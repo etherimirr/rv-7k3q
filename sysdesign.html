@@ -82,8 +82,18 @@ flowchart LR
 <tr><td>1 KB × 10 亿 = 1 TB</td><td>每行 1 KB、10 亿行 = 1 TB</td></tr>
 <tr><td>一台机器：内存 64–256 GB，SSD 几 TB，网卡 1–10 Gbps</td><td>超过就要分机器</td></tr>
 <tr><td>内存读 100 ns、SSD 读 100 µs、跨机房网络 100 ms</td><td>每差 1000 倍；能放内存就别读盘</td></tr>
-<tr><td>一个 CPU 核每秒处理简单行：几万到几十万</td><td>你实测 Polars 3.5 万行/核秒（含模糊匹配）</td></tr>
+<tr><td>一个 CPU 核每秒能处理多少行：看每行干多少活（见下）</td><td>你实测 3.5 万行/核秒（含 Python 模糊匹配）</td></tr>
 </table></div>
+<p><b>「一个核每秒处理几万到几十万行」怎么来的</b>：一个 CPU 核每秒大约做 10<sup>9</sup> 次简单操作。处理一行要做多少次操作，决定每秒能过多少行：</p>
+<div class="tbl"><table>
+<tr><th>每行干的活</th><th>每行大约几次操作</th><th>每核每秒多少行</th><th>例子</th></tr>
+<tr><td>纯向量化：过滤、加列、类型转换（Polars/Spark 的列式计算）</td><td>10<sup>2</sup>–10<sup>3</sup></td><td>10<sup>6</sup>–10<sup>7</sup>（百万到千万）</td><td>你的 conform、clean、分桶</td></tr>
+<tr><td>一般逐行逻辑：解析、几次比较、写出</td><td>10<sup>4</sup>–10<sup>5</sup></td><td>10<sup>4</sup>–10<sup>5</sup>（几万到几十万）</td><td>普通 ETL 的估算默认值</td></tr>
+<tr><td>重逻辑：Python 循环 + 字符串相似度 + 多候选打分</td><td>10<sup>4</sup>–10<sup>5</sup>，但 Python 本身慢 10–100 倍</td><td>10<sup>4</sup> 左右</td><td>你的 step + match：3.5 × 10<sup>4</sup> 行/核秒（指纹跳过一半帮了大忙）</td></tr>
+<tr><td>每行调一次模型 / LLM</td><td>10<sup>8</sup> 以上，或网络往返</td><td>10–100</td><td>这就是为什么不能 LLM 逐对判</td></tr>
+</table></div>
+<p class="zh">用法：估算时先判断「每行是哪一档活」，再乘以行数得核秒。被问「怎么知道 3.5 万」：实测，1150 万行 ÷ (78 秒 × 4 核) ≈ 3.7 万，取 3.5 万保守。</p>
+<p class="en">A core does about a billion simple operations a second. Vectorised column work is a few hundred operations per row, so millions of rows per second; row-by-row logic in Python with fuzzy matching is tens of thousands per second, which is what I measured, 35 thousand rows per core-second. Calling a model per row drops that to tens, which is why an LLM can't sit on the hot path.</p>
 <p class="me">你的项目里：1000 亿行 × 约 500 字节 ≈ 50 TB 输入；3.5 万行/核秒 → 1000 亿 ÷ 3.5 万 ≈ 286 万核秒 ≈ 800 核时；64 核约 12 小时。输出约 1.08 倍输入。</p>
 <p class="en">At roughly 500 bytes a row, 100 billion rows is about 50 terabytes. At 35 thousand rows per core-second that's about 800 core-hours, so 12 hours on 64 cores or a bit over an hour on 640.</p>
 </div>
