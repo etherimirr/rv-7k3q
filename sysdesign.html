@@ -26,7 +26,7 @@ code{font-family:Menlo,monospace;font-size:14px;background:var(--code);padding:1
 #tocbtn{display:none;position:fixed;right:14px;bottom:18px;z-index:11;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:10px 16px;font-size:15px}
 @media (min-width:1000px){body{padding-left:260px}}
 @media (max-width:999px){#toc{display:none;width:82%}#toc.open{display:block}#tocbtn{display:block}}
-@media print{#toc,#tocbtn{display:none!important}body{padding-left:16px}h2{break-before:page}h2:first-of-type{break-before:auto}.card{break-inside:avoid}}
+@media print{#toc,#tocbtn{display:none!important}body{padding-left:16px}h2{break-before:page}h2:first-of-type{break-before:auto}.card{break-inside:avoid}.mermaid{break-inside:avoid}.mermaid svg{max-height:230mm!important;max-width:100%!important;height:auto!important;width:auto!important}}
 .tm{border-bottom:1.5px dashed var(--accent);color:var(--accent);cursor:pointer}
 .tm.on{background:var(--hl)}
 .tmbox{background:var(--card);border:1.5px solid var(--accent);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:15.5px}
@@ -365,7 +365,7 @@ flowchart LR
 
 <p><b>先问的思维导图</b>：问五个问题，每个答案决定一个组件。 左边是问题，箭头上是他可能的回答，右边是这个回答把设计引向哪里。</p>
 <pre class="mermaid">
-flowchart LR
+flowchart TD
   Q1{"每天多少条?"} -->|"几百万"| A1["单机 Polars 就够<br>不用 Spark"]
   Q1 -->|"几亿以上"| A2["Spark 集群<br>按 user_id 分区"]
   Q2{"多新鲜?"} -->|"天级"| B1["每日批处理<br>上游给文件就不要 Kafka"]
@@ -474,7 +474,7 @@ flowchart TD
 
 <p><b>先问的思维导图</b>：问五个问题，答案决定「花多少钱在准确率上」。 左边是问题，箭头上是他可能的回答，右边是这个回答把设计引向哪里。</p>
 <pre class="mermaid">
-flowchart LR
+flowchart TD
   Q1{"延迟要求?"} -->|"线上毫秒"| A1["不能每次调 LLM<br>缓存 + 向量索引在线"]
   Q1 -->|"离线批量"| A2["可以多用 LLM<br>批量跑、结果入库"]
   Q2{"分类表会改版吗?"} -->|"会"| B1["映射表带版本号<br>能回算历史"]
@@ -567,7 +567,7 @@ flowchart LR
 
 <p><b>先问的思维导图</b>：问五个问题，最关键的是第 3 个：错合和漏合哪个更伤。 左边是问题，箭头上是他可能的回答，右边是这个回答把设计引向哪里。</p>
 <pre class="mermaid">
-flowchart LR
+flowchart TD
   Q1{"合并到什么粒度?"} -->|"法人"| A1["Google 和 Alphabet 分开<br>母子关系另存"]
   Q1 -->|"集团"| A2["子公司都并到母公司"]
   Q2{"改名 / 并购怎么算?"} -->|"改名算同一家"| B1["ID 带改名历史和别名"]
