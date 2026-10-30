@@ -86,8 +86,9 @@ pre.d{font-family:Menlo,Consolas,"PingFang SC",monospace;font-size:13px;line-hei
 <ol>
 <li>标签：有薪资透明法的州（纽约、加州、科罗拉多）发布的岗位写了薪资范围，拿来当训练数据。</li>
 <li>特征：标准化后的职位、资历级别、地区、公司、行业、公司规模。</li>
-<li>目标取对数（log salary），因为薪资是右偏的。</li>
-<li>先做简单基线：按「职位 × 地区」取中位数；再上梯度提升树。</li>
+<li>目标取对数（log salary），因为薪资是<b>右偏的</b>（right-skewed）：大多数人 5 万到 15 万，少数人 100 万、300 万，画出来的分布左边堆成一座山、右边拖一条长尾巴。直接预测原始数字，模型会被那几个超高薪的拉偏，而且「预测 5 万错 1 万」和「预测 50 万错 1 万」意义完全不一样。取对数后：① 分布变得接近正态，模型好学；② 误差变成百分比，5 万错 10% 和 50 万错 10% 一样重；③ 预测出来再 exp 回去。<span class="en" style="font-size:15px">Salaries are right-skewed, a long tail of very high pay, so I model log salary: the distribution becomes roughly normal and errors become percentage errors, then I exponentiate back.</span></li>
+<li>先做简单基线：按「职位 × 地区」取中位数（median，不用平均数，平均数也会被高薪拉偏）。基线的作用是知道「不用模型能到多少」，模型只有比它好才值得。</li>
+<li>再上<b>梯度提升树（gradient boosting，如 XGBoost / LightGBM）</b>。为什么是它：① 特征全是类别型（职位、地区、公司、行业）+ 少量数值（资历、公司规模），树模型天然处理类别和非线性，不用手动做特征交叉（比如「纽约的软件工程师」和「纽约的护士」薪资差距不是简单相加）；② 表格数据上它几乎总是最强的基线，比线性回归准得多，又不像深度学习那样要大数据和调参；③ 训练快、能输出特征重要性，方便解释。为什么不用线性回归：假设特征效果线性相加，职位 × 地区的交互抓不住。为什么不用神经网络：数据只有几万到几十万条、特征是表格，神经网络没优势还难解释。<span class="en" style="font-size:15px">Gradient boosting is the strongest default for tabular data with categorical features: trees capture interactions like title-by-location without hand engineering, train fast, and give feature importance. Linear models miss the interactions, and neural nets need more data for no gain here.</span></li>
 <li>评估：对数空间的 MAE，换算成百分比误差；按职位和地区分组看误差。</li>
 <li>坑：写了薪资的岗位本身就有偏（集中在某些州、某些公司），要检查迁移到别的州时误差会不会变大。</li>
 </ol>
