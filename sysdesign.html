@@ -88,6 +88,42 @@ flowchart LR
 <p class="en">At roughly 500 bytes a row, 100 billion rows is about 50 terabytes. At 35 thousand rows per core-second that's about 800 core-hours, so 12 hours on 64 cores or a bit over an hour on 640.</p>
 </div>
 
+<h3 id="s1b">数量级换算表（10 的几次方）</h3>
+<div class="card">
+<div class="tbl"><table>
+<tr><th>10 的几次方</th><th>叫法</th><th>字节单位</th><th>直观</th></tr>
+<tr><td>10<sup>3</sup></td><td>千 thousand（K）</td><td>1 KB ≈ 一条 1000 字的记录</td><td>一个人一段经历的所有字段约 0.5 KB</td></tr>
+<tr><td>10<sup>6</sup></td><td>百万 million（M）</td><td>1 MB ≈ 一张照片</td><td>一百万行 × 1 KB = 1 GB</td></tr>
+<tr><td>10<sup>9</sup></td><td>十亿 billion（G / B）</td><td>1 GB ≈ 一部电影</td><td>十亿行 × 1 KB = 1 TB</td></tr>
+<tr><td>10<sup>12</sup></td><td>万亿 trillion（T）</td><td>1 TB ≈ 一块硬盘</td><td>1000 亿行 × 0.5 KB = 50 TB</td></tr>
+<tr><td>10<sup>15</sup></td><td>千万亿 quadrillion（P）</td><td>1 PB = 1000 块硬盘</td><td>大公司数据湖级别</td></tr>
+</table></div>
+<p><b>中文和英文的坑</b>：中文按万进位，英文按千进位。</p>
+<div class="tbl"><table>
+<tr><th>中文</th><th>数字</th><th>英文</th></tr>
+<tr><td>1 万</td><td>10<sup>4</sup></td><td>10 thousand</td></tr>
+<tr><td>10 万</td><td>10<sup>5</sup></td><td>100 thousand</td></tr>
+<tr><td>100 万</td><td>10<sup>6</sup></td><td>1 million</td></tr>
+<tr><td>1000 万</td><td>10<sup>7</sup></td><td>10 million</td></tr>
+<tr><td>1 亿</td><td>10<sup>8</sup></td><td>100 million</td></tr>
+<tr><td>10 亿</td><td>10<sup>9</sup></td><td>1 billion</td></tr>
+<tr><td>1000 亿</td><td>10<sup>11</sup></td><td>100 billion</td></tr>
+<tr><td>1 万亿</td><td>10<sup>12</sup></td><td>1 trillion</td></tr>
+</table></div>
+<p><b>时间</b>：1 天 = 86,400 秒 ≈ 10<sup>5</sup>（算 QPS 时直接除 10 万）；1 月 ≈ 2.6 × 10<sup>6</sup> 秒；1 年 ≈ 3.15 × 10<sup>7</sup> 秒。</p>
+<p><b>延迟（相差 1000 倍一档）</b>：内存 100 ns = 10<sup>-7</sup> 秒 → SSD 100 µs = 10<sup>-4</sup> 秒 → 跨机房网络 100 ms = 10<sup>-1</sup> 秒。</p>
+<p><b>你的题目用这张表算一遍</b>：</p>
+<ul>
+<li>输入 11.5M 行 = 1.15 × 10<sup>7</sup>；150k 人 = 1.5 × 10<sup>5</sup>；每人约 77 行。</li>
+<li>1000 亿行 = 10<sup>11</sup>；× 500 B（5 × 10<sup>2</sup>）= 5 × 10<sup>13</sup> B = 50 TB。</li>
+<li>3.5 万行/核秒 = 3.5 × 10<sup>4</sup>；10<sup>11</sup> ÷ 3.5 × 10<sup>4</sup> ≈ 2.9 × 10<sup>6</sup> 核秒；÷ 3600 ≈ 800 核时。</li>
+<li>64 核：800 ÷ 64 = 12.5 小时；640 核：1.25 小时。</li>
+<li>每天 3 亿新行 = 3 × 10<sup>8</sup>；÷ 3.5 × 10<sup>4</sup> ≈ 8.6 × 10<sup>3</sup> 核秒 ≈ 2.4 核时；4 核约 36 分钟。</li>
+<li>1 万 QPS 的点查：× 10<sup>5</sup> 秒/天 = 10<sup>9</sup> 次/天。</li>
+</ul>
+<p class="en">I round everything to powers of ten: a day is ten to the fifth seconds, a kilobyte times a billion rows is a terabyte, and memory, SSD and network are each a thousand times apart. 100 billion rows at 500 bytes is 50 terabytes; at 35 thousand rows per core-second that's about 800 core-hours.</p>
+</div>
+
 <h2 id="s2">2 · 分区 / 分片 + 一致性哈希</h2>
 <div class="card">
 <p>比方：一个图书馆放不下，按书名首字母分到 26 个馆。分区就是「按什么键把数据切开放到不同机器」。</p>
