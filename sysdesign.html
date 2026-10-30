@@ -242,6 +242,17 @@ flowchart LR
 <li><b>列式（parquet）</b>：同一列存在一起。好处：只读需要的列（你 conform 只读 10 列）；同列压缩率高；带统计信息（每块的最大最小值）能跳过整块（<b>谓词下推</b>）。坏处：改一行要重写文件。</li>
 <li><b>行式</b>（数据库表）：一行存一起，点查快、改一行快。</li>
 <li><b>表格式（Iceberg / Delta / Hudi）</b>：在一堆 parquet 文件上加一层元数据，提供：<b>ACID 提交</b>（一次写入要么全可见要么全不可见）、<b>快照 / 时间旅行</b>（回到任何一版）、<b>MERGE</b>（按键更新）、<b>分区裁剪</b>（按分区只读需要的文件）、<b>schema 演进</b>（加列不重写）、<b>小文件合并</b>。</li>
+<li><b>Iceberg 的「事务提交」具体是怎么做到的</b>：
+<ul>
+<li>比方：仓库里放着一堆箱子（parquet 文件），墙上有一块公告板，贴着一张清单：「当前这一版 = 这 500 个箱子」。读的人只认清单，清单上没有的箱子当不存在。</li>
+<li>写新数据的流程：① 先把新箱子搬进仓库（写新的 parquet 文件，<u>旧文件一个都不改</u>）；② 写一张新清单，列出新版本包含哪些箱子（旧的 480 个 + 新的 30 个，去掉被替换的 20 个）；③ 最后一步，<u>把公告板上的清单换成新的</u>。这一换是一个原子动作，要么换了要么没换，没有中间状态。</li>
+<li>所以：写到一半挂了，新箱子搬了一半但清单没换，读的人还是看旧清单，什么都没变，只是仓库里多了几个没人认领的箱子，事后清理。这就是「要么全可见要么全不可见」。</li>
+<li>读的人在你换清单的那一刻之前拿到的是旧清单，之后拿到的是新清单，永远不会拿到一张写了一半的清单。读写互不阻塞。</li>
+<li>旧清单不扔，所以可以「回到上周三那一版」（时间旅行），也可以一键回退。</li>
+<li>两个人同时写：换清单时要先检查「公告板上现在还是我开始时看到的那张吗」。是，就换；不是（别人先换了），就拿新清单重做一遍再换。这叫乐观并发，和 git push 被拒绝要先 pull 一样。</li>
+<li>术语对照：清单 = 元数据文件（metadata.json → snapshot → manifest），公告板 = catalog（Hive Metastore / Glue / Nessie），换清单 = 对 catalog 做一次 compare-and-swap。</li>
+</ul>
+<span class="en" style="font-size:15px">Iceberg never modifies a data file. A write adds new parquet files, writes a new metadata snapshot listing exactly which files make up the new version, and then atomically swaps the table's pointer in the catalog. Readers only follow the pointer, so they see either the old version or the new one, never a half-written state. Old snapshots stay, which gives time travel and rollback, and concurrent writers use compare-and-swap on the pointer.</span></li>
 <li><b>小文件问题</b>：几百万个 1 MB 文件比几千个 1 GB 文件慢得多（打开文件有固定开销）。目标每个文件 128 MB–1 GB。</li>
 </ul>
 <p class="me">你的项目里：输出 parquet、每桶一个文件（64 个），大小合适；状态现在是 parquet 每天整份重写，生产应放 Iceberg 按 user_id 分区、MERGE 只更新动过的人、一次运行一次提交、旧版本留着回退；history 只追加。桶太多 = 小文件问题，所以桶数不是越多越好。</p>
