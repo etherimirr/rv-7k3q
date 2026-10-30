@@ -207,7 +207,7 @@ flowchart LR
 <p>比方：快递站的传送带。寄件人放上去就走，分拣员按自己的速度拿，带子上的包裹还能倒回去重看。</p>
 <ul>
 <li><b>三个用处</b>：<b>解耦（decoupling）</b>（生产方和消费方不用同时在线）、<b>削峰（buffering peaks）</b>（高峰先排队）、<b>可重放（replayable）</b>（消费方挂了从上次的位置接着读）。</li>
-<li><b>Topic / 分区 / offset</b>：一个 topic 切成多个分区；<u>同一个分区内有序</u>，跨分区无序；每个消费者记自己读到的位置（offset）。按 key（比如 user_id）分区，同一个人的消息就在同一分区、按顺序到。</li>
+<li><b>Topic / 分区 / offset</b>：一个 topic 切成多个分区；<u>同一个分区内有序</u>，跨分区无序；每个消费者记自己读到的位置（offset）。按 key（比如 user_id）分区，同一个人的消息就在同一分区、按顺序到。<br><b>为什么分区内有序、跨分区无序</b>：比方，银行开了 4 个窗口，每个窗口前排一条队。同一条队里，先来的一定先办（这条队有序）。但 1 号窗口的第 5 个人和 3 号窗口的第 2 个人谁先办完，没人管，看各窗口快慢（跨队无序）。Kafka 的每个分区（partition）就是一个窗口：它是一个只往末尾追加的日志（append-only log），每条消息拿一个递增的位置号 offset，消费者按 offset 从小到大读，所以分区内天然有序。不同分区在不同机器上、由不同消费者并行读，没有一个全局的顺序号把它们串起来；要做全局有序，就只能所有消息排同一条队，也就失去了并行（throughput）。<u>所以做法是：需要有序的东西放进同一个分区</u>。用 user_id 当分区键（partition key），同一个人的消息哈希到同一个分区，他自己的事件就保序；不同人之间本来就不需要顺序。<span class="en" style="font-size:15px">Each partition is an append-only log with increasing offsets, so order holds inside it. Partitions are read in parallel with no global sequence across them; global order would mean one partition and no parallelism. So you choose the partition key to match what must stay ordered: user_id keeps each person's events in order.</span></li>
 <li><b>投递语义（delivery semantics）</b>：至多一次（at-most-once）（可能丢）、至少一次（at-least-once）（可能重）、恰好一次（贵）。常用做法：<u>至少一次 + 消费端幂等</u>。</li>
 <li><b>消费者组（consumer group）</b>：一组消费者分摊一个 topic 的分区，加消费者就加吞吐，但消费者数不能超过分区数。</li>
 <li><b>积压（lag）（consumer lag）</b>：生产比消费快，offset 落后越来越多，是最重要的监控指标。</li>
