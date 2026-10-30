@@ -363,6 +363,84 @@ flowchart LR
 <p class="en">Same core as the take-home, run under Spark partitioned by user_id, with state in an Iceberg table partitioned by user_id so each day merges only touched users and commits atomically. Late data replays one person; failures are quarantined. Output goes to a warehouse for analysis and a key-value store for point lookups, and every run emits the quality metrics I alert on.</p>
 </div>
 
+<p><b>先问的思维导图</b>：问五个问题，每个答案决定一个组件。 左边是问题，箭头上是他可能的回答，右边是这个回答把设计引向哪里。</p>
+<pre class="mermaid">
+flowchart LR
+  Q1{"每天多少条?"} -->|"几百万"| A1["单机 Polars 就够<br>不用 Spark"]
+  Q1 -->|"几亿以上"| A2["Spark 集群<br>按 user_id 分区"]
+  Q2{"多新鲜?"} -->|"天级"| B1["每日批处理<br>上游给文件就不要 Kafka"]
+  Q2 -->|"分钟 / 秒级"| B2["Kafka + Flink 流处理<br>状态放 Flink"]
+  Q3{"谁来读?"} -->|"分析师 SQL"| C1["Iceberg 表 + Trino / 数仓"]
+  Q3 -->|"网站按人点查"| C2["再加 KV 存储<br>+ API + 缓存"]
+  Q4{"要历史版本吗?"} -->|"要 as-of"| D1["输出按 asof 分区<br>Iceberg 快照"]
+  Q4 -->|"只要最新"| D2["只存当前状态<br>简单得多"]
+  Q5{"哪种错更伤?"} -->|"漏合并"| E1["存疑就合<br>阈值放低"]
+  Q5 -->|"错合并"| E2["存疑就分<br>阈值抬高 + 人工"]
+</pre>
+<h3 id="qas">题 A：逐步思考和取舍（每一步：要解决什么 → 可选方案 → 选哪个 → 为什么 → 代价）</h3>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 1 步 · 先问清楚要求（clarify requirements）</h4>
+<p><b>要解决什么</b>：同一道题，每天 1 万条和每天 10 亿条、要秒级更新和要天级更新，设计完全不同。不问就画，十有八九画错方向。</p>
+<p><b>可选方案</b>：</p><ul><li>问：每天进来多少条？（设 3 亿）</li><li>问：结果要多新鲜？秒级、小时级还是天级？（设天级，和 take-home 一样）</li><li>问：谁读结果？分析师跑 SQL，还是网站按人点查？（设两种都有）</li><li>问：要不要保留历史版本，能查「截至某天」的样子？（要，as-of）</li><li>问：错一点能不能接受？漏合并和错合并哪个更伤？</li></ul>
+<p><b>选哪个</b>：问完把答案写在白板最上面，后面每个决定都回头指着它说「因为天级就够，所以……」。</p>
+<p><b>为什么</b>：面试官最看重你会不会先界定问题。每个答案都会直接决定后面一个组件的选择。</p>
+<p><b>代价 / 取舍</b>：花 3–5 分钟，看起来慢，但能避免后面整段推倒重来。</p>
+<p class="en">Before drawing anything, I'd confirm the daily volume, how fresh the output must be, who reads it, and whether we need history, because each answer changes a component.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 2 步 · 估算（back-of-envelope）</h4>
+<p><b>要解决什么</b>：知道数据有多大，才知道一台机器够不够、要几台、存储花多少钱。</p>
+<p><b>可选方案</b>：</p><ul><li>只算数量级，不求精确</li></ul>
+<p><b>选哪个</b>：3 亿行/天 × 500 字节 ≈ 150 GB/天；存量 1000 亿行 ≈ 50 TB；每天约 1% 的人有新数据；你的代码 3.5 万行/核秒 → 3 亿行 ≈ 8,600 核秒 ≈ 2.4 核时。</p>
+<p><b>为什么</b>：结论很关键：<u>每天的增量很小</u>，几台机器半小时跑完；真正大的是存量和偶尔的全量重算（800 核时）。所以设计重点是「增量只碰动过的人」，而不是「每天全量重跑」。</p>
+<p><b>代价 / 取舍</b>：估算有误差，所以说「数量级」，并说明假设（每行 500 字节、1% 的人有更新）。</p>
+<p class="en">Three hundred million rows a day at 500 bytes is about 150 gigabytes; at 35 thousand rows per core-second that's under three core-hours, so the daily job is small. The design should touch only users with new data rather than recompute everything.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 3 步 · 数据怎么进来（ingest）</h4>
+<p><b>要解决什么</b>：爬虫和合作方源源不断地送数据，要有个地方先接住，不能直接塞进处理程序（处理程序挂了数据就丢了）。</p>
+<p><b>可选方案</b>：</p><ul><li>直接写数据库：简单，但数据库扛不住每天几亿行的写入，而且和处理逻辑绑死。</li><li>写进 <span class="tm" data-k="kafka">Kafka</span>（消息队列）：生产者和消费者解耦（decoupling），消费者挂了数据还在，可以重放（replay）。</li><li>直接落 S3 文件：最便宜，按天一个文件夹，但不方便实时消费。</li></ul>
+<p><b>选哪个</b>：Kafka 按 user_id 分区接住 → 每小时把 Kafka 里的数据落成 S3 上按日期分区的 parquet（原始区，raw zone）。</p>
+<p><b>为什么</b>：Kafka 负责「接住、不丢、能重放」；S3 原始区负责「便宜地长期保存原样数据」，以后规则改了可以从原始数据重算。按 user_id 分区让同一个人的事件在同一个分区里保序。</p>
+<p><b>代价 / 取舍</b>：多维护一个 Kafka 集群。如果新鲜度只要天级、上游本来就每天给文件，<u>可以不要 Kafka，直接收 S3 文件</u>，更简单。面试时把这个取舍说出来。</p>
+<p class="en">I'd land events on Kafka partitioned by user_id so nothing is lost and one person's events stay in order, then persist them hourly as date-partitioned parquet in a raw zone on S3. If upstream already delivers daily files, I'd skip Kafka and read S3 directly.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 4 步 · 选计算引擎：批还是流</h4>
+<p><b>要解决什么</b>：每天要把新数据和已有状态合起来算一遍，用什么跑？</p>
+<p><b>可选方案</b>：</p><ul><li><span class="tm" data-k="spark">Spark</span> 每日批处理（batch）：攒一天的数据一次算完。</li><li><span class="tm" data-k="flink">Flink</span> 流处理（streaming）：来一条算一条，秒级。</li><li>单机 Polars：你作业那样，够快但只有一台机器。</li></ul>
+<p><b>选哪个</b>：Spark 每日批。</p>
+<p><b>为什么</b>：要求是天级新鲜度，流处理的好处（秒级）用不上，却要付出它的代价：一直开着、状态管理、乱序处理、运维（operations）重。Spark 成熟、按天跑正好、和 Iceberg 配合好，而且 mapInArrow 能直接调你写好的 coalesce_bucket，规则只有一份。</p>
+<p><b>代价 / 取舍</b>：新数据最晚要等一天才可见。如果以后要求变成分钟级，再把核心函数搬进 Flink（函数本身不用改，因为它就是「给一个人的状态和新快照，返回新状态」）。</p>
+<p class="en">Daily freshness makes batch the right call; streaming would add state management and operations for no benefit. Spark runs the same coalesce_bucket through mapInArrow, so there's one copy of the logic, and it could move to Flink later without changes.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 5 步 · 核心处理怎么并行（partition by user_id）</h4>
+<p><b>要解决什么</b>：1000 亿行一台机器跑不动，要分给很多机器。怎么分才不会算错？</p>
+<p><b>可选方案</b>：</p><ul><li>随机分：均匀，但同一个人的行散在多台机器，没法做每人的状态机。</li><li>按 user_id 分：同一个人的数据一定在同一台机器。</li><li>按公司分：同一公司在一起，但一个人换过多家公司会被拆开。</li></ul>
+<p><b>选哪个</b>：按 user_id 分区（repartition by user_id，这一步就是一次 <span class="tm" data-k="mapreduce">shuffle</span>）。</p>
+<p><b>为什么</b>：你的算法是「每人一个状态机」，人和人之间不共享任何东西，所以只要同一个人在一台机器上就能独立算，<u>加机器就线性变快</u>。</p>
+<p><b>代价 / 取舍</b>：一次 shuffle 要走网络，是最贵的一步；所以状态表也按 user_id 分区，让 join 时同一个人的状态和新数据本来就在一起，少搬数据。超级用户（几千条的人）可能造成<span class="tm" data-k="skew">数据倾斜</span>，单独处理。</p>
+<p class="en">Partitioning by user_id puts all of one person's rows on one worker, and since nothing is shared between people, it scales linearly. The shuffle is the expensive step, so the state table is partitioned the same way.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 6 步 · 状态存哪里（state store）</h4>
+<p><b>要解决什么</b>：每个人「目前有哪些职位、下一个序号、上次处理到哪天」要存下来，明天接着用。</p>
+<p><b>可选方案</b>：</p><ul><li>现在作业里的做法：每天把 parquet 整份重写到新文件夹。简单，但每天重写全部，哪怕只有 1% 的人变了。</li><li>放 KV 数据库（DynamoDB）：按人读写快，但批处理一次读几亿人很贵。</li><li>放 <span class="tm" data-k="iceberg">Iceberg</span> 表，按 user_id 分区。</li></ul>
+<p><b>选哪个</b>：Iceberg 表，按 user_id 分区，每天用 MERGE 只更新动过的人；history 单独一张只追加（append-only）的表。</p>
+<p><b>为什么</b>：① MERGE 只改动过的人，不用整份重写；② 按 user_id 分区，当天只读有新数据的人所在分区（分区裁剪，partition pruning）；③ 一次运行一次原子提交，跑一半挂了不会留下半截状态；④ 旧快照留着，跑坏了一键回退到昨天。</p>
+<p><b>代价 / 取舍</b>：多了一层表格式要维护（定期合并小文件 compaction、清理旧快照）。</p>
+<p class="en">State lives in an Iceberg table partitioned by user_id: each day merges only touched users, reads only their partitions, commits atomically, and keeps snapshots so a bad run can be rolled back.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 7 步 · 迟到数据和出错怎么处理</h4>
+<p><b>要解决什么</b>：有的快照晚几天才到；有的人数据奇怪会让程序报错。不能让一个人拖垮整批。</p>
+<p><b>可选方案</b>：</p><ul><li>迟到：直接丢弃（简单但输出错）</li><li>迟到：隔离等人工（安全但积压）</li><li>迟到：只重放那一个人（你作业的做法）</li><li>出错：整批失败重跑 vs 只隔离出错的人</li></ul>
+<p><b>选哪个</b>：迟到只重放那个人、写进 restated 名单；出错的人回滚进隔离区（quarantine），其余照常提交。</p>
+<p><b>为什么</b>：人和人独立，所以重放一个人、隔离一个人都不影响别人。重放结果和全量跑一致，有测试证明。</p>
+<p><b>代价 / 取舍</b>：要多存 history；restated 的人下游要整体替换他的历史行。隔离区要有人定期看。</p>
+<p class="en">Late snapshots replay just that user and are listed as restated; a user who fails is rolled back and quarantined while everyone else commits.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 8 步 · 结果怎么给下游用（serving）</h4>
+<p><b>要解决什么</b>：分析师要跑 SQL 统计；网站要「给我这个人截至某天的履历」毫秒级返回。一个存储满足不了两种读法。</p>
+<p><b>可选方案</b>：</p><ul><li>只放数据仓库：SQL 方便，但点查要几秒。</li><li>只放 KV：点查快，但没法做统计。</li><li>两份都放。</li></ul>
+<p><b>选哪个</b>：输出 Iceberg 表（按 asof 日期分区）给 <span class="tm" data-k="trino">Trino / 数仓</span>跑分析；同时每天把动过的人批量写进 <span class="tm" data-k="kv">DynamoDB</span>（key = user_id），前面加 API 和缓存给网站点查。</p>
+<p><b>为什么</b>：读法不同就用不同的存储，这叫读写分离 / 多存储（polyglot persistence）。每天只写动过的人，KV 的写入量很小。</p>
+<p><b>代价 / 取舍</b>：同一份数据两份拷贝，要保证一致：以 Iceberg 为准，KV 是它的派生，出问题从 Iceberg 重新灌。</p>
+<p class="en">Analysts query the Iceberg output through a warehouse; point lookups go to a key-value store loaded daily with only the touched users, behind an API and cache. The table is the source of truth and the store can be rebuilt from it.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 9 步 · 监控（monitoring）</h4>
+<p><b>要解决什么</b>：没有标准答案，上线后怎么知道结果还对、哪天抓取器坏了？</p>
+<p><b>可选方案</b>：</p><ul><li>只看程序有没有报错（不够，结果错了程序不会报错）</li><li>每次运行输出质量指标并告警</li></ul>
+<p><b>选哪个</b>：每次运行出指标：输入行数、丢弃行数（按规则）、修复格数、合并数、重放人数、隔离人数、覆盖率、倒序日期数、可疑拆分数、新 id 比例；和历史比，突变就告警；必须为 0 的（主键重复、倒序日期）直接让任务失败。再加定期抽样 + 判官。</p>
+<p><b>为什么</b>：数据错误不会抛异常，只能靠指标发现。抓取器改版通常最先表现为「新 id 比例突然涨了」。</p>
+<p><b>代价 / 取舍</b>：告警阈值要调，太松漏报、太紧吵人。</p>
+<p class="en">Every run emits counts per rule, coverage, inverted dates, suspicious splits and the new-id rate; I alert on deviations from history and hard-fail on anything that must be zero, plus periodic sampled judging.</p></div>
 <h3 id="qb">题 B · 职位名 / 技能映射服务（1000 万种原始职位名 → 标准分类）</h3>
 <div class="card">
 <p><b>先问</b>：分类表多大（几千类）、延迟要求（线上毫秒 vs 离线批）、准确率目标、要不要多语言、分类表会不会改版。</p>
@@ -394,6 +472,70 @@ flowchart TD
 <p class="en">A three-tier funnel: normalise, then rules and a cache for the head of the distribution, embedding nearest-neighbour for the long tail, and an LLM only for low-confidence cases, with results cached and the lowest sent to human review. The mapping table is versioned so history can be recomputed, and I evaluate on frequency-stratified samples with an LLM judge calibrated against human labels.</p>
 </div>
 
+<p><b>先问的思维导图</b>：问五个问题，答案决定「花多少钱在准确率上」。 左边是问题，箭头上是他可能的回答，右边是这个回答把设计引向哪里。</p>
+<pre class="mermaid">
+flowchart LR
+  Q1{"延迟要求?"} -->|"线上毫秒"| A1["不能每次调 LLM<br>缓存 + 向量索引在线"]
+  Q1 -->|"离线批量"| A2["可以多用 LLM<br>批量跑、结果入库"]
+  Q2{"分类表会改版吗?"} -->|"会"| B1["映射表带版本号<br>能回算历史"]
+  Q2 -->|"不会"| B2["一张表就够"]
+  Q3{"多语言吗?"} -->|"是"| C1["多语言 embedding<br>+ 翻译词表"]
+  Q3 -->|"只英文"| C2["英文模型 + 规则"]
+  Q4{"准确率目标 / 错的代价?"} -->|"很高"| D1["阈值高<br>更多进 LLM 和人工"]
+  Q4 -->|"一般"| D2["阈值低<br>向量结果直接用"]
+  Q5{"流量分布?"} -->|"头部集中"| E1["头部人工审 + 缓存<br>长尾才用模型"]
+  Q5 -->|"很平"| E2["主要靠 embedding"]
+</pre>
+<h3 id="qbs">题 B：逐步思考和取舍（每一步：要解决什么 → 可选方案 → 选哪个 → 为什么 → 代价）</h3>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 1 步 · 先问清楚</h4>
+<p><b>要解决什么</b>：职位名有一千万种写法，要映射到几千个标准类。线上实时用还是离线批量用、准确率要多少，决定了能不能用贵的方法。</p>
+<p><b>可选方案</b>：</p><ul><li>问：标准分类表多大？会不会改版？</li><li>问：延迟要求？线上搜索框要毫秒级，离线报表可以慢</li><li>问：多语言吗？</li><li>问：准确率目标？错了的代价？</li></ul>
+<p><b>选哪个</b>：设：几千个标准类、会改版；线上要毫秒级、离线也要；多语言；头部准确率要很高。</p>
+<p><b>为什么</b>：延迟和成本决定能不能每次都调 LLM（不能）。改版决定映射表要版本化。</p>
+<p><b>代价 / 取舍</b>：—</p>
+<p class="en">I'd confirm the taxonomy size and how often it changes, the latency target, languages, and the accuracy bar, since those decide whether we can afford an LLM per lookup.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 2 步 · 估算</h4>
+<p><b>要解决什么</b>：看数据分布，决定在哪里花钱。</p>
+<p><b>可选方案</b>：</p><ul><li>统计每个头衔出现多少次</li></ul>
+<p><b>选哪个</b>：一千万种头衔，但<u>头部几千种覆盖约 80% 的流量</u>（长尾分布，long tail）；线上 1 万 QPS；向量 384 维 × 4 字节 ≈ 1.5 KB，一千万个 ≈ 15 GB，一台机器内存放得下。</p>
+<p><b>为什么</b>：既然大头集中在少数头衔，就把它们做到又快又准；长尾才用更贵的方法。</p>
+<p><b>代价 / 取舍</b>：—</p>
+<p class="en">The distribution is long-tailed: a few thousand titles cover most traffic, so the head gets cheap exact handling and only the tail needs expensive methods.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 3 步 · 规范化（normalisation）</h4>
+<p><b>要解决什么</b>：「Sr. Software Engineer」「senior software engineer」「高级软件工程师」其实是一回事，先把写法统一，后面才好比。</p>
+<p><b>可选方案</b>：</p><ul><li>什么都不做直接比（命中率低）</li><li>规范化：大小写、标点、缩写展开、词表翻译（你的 title_key + glossary）</li></ul>
+<p><b>选哪个</b>：先规范化，生成一个 key。</p>
+<p><b>为什么</b>：规范化便宜、确定，一下子把很多写法合成同一个 key，后面缓存命中率大幅提高。</p>
+<p><b>代价 / 取舍</b>：规则要维护；翻译过度会把不相关的合在一起（你作业里 chief 被误翻那次）。</p>
+<p class="en">Normalise first, case, punctuation, abbreviations and a translation glossary, so many spellings collapse to one key before anything expensive runs.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 4 步 · 头部：缓存 / 规则表</h4>
+<p><b>要解决什么</b>：最常见的几千个头衔要毫秒级、百分百确定。</p>
+<p><b>可选方案</b>：</p><ul><li>每次都现算</li><li>人工审过的规则表 + 缓存（Redis）</li></ul>
+<p><b>选哪个</b>：规范化后的 key 先查规则表 / 缓存，命中直接返回。</p>
+<p><b>为什么</b>：占了大部分流量；人工审过一次就永远对；内存查找微秒级。</p>
+<p><b>代价 / 取舍</b>：规则表要有人维护；分类表改版时要批量更新。</p>
+<p class="en">The head is served from a reviewed mapping table in a cache: microseconds and exact.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 5 步 · 长尾：embedding 最近邻</h4>
+<p><b>要解决什么</b>：没见过的写法，规则对不上，需要「按意思找最像的标准类」。</p>
+<p><b>可选方案</b>：</p><ul><li>编辑距离 / token 相似度（便宜，但不懂意思：Developer 和 Engineer 字面不像）</li><li><span class="tm" data-k="embedding">embedding</span> 最近邻（懂意思，几毫秒）</li><li>直接问 LLM（最懂，但贵、慢、不稳定）</li></ul>
+<p><b>选哪个</b>：用多语言 embedding 模型把头衔变成向量，在标准类的向量里找最近的 top-k，并给一个距离当置信度。</p>
+<p><b>为什么</b>：embedding 懂语义、支持多语言、几毫秒、成本低，能吃掉大部分长尾。</p>
+<p><b>代价 / 取舍</b>：要部署模型和向量索引；距离阈值要用标注数据调。</p>
+<p class="en">For the long tail, a multilingual embedding finds the nearest standard titles in milliseconds, with distance as a confidence score.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 6 步 · 低置信：LLM 兜底 + 人工</h4>
+<p><b>要解决什么</b>：embedding 拿不准的（最近的两个类差不多近），需要更聪明的判断。</p>
+<p><b>可选方案</b>：</p><ul><li>全交人工（准但慢、贵）</li><li>全交 LLM（贵、不稳定）</li><li>只把低置信的交 LLM，LLM 也拿不准的交人工</li></ul>
+<p><b>选哪个</b>：低于阈值的交给 LLM：给它 top-k 候选让它选（不让它自由发挥）；结果写回缓存，同一个头衔不会问第二次。LLM 也拿不准的进人工队列，审完写进规则表。</p>
+<p><b>为什么</b>：把贵的资源只用在难的少数；LLM 结果缓存后成本是一次性的；人工审核的结果回流，系统越用越准。</p>
+<p><b>代价 / 取舍</b>：LLM 答案要可复现：固定模型版本、温度 0、记录版本号。</p>
+<p class="en">Only low-confidence cases go to an LLM, constrained to the top candidates and cached; the hardest go to human review, which feeds back into the rule table.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 7 步 · 版本化和评估</h4>
+<p><b>要解决什么</b>：分类表改版后，历史数据要能按新版本重算，否则时间序列断开；还要知道准确率有没有下降。</p>
+<p><b>可选方案</b>：</p><ul><li>映射表只存最新（简单，但历史对不上）</li><li>映射表带版本号和来源（规则 / 向量 / LLM / 人工）</li></ul>
+<p><b>选哪个</b>：映射表存 (头衔, 标准类, 来源, 分类表版本, 模型版本)；按频次分层抽样评估，LLM 判官用人工样本校准；监控「进 LLM 的比例」「进人工的比例」。</p>
+<p><b>为什么</b>：头部错一个影响大，所以分层抽样；比例突然上涨说明出现了新词或者模型退化。</p>
+<p><b>代价 / 取舍</b>：多存几列；评估要持续投入人工。</p>
+<p class="en">The mapping is versioned with its source and taxonomy version so history can be recomputed, and I evaluate on frequency-stratified samples and watch the share sent to the LLM and to humans.</p></div>
 <h3 id="qc">题 C · 公司实体消歧 + 数据质量监控</h3>
 <div class="card">
 <p><b>先问</b>：公司实体来源（档案里的公司名、URL、官网、注册信息）、要合并到什么粒度（法人 vs 品牌 vs 子公司）、改名/并购怎么算、下游要什么（公司级统计）。</p>
@@ -423,6 +565,77 @@ flowchart LR
 <p class="en">Standard record linkage: normalise names and domains, block on domain and name prefix, score pairs on name similarity plus domain, address and industry, then cluster with a cap on cluster size to avoid chaining. Each company keeps an alias set and rename history; mergers are relationships, not merges. Official registries seed the big companies. For quality I track new-id and merge rates, max cluster size and coverage daily, sample with judges, and route oversized or low-confidence clusters to human review. Here a wrong merge hurts more than a missed one, so unlike the take-home I split when in doubt.</p>
 </div>
 
+<p><b>先问的思维导图</b>：问五个问题，最关键的是第 3 个：错合和漏合哪个更伤。 左边是问题，箭头上是他可能的回答，右边是这个回答把设计引向哪里。</p>
+<pre class="mermaid">
+flowchart LR
+  Q1{"合并到什么粒度?"} -->|"法人"| A1["Google 和 Alphabet 分开<br>母子关系另存"]
+  Q1 -->|"集团"| A2["子公司都并到母公司"]
+  Q2{"改名 / 并购怎么算?"} -->|"改名算同一家"| B1["ID 带改名历史和别名"]
+  Q2 -->|"并购"| B2["记关系，不合并 ID"]
+  Q3{"下游用来干什么?"} -->|"人数统计"| C1["错合更伤 → 存疑就分<br>大公司人工审"]
+  Q3 -->|"搜索 / 推荐"| C2["漏合更伤 → 可以合得松"]
+  Q4{"有没有网址 / 域名?"} -->|"大多有"| D1["域名当最强 blocking 键"]
+  Q4 -->|"很少"| D2["靠名字前缀 / 首字母 / 读音<br>召回更难"]
+  Q5{"有没有权威名单?"} -->|"有"| E1["用注册库 / 上市公司当种子"]
+  Q5 -->|"没有"| E2["从大簇开始人工确认"]
+</pre>
+<h3 id="qcs">题 C：逐步思考和取舍（每一步：要解决什么 → 可选方案 → 选哪个 → 为什么 → 代价）</h3>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 1 步 · 先问清楚</h4>
+<p><b>要解决什么</b>：「公司」的定义不同，答案完全不同：Google 和 Alphabet 算不算一家？YouTube 呢？</p>
+<p><b>可选方案</b>：</p><ul><li>问：合并到什么粒度？法人、品牌、还是集团？</li><li>问：改名、并购怎么算？</li><li>问：下游用来干什么？公司人数统计最怕什么错？</li></ul>
+<p><b>选哪个</b>：设：按法人合并；改名算同一家；并购记成关系（母子公司）不合并；下游做公司人数统计。</p>
+<p><b>为什么</b>：下游是统计人数，<u>两家公司被错合成一家</u>会让人数直接翻倍，比「一家被拆成两家」更伤。这决定了后面阈值要偏保守。</p>
+<p><b>代价 / 取舍</b>：—</p>
+<p class="en">I'd pin down the entity level, legal entity versus brand versus parent, and how renames and acquisitions count, because a wrong merge doubles a company's headcount.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 2 步 · 估算 + 为什么要 blocking</h4>
+<p><b>要解决什么</b>：几千万个不同的公司名，两两比较是多少次？</p>
+<p><b>可选方案</b>：</p><ul><li>全部两两比</li><li>先分组再比</li></ul>
+<p><b>选哪个</b>：几千万个名字两两比 ≈ 10<sup>14</sup> 到 10<sup>15</sup> 次，算不完。必须先用 <span class="tm" data-k="blocking">blocking</span> 把候选缩小到每组几十个。</p>
+<p><b>为什么</b>：blocking 是这类问题能不能做出来的关键。</p>
+<p><b>代价 / 取舍</b>：blocking 太严会漏掉本该合并的（召回下降），太松又算不完。所以用几种键各分一遍，取并集。</p>
+<p class="en">Comparing every pair is about ten to the fifteen comparisons, so blocking on cheap keys is what makes it feasible; I'd use several keys and union the candidates to protect recall.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 3 步 · 规范化 + blocking 键</h4>
+<p><b>要解决什么</b>：同一家公司有很多写法：Google LLC / google inc / google.com。</p>
+<p><b>可选方案</b>：</p><ul><li>只比名字</li><li>名字 + 域名 + URL + 地址</li></ul>
+<p><b>选哪个</b>：规范化：小写、去标点、去 Inc/LLC/Corp、URL 去 www 和 https、取域名。blocking 键：① 相同域名（最强）② 名字前两个词相同 ③ 首字母缩写相同（RL ↔ Revelio Labs）④ 读音相似。</p>
+<p><b>为什么</b>：域名几乎是公司的身份证，最可靠；名字类的键兜住没有网址的情况。</p>
+<p><b>代价 / 取舍</b>：多个键会产生更多候选，计算量上去一些。</p>
+<p class="en">Normalise names and URLs, then block on shared domain first, plus leading name tokens, initials and phonetic keys for records without a URL.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 4 步 · 成对打分（pairwise scoring）</h4>
+<p><b>要解决什么</b>：每个候选对，算「是同一家」的可能性。</p>
+<p><b>可选方案</b>：</p><ul><li>手写规则打分（像你的 take-home）</li><li>训练一个分类器（逻辑回归 / 梯度提升树）</li></ul>
+<p><b>选哪个</b>：先规则：名字相似度 + 同域名 + 地址 + 行业 + 员工共现（两个名字下面有同一批人）。有了标注后再训一个分类器输出概率。</p>
+<p><b>为什么</b>：规则可解释、马上能上线；分类器在有标注后能把信号组合得更好。</p>
+<p><b>代价 / 取舍</b>：分类器需要标注、要做版本管理和监控。</p>
+<p class="en">Score candidate pairs on name similarity, shared domain, address, industry and shared employees; start with rules and move to a trained classifier once labels exist.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 5 步 · 聚类（clustering）</h4>
+<p><b>要解决什么</b>：A 和 B 像、B 和 C 像，那 A、B、C 是不是一家？</p>
+<p><b>可选方案</b>：</p><ul><li>直接传递合并（transitive closure）：简单，但会链式乱合，最后把一大堆不相关的公司合成一团</li><li>受限聚类：限制簇大小、要求新成员和簇里多数成员都像</li></ul>
+<p><b>选哪个</b>：受限聚类，加上超大簇报警。</p>
+<p><b>为什么</b>：链式乱合是实体消歧最常见的灾难，下游人数会突然暴涨。</p>
+<p><b>代价 / 取舍</b>：会漏掉一些真该合并的长链，交给人工处理。</p>
+<p class="en">I'd cluster with constraints, a size cap and majority agreement, because plain transitive closure chains unrelated companies together.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 6 步 · 种子数据和 ID 管理</h4>
+<p><b>要解决什么</b>：怎么让大公司先对？公司 ID 怎么保持稳定？</p>
+<p><b>可选方案</b>：</p><ul><li>从零开始全靠算法</li><li>用官方注册库、上市公司名单、域名库当锚点（seed）</li></ul>
+<p><b>选哪个</b>：先用种子把大公司钉死；每个公司 ID 带别名集合（所有叫过的名字和域名）和改名历史；并购记成母子关系；ID 永不复用、可退役。</p>
+<p><b>为什么</b>：大公司影响最大，用权威数据锚定最划算；稳定 ID 让下游的时间序列不断。</p>
+<p><b>代价 / 取舍</b>：种子数据要买或者维护。</p>
+<p class="en">Seed the big companies from official registries, keep alias sets and rename history per company id, record acquisitions as relationships, and never reuse ids.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 7 步 · 质量监控和人工</h4>
+<p><b>要解决什么</b>：上线后怎么知道没合错？</p>
+<p><b>可选方案</b>：</p><ul><li>只看程序有没有报错</li><li>每天看指标 + 抽样 + 人工审核关键部分</li></ul>
+<p><b>选哪个</b>：每天看：新 ID 比例、合并比例、最大簇大小、每家公司人数的日变化（大公司门槛更低）；分层抽样 + 判官；人工只审三类：超大簇、低置信合并、头部大公司。</p>
+<p><b>为什么</b>：错合会表现为某家公司人数突然暴涨，最容易从指标上看出来。</p>
+<p><b>代价 / 取舍</b>：人工有成本，所以只审最关键的。</p>
+<p class="en">I'd track new-id and merge rates, max cluster size and daily headcount changes per company, sample with judges, and send oversized clusters, low-confidence merges and top companies to human review.</p></div>
+<div class="card"><h4 style="margin:0 0 6px;color:var(--accent)">第 8 步 · 总取舍：存疑时合还是分</h4>
+<p><b>要解决什么</b>：和你的 take-home 正好相反。</p>
+<p><b>可选方案</b>：</p><ul><li>存疑就合（take-home 的选择）</li><li>存疑就分</li></ul>
+<p><b>选哪个</b>：<u>存疑就分开</u>，靠种子和人工来合。</p>
+<p><b>为什么</b>：take-home 里错合只丢一个头衔，漏合是一个重复 id 永远带着；这里错合会让两家公司人数加在一起，统计全错，代价反过来了。</p>
+<p><b>代价 / 取舍</b>：会有一些重复的公司 ID，需要人工慢慢合。</p>
+<p class="en">Here I'd split when in doubt, the opposite of the take-home, because a wrong merge corrupts headcounts while a missed merge only leaves a duplicate to fix later.</p></div>
 <h2 id="s13">13 · 其他常被问的一页</h2>
 <div class="card">
 <ul>
