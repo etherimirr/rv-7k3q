@@ -195,7 +195,7 @@ flowchart LR
 <li><b>cache-aside</b>（最常用）：先查缓存，没有就查库，查到后写进缓存。写数据时删掉缓存里的旧值。</li>
 <li><b>TTL</b>：缓存多久过期。短 = 新鲜但命中低；长 = 命中高但可能旧。</li>
 <li><b>淘汰策略（eviction policy）</b>：满了删谁。LRU 删最久没用的；LFU 删用得最少的。</li>
-<li><b>三个坑</b>：<b>穿透（cache penetration）</b>（查不存在的 key，每次打到库 → 缓存空值）；<b>雪崩（cache avalanche）</b>（大量 key 同时过期 → TTL 加随机抖动）；<b>击穿（hot-key breakdown）</b>（一个热 key 过期瞬间大量请求 → 加锁只让一个去查）。</li>
+<li><b>三个坑</b>：<b>穿透（cache penetration）</b>（查不存在的 key，每次打到库 → 缓存空值）；<b>雪崩（cache avalanche）</b>（大量 key 同时过期 → TTL 加随机抖动（jitter））。展开：比方，一栋楼所有人的牛奶都订在早上 8 点整送到，8 点电梯就挤爆。缓存也一样：凌晨 0 点一次性把 100 万个 key 写进缓存、都设 1 小时过期，那 1 点整它们同时失效，100 万个请求同一秒全打到数据库，库被压垮。办法：过期时间别设成固定的 1 小时，设成「1 小时 ± 随机几分钟」，比如 55 到 65 分钟之间随机取。这样 100 万个 key 在 10 分钟内零零散散地过期，数据库每秒只多一点点压力。代码就一行：<code>ttl = 3600 + random.randint(-300, 300)</code>。<span class="en" style="font-size:15px">Jitter means adding a small random offset to each TTL so keys that were cached together don't all expire in the same second and stampede the database.</span>；<b>击穿（hot-key breakdown）</b>（一个热 key 过期瞬间大量请求 → 加锁只让一个去查）。</li>
 <li><b>命中率（hit rate）</b>：命中次数 ÷ 总次数；80% 命中就把库的压力降到 1/5。</li>
 </ul>
 <p class="me">你的项目里：lru_cache 缓存 title_key / sim_key / desc_tokens 的结果（同一个头衔反复出现）；TikTok 那段的在线特征链路用过 20 分钟 TTL + 哈希降级，可以拿来当缓存设计的例子。</p>
