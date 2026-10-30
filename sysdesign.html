@@ -156,7 +156,11 @@ flowchart LR
 <ul>
 <li><b>主从（leader–follower）</b>：写只去主，从库跟着抄；读可以分给从库。抄有延迟 → 刚写完去从库读可能读不到（<b>复制延迟</b>）。</li>
 <li><b>强一致</b>：写完所有人立刻看到同样的值。<b>最终一致</b>：一会儿之后大家才一样。数据流水线的输出通常接受最终一致（按天/按小时更新）。</li>
-<li><b>CAP 一句话</b>：网络断了（P 一定会发生）的时候，只能二选一：要么拒绝服务保证一致（C），要么继续服务但可能读到旧值（A）。</li>
+<li><b>CAP 三个字母</b>：C = Consistency 一致性，所有机器上读到的值一样。A = Availability 可用性，任何时候来请求都有回应。P = Partition tolerance 分区容忍，网络断成两半时系统还能工作。</li>
+<li><b>P 是什么</b>：比方：两家分店靠电话对账，电话线断了，两家店互相不知道对方卖了什么。这就是「网络分区」，机器都活着，只是彼此联系不上。分布式系统里电话线一定会偶尔断，所以 P 不是你选不选的，是必须扛住的。</li>
+<li><b>所以 CAP 实际是二选一</b>：电话断了的那段时间，分店只能二选一。要么<u>停止卖货等电话恢复</u>（保 C 丢 A：宁可不服务也不让两边账不一样）；要么<u>照常卖、各记各的账，之后再对</u>（保 A 丢 C：一直能用，但这段时间两边读到的值可能不同）。</li>
+<li><b>你的场景</b>：每天一批、输出一次提交，读的人要么看昨天的完整版、要么看今天的完整版，不会读到一半。这是偏 C 的做法，代价是新数据要等到下一次提交才可见，天级新鲜度本来就允许。</li>
+<li><b>英文</b>：<span class="en" style="font-size:15px">P is partition tolerance: the network will split sometimes, so you have to tolerate it. During a split you choose: stay consistent and refuse some requests, or stay available and risk serving stale values. A daily batch with one atomic commit per run is on the consistent side, which the freshness requirement allows.</span></li>
 <li><b>多副本写冲突</b>：两边同时改同一条 → 要定规则：最后写入赢（丢数据）、或者按版本号合并。</li>
 </ul>
 <p class="me">你的项目里：输出 parquet 放对象存储（S3 自带多副本），不用自己管复制；每天一版、最终一致。状态表用 Iceberg 的事务提交，读的人永远看到完整的一版，不会读到写一半。</p>
