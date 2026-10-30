@@ -352,6 +352,7 @@ flowchart LR
 </pre>
 <ul>
 <li><b>核心</b>：和作业一样的 coalesce_bucket，Spark mapIn<span class="tm" data-k="arrow" tabindex="0">Arrow</span> 调同一个函数；按 user_id 分区所以状态 join 不用跨机器。</li>
+<li><b>「输出表按 asof 日期分区」是什么意思</b>：asof_ts 是你输出里的那一列，「截至哪一天」的履历。按它分区 = 把输出表按日期分成一个个文件夹：<code>asof=2026-10-28/</code>、<code>asof=2026-10-29/</code>、<code>asof=2026-10-30/</code>，每天的结果放自己的文件夹里。比方：档案室按日期分抽屉，每天一个抽屉。好处：① 每天跑完只往今天的抽屉里放东西，不碰旧抽屉；② 查「某人 10 月 29 日的履历」只开那一个抽屉（分区裁剪，partition pruning），不用翻全部；③ 跑坏了只重做今天的抽屉。和「按 user_id 分区」的区别：状态表要按人找，所以按 user_id 分；输出表下游是按日期查，所以按日期分。<span class="en" style="font-size:15px">Partitioning the output by asof date means one folder per day; each run only writes today's folder, a query for one day reads only that folder, and a bad day can be rewritten alone. State is partitioned by user because it's looked up by user; output is partitioned by date because it's queried by date.</span></li>
 <li><b>状态</b>：Iceberg 按 user_id 分区、只 MERGE 动过的人、一次运行一次提交、旧快照留着回退；history 只追加、只给迟到的人读。</li>
 <li><b>迟到</b>：事件时间 observed_ts；比状态旧的只重放那一个人，restated 告诉 KV 加载器整体替换。</li>
 <li><b>隔离</b>：一个人出错回滚进隔离区，不阻塞当天运行。</li>
