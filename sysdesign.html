@@ -229,7 +229,16 @@ flowchart LR
 <li><b>批</b>（Spark、<span class="tm" data-k="mapreduce" tabindex="0">MapReduce</span>）：吞吐大、简单、延迟小时到天。<b>流</b>（<span class="tm" data-k="flink" tabindex="0">Flink</span>、<span class="tm" data-k="kafkastreams" tabindex="0">Kafka Streams</span>）：秒级延迟，但要处理乱序、迟到、状态管理，运维重。</li>
 <li><b><span class="tm" data-k="watermark" tabindex="0">事件时间</span> vs 处理时间（event time vs processing time）</b>：事情发生的时间 vs 系统看到的时间。两者差 = 迟到。<b>水位线（watermark）</b>：系统宣布「X 时刻之前的事件应该都到了」，之后再来的算迟到，要单独处理（丢、或者回头更正）。</li>
 <li><b><span class="tm" data-k="lambda" tabindex="0">Lambda 架构</span></b>：批 + 流两套，流给实时近似，批晚上修正。<b>Kappa 架构</b>：只用流，要重算就从队列头重放。</li>
-<li><b>MapReduce 核心</b>：map 按 key 打散 → shuffle 把同 key 聚到一台 → reduce 处理。贵的是 shuffle（网络搬数据）。</li>
+<li><b><span class="tm" data-k="mapreduce" tabindex="0">MapReduce</span> 是干什么的</b>：数据大到一台机器装不下时，用一群机器一起算一个「按某个东西分组统计」的结果。三步：map（映射）→ shuffle（洗牌）→ reduce（归并）。
+<br><b>例子：算每家公司有多少员工</b>。10 亿行档案分散在 100 台机器上，每台 1000 万行。
+<ul>
+<li><b>map</b>：每台机器各看各的 1000 万行，每行吐出一对 <code>(公司名, 1)</code>，比如 <code>(Google, 1)</code>、<code>(Meta, 1)</code>。公司名就是 <b>key</b>。这一步机器之间完全不用说话，各干各的。</li>
+<li><b>shuffle</b>：问题来了，Google 的员工散在 100 台机器上，谁来加总？规则：按 key 的哈希，把所有 <code>(Google, 1)</code> 都送到同一台机器，比如 7 号机；所有 <code>(Meta, 1)</code> 送到 23 号机。这一步要把数据<b>通过网络在机器之间搬来搬去</b>，100 台机器互相发数据。</li>
+<li><b>reduce</b>：7 号机现在手里有所有 Google 的行，把 1 加起来得到 Google 的总数；23 号机算 Meta。各算各的，又不用说话了。</li>
+</ul>
+<b>为什么说 shuffle 最贵</b>：map 和 reduce 都只在本机算（内存、CPU，很快）；shuffle 要把几乎全部数据过一遍网络、还常常要写硬盘排序。网络比内存慢上千倍，所以一个任务的时间大头通常在 shuffle。优化方向就是少 shuffle：能在 map 端先局部合并就先合并（每台机先算出本机 Google 有 5 万人，只发一条 <code>(Google, 50000)</code>，叫 combiner / 局部聚合）。
+<br><b>你的项目</b>：Spark 版的 <code>repartition by user_id</code> 就是一次 shuffle，把同一个人散在各个文件里的行送到同一台机器；然后 <code>mapInArrow</code> 调你的 coalesce_bucket 就相当于 reduce，每台机器各自处理自己那些人。单机版的「先分桶」做的也是同一件事。
+<br><span class="en" style="font-size:15px">MapReduce is map, shuffle, reduce. Map runs locally and emits key-value pairs, shuffle moves every pair with the same key to the same machine over the network, and reduce combines each key's group. Shuffle dominates the cost because it pushes almost all the data through the network, so you pre-aggregate on the map side when you can. In my Spark version, repartition by user_id is the shuffle and coalesce_bucket is the reduce.</span></li>
 <li><b><span class="tm" data-k="skew" tabindex="0">数据倾斜</span>（data skew）</b>：某个 key 的数据特别多，一台机器干到天亮别的都闲着。办法：热 key 加盐拆开（salting）、两阶段聚合（two-phase aggregation）、或者单独处理大 key。</li>
 </ul>
 <p class="me">你的项目里：选批，因为题目只要每天更新，流的复杂度用不上。observed_ts 是事件时间、到达日期是处理时间，迟到 = 两者不一致，你的处理是「只重放那一个人」，相当于迟到数据的回头更正。Spark 的 repartition by user_id 就是 shuffle；人均 29 条、最多 166 条，没有倾斜；真有超级用户就单独处理。</p>
