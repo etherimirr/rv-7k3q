@@ -42,6 +42,24 @@ u{text-decoration:none;background:var(--hl);padding:0 2px;border-radius:3px}
 <li>Two cases the brief named: Case A, a scrape misses a job that was there before, so I carry it forward. Case B, the person edits a job, say the title changes, and it has to keep the same id.</li>
 </ul><p class="zh">题目一句话：每人每天最完整履历 + 稳定 id + 不用未来信息。</p></div>
 
+<h2 id="s1b">Slide 1 补充 · 按 Patrick 题目的要求切入（他很可能希望你这么讲）</h2>
+<div class="card">
+<p class="zh">题目原文就是 7 条要求 + 评分「准确度 / 速度 / 两者平衡」。开场把这 7 条过一遍、每条一句话说怎么满足，他会立刻知道你没漏东西。</p>
+<ul>
+<li>Let me map the brief's requirements to the design first, then go into each piece.</li>
+<li>One: every valid user and scrape date in the input appears in the output; bad scrapes dropped. I drop bad rows, seven rules, and drop a snapshot only if every row is bad. Coverage is 99.94 percent.</li>
+<li>Two: only current and past observations, never future ones; ids assigned on first sight and kept. That's the state machine fed in date order, plus the canary test.</li>
+<li>Three: no user-date pairs the input doesn't have. Output rows come only from an input snapshot.</li>
+<li>Four, <u>Case A</u>: a job the user deleted, or the scrape missed, stays in the output under the new date. Known positions are carried forward; and the data says this is the normal case, half the snapshots have one row.</li>
+<li>Five, <u>Case B</u>: the same job seen with different values across scrapes, RL versus Revelio Labs, MLE versus Machine Learning Engineer, a missing description. Rules 2 to 5 match the row to the existing id; absorb keeps the latest non-null value per field, so the description is the last one seen; and aliases remember every spelling for future matching.</li>
+<li>Six, other edge cases I found in the data: rehires, renamed employers, translated titles, garbled text, scrapes with every title null, duplicate ids. Each one became a rule and a regression test.</li>
+<li>Seven, scale and daily updates: 100 billion rows is about 800 core-hours with the same function on Spark; daily runs via saved state, late data replays one person.</li>
+<li>On accuracy versus speed: the expensive part is fuzzy matching, so I only pay for it on the rows that need it. The fingerprint skips 57.5 percent of snapshots, rule 4 matches most of the rest without scoring, and only contested pairs get scored. Accuracy is measured on judged samples, speed on the full run.</li>
+</ul>
+<p class="zh">Case A 例子：1 月快照有 Google 和 Meta 两段，3 月快照只抓到 Meta，3 月的输出里 Google 仍然在，id 不变。Case B 例子：1 月写 Machine Learning Engineer，3 月改成 MLE，同一个 id，头衔显示 MLE；描述 3 月是空的就保留 1 月的（取最新非空）。</p>
+<p class="zh">他的评分三条：准确度（边界情况处理是否合理）、速度（1000 万行多快、1000 亿行要多少资源）、平衡说清楚。总结那页回到这三条。</p>
+</div>
+
 <h2 id="s2">Slide 2 · One state machine per person</h2>
 <div class="card"><ul>
 <li><u>The core idea is one state machine per person.</u> I sort a person's snapshots by date and feed them one at a time into a function called step.</li>
