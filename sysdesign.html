@@ -27,15 +27,21 @@ code{font-family:Menlo,monospace;font-size:14px;background:var(--code);padding:1
 @media (min-width:1000px){body{padding-left:260px}}
 @media (max-width:999px){#toc{display:none;width:82%}#toc.open{display:block}#tocbtn{display:block}}
 @media print{#toc,#tocbtn{display:none!important}body{padding-left:16px}h2{break-before:page}h2:first-of-type{break-before:auto}.card{break-inside:avoid}}
+.tm{border-bottom:1.5px dashed var(--accent);color:var(--accent);cursor:pointer}
+.tm.on{background:var(--hl)}
+.tmbox{background:var(--card);border:1.5px solid var(--accent);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:15.5px}
+.tmbox .tmh{font-weight:700;color:var(--accent);margin-bottom:4px}
+.tmbox .x{float:right;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;cursor:pointer;padding:0 8px}
+@media print{.tmbox{display:none}.tm{border:0;color:inherit}}
 </style></head><body><main>
 <h1>系统设计速成 · 替代 Alex Xu，一晚上能看完</h1>
-<div class="sub">给 11–12 点 Kyle 那一小时（写代码 + 系统设计）。每个概念：先比方，再要点，再一个数字，最后一句英文。黄底「你的项目里」= 答题时拿来当例子的东西。不重复代码对照页和补充手册已有的内容。</div>
+<div class="sub">带<span class="tm" style="cursor:default">虚线下划线</span>的名词点一下就地展开详细解释，再点收起；PDF 版在最后的「名词详解」附录。给 11–12 点 Kyle 那一小时（写代码 + 系统设计）。每个概念：先比方，再要点，再一个数字，最后一句英文。黄底「你的项目里」= 答题时拿来当例子的东西。不重复代码对照页和补充手册已有的内容。</div>
 
 <h2 id="s0">0 · 系统设计题怎么答（4 步，30 分钟分法）</h2>
 <div class="card">
 <ul>
 <li><b>第 1 步 · 问清楚要求（3–5 分钟）（clarify requirements）</b>：功能要什么、不要什么；规模多大（用户数、每天多少数据、读多写多）；延迟要求（秒级还是天级）；一致性要求（能不能晚一点看到）。<u>先问再画，别一上来就画框</u>。</li>
-<li><b>第 2 步 · 估算（3 分钟）（back-of-envelope）</b>：QPS、存储、带宽，算到数量级就行（见第 1 节）。</li>
+<li><b>第 2 步 · 估算（3 分钟）（back-of-envelope）</b>：<span class="tm" data-k="qps" tabindex="0">QPS</span>、存储、带宽，算到数量级就行（见第 1 节）。</li>
 <li><b>第 3 步 · 画高层图（10 分钟）（high-level design）</b>：数据从哪来 → 经过什么 → 存哪 → 谁来读。每个框一句话说为什么要它。</li>
 <li><b>第 4 步 · 深挖 1–2 个点（10 分钟）（deep dive）</b>：他最关心的那个瓶颈。说清取舍：选了 A 放弃了 B，因为 C。</li>
 <li>最后 2 分钟：瓶颈在哪、怎么扩、怎么监控、下一步。</li>
@@ -63,10 +69,10 @@ flowchart LR
 <div class="card"><p><b>照着说的顺序（每框一句）</b>：</p>
 <ul>
 <li>1 来源：数据从哪来、每天多少、格式是什么、会不会迟到。</li>
-<li>2 接入：要秒级就 Kafka（按 user_id 分区保序），要天级就 S3 落文件每天跑一批。</li>
-<li>3 清洗：schema 契约、丢坏行不丢整批、修乱码、按内容哈希去重。</li>
+<li>2 接入：要秒级就 <span class="tm" data-k="kafka" tabindex="0">Kafka</span>（按 user_id 分区保序），要天级就 <span class="tm" data-k="s3" tabindex="0">S3</span> 落文件每天跑一批。</li>
+<li>3 清洗：schema 契约、丢坏行不丢整批、修乱码、按内容<span class="tm" data-k="hash" tabindex="0">哈希</span>去重。</li>
 <li>4 核心：<u>按 key 分区</u>让同一个人的数据在一台机器上；逐 key 的有状态逻辑（这就是你的状态机）；一个 key 出错隔离不阻塞。</li>
-<li>5 存储：列式 parquet；表格式给事务、分区裁剪、时间旅行；状态按 key 分区只追加。</li>
+<li>5 存储：列式 <span class="tm" data-k="parquet" tabindex="0">parquet</span>；表格式给事务、分区裁剪、时间旅行；状态按 key 分区只追加。</li>
 <li>6 服务：分析查询走仓库；点查走 KV + 缓存 + API。</li>
 <li>7 监控：每次运行出指标，突变告警，必须为 0 的硬断言。</li>
 <li>最后说三句：瓶颈在 4（算力线性加机器）和 5（小文件）；扩容靠分区数；<u>取舍是 X 换 Y 因为 Z</u>。</li>
@@ -87,7 +93,7 @@ flowchart LR
 <p><b>「一个核每秒处理几万到几十万行」怎么来的</b>：一个 CPU 核每秒大约做 10<sup>9</sup> 次简单操作。处理一行要做多少次操作，决定每秒能过多少行：</p>
 <div class="tbl"><table>
 <tr><th>每行干的活</th><th>每行大约几次操作</th><th>每核每秒多少行</th><th>例子</th></tr>
-<tr><td>纯向量化：过滤、加列、类型转换（Polars/Spark 的列式计算）</td><td>10<sup>2</sup>–10<sup>3</sup></td><td>10<sup>6</sup>–10<sup>7</sup>（百万到千万）</td><td>你的 conform、clean、分桶</td></tr>
+<tr><td>纯<span class="tm" data-k="embedding" tabindex="0">向量</span>化：过滤、加列、类型转换（Polars/<span class="tm" data-k="spark" tabindex="0">Spark</span> 的列式计算）</td><td>10<sup>2</sup>–10<sup>3</sup></td><td>10<sup>6</sup>–10<sup>7</sup>（百万到千万）</td><td>你的 conform、clean、分桶</td></tr>
 <tr><td>一般逐行逻辑：解析、几次比较、写出</td><td>10<sup>4</sup>–10<sup>5</sup></td><td>10<sup>4</sup>–10<sup>5</sup>（几万到几十万）</td><td>普通 ETL 的估算默认值</td></tr>
 <tr><td>重逻辑：Python 循环 + 字符串相似度 + 多候选打分</td><td>10<sup>4</sup>–10<sup>5</sup>，但 Python 本身慢 10–100 倍</td><td>10<sup>4</sup> 左右</td><td>你的 step + match：3.5 × 10<sup>4</sup> 行/核秒（指纹跳过一半帮了大忙）</td></tr>
 <tr><td>每行调一次模型 / LLM</td><td>10<sup>8</sup> 以上，或网络往返</td><td>10–100</td><td>这就是为什么不能 LLM 逐对判</td></tr>
@@ -145,7 +151,7 @@ flowchart LR
 <li><b>加机器只搬一小段</b>：新来一台 D 站在 55。原来 41 到 70 之间的数据都归 C，现在 41 到 55 这段归 D，56 到 70 还归 C。<u>只有 C 的一部分数据搬给了 D，A 和 B 的数据一条都没动</u>。有 N 台机器，加一台大约只搬 1/N 的数据，而不是全部。</li>
 <li><b>虚拟节点（virtual nodes）</b>：上面 3 台机器站 10、40、70，看起来还算匀。可要是站成 10、12、14，那 14 到 100 这一大段全归 A，A 累死别人闲着。办法：每台机器不站一个点，站 100 到 200 个点，散在跑道各处。这样每台机器管的总长度就差不多。机器性能强的多站几个点，自然多管一点。</li>
 <li><b>热点键（hot key）</b>：比方：一个超市 100 个收银台，但所有人都挤在卖茅台的那一个。某个 key 的流量特别大（一个大 V 的主页），它落在哪台机器哪台就被压垮。两个办法：① 把这个 key 拆成「key-1、key-2 … key-10」十份，分到十台机器，读的时候十份合起来；② 这个 key 单独给一台专用机器。</li>
-<li><b>二级索引（secondary index）</b>：比方：通讯录按姓名排序，想按电话号码找人就得从头翻到尾。你按 user_id 分区，「查某个人」很快，直接去那一台。但「查所有在 Google 工作过的人」，每台机器上都可能有，<u>只能每台都问一遍再把结果拼起来</u>（叫 scatter-gather，撒出去再收回来），慢。要想按公司查也快，就另外维护一份按公司名分区的数据（二级索引），写的时候两份都要更新。</li></ul>
+<li><b>二级索引（secondary index）</b>：比方：通讯录按姓名排序，想按电话号码找人就得从头翻到尾。你按 user_id 分区，「查某个人」很快，直接去那一台。但「查所有在 Google 工作过的人」，每台机器上都可能有，<u>只能每台都问一遍再把结果拼起来</u>（叫 <span class="tm" data-k="scatter" tabindex="0">scatter-gather</span>，撒出去再收回来），慢。要想按公司查也快，就另外维护一份按公司名分区的数据（二级索引），写的时候两份都要更新。</li></ul>
 <p class="me">你的项目里：取模是对的，因为状态按桶存、同一个人必须回到同一桶，而且桶数你自己定、_meta.json 守着。被问「桶数要变怎么办」：用 history 全量重跑一次换桶数；生产上要平滑扩容就上一致性哈希或者表格式自带的分区。Spark 版 4096 分区；按 user_id 分区让 join 状态表时同一个人在同一台机器上，不用网络搬数据。</p>
 <p class="en">I partition by user_id mod 64 because state is stored per bucket and the same user must land in the same bucket next time. Modulo doesn't rebalance gracefully, so for elastic scaling I'd use consistent hashing with virtual nodes, or let the table format own the partitioning.</p>
 </div>
@@ -154,16 +160,16 @@ flowchart LR
 <div class="card">
 <p>比方：一份账本抄三份放三个地方，一处烧了别处还在。复制 = 同一份数据存多份。</p>
 <ul>
-<li><b>主从（leader–follower）</b>：写只去主，从库跟着抄；读可以分给从库。抄有延迟 → 刚写完去从库读可能读不到（<b>复制延迟（replication lag）</b>）。</li>
+<li><b><span class="tm" data-k="replica" tabindex="0">主从</span>（leader–follower）</b>：写只去主，从库跟着抄；读可以分给从库。抄有延迟 → 刚写完去从库读可能读不到（<b>复制延迟（replication lag）</b>）。</li>
 <li><b>强一致（strong consistency）</b>：写完所有人立刻看到同样的值。<b>最终一致（eventual consistency）</b>：一会儿之后大家才一样。数据流水线的输出通常接受最终一致（按天/按小时更新）。</li>
-<li><b>CAP 三个字母</b>：C = Consistency 一致性，所有机器上读到的值一样。A = Availability 可用性，任何时候来请求都有回应。P = Partition tolerance 分区容忍，网络断成两半时系统还能工作。</li>
+<li><b><span class="tm" data-k="cap" tabindex="0">CAP</span> 三个字母</b>：C = Consistency 一致性，所有机器上读到的值一样。A = Availability 可用性，任何时候来请求都有回应。P = Partition tolerance 分区容忍，网络断成两半时系统还能工作。</li>
 <li><b>P 是什么</b>：比方：两家分店靠电话对账，电话线断了，两家店互相不知道对方卖了什么。这就是「网络分区」，机器都活着，只是彼此联系不上。分布式系统里电话线一定会偶尔断，所以 P 不是你选不选的，是必须扛住的。</li>
 <li><b>所以 CAP 实际是二选一</b>：电话断了的那段时间，分店只能二选一。要么<u>停止卖货等电话恢复</u>（保 C 丢 A：宁可不服务也不让两边账不一样）；要么<u>照常卖、各记各的账，之后再对</u>（保 A 丢 C：一直能用，但这段时间两边读到的值可能不同）。</li>
 <li><b>你的场景</b>：每天一批、输出一次提交，读的人要么看昨天的完整版、要么看今天的完整版，不会读到一半。这是偏 C 的做法，代价是新数据要等到下一次提交才可见，天级新鲜度本来就允许。</li>
 <li><b>英文</b>：<span class="en" style="font-size:15px">P is partition tolerance: the network will split sometimes, so you have to tolerate it. During a split you choose: stay consistent and refuse some requests, or stay available and risk serving stale values. A daily batch with one atomic commit per run is on the consistent side, which the freshness requirement allows.</span></li>
 <li><b>多副本写冲突（write conflict）</b>：两边同时改同一条 → 要定规则：最后写入赢（last-write-wins）（丢数据）、或者按版本号合并。</li>
 </ul>
-<p class="me">你的项目里：输出 parquet 放对象存储（S3 自带多副本），不用自己管复制；每天一版、最终一致。状态表用 Iceberg 的事务提交，读的人永远看到完整的一版，不会读到写一半。</p>
+<p class="me">你的项目里：输出 parquet 放对象存储（S3 自带多副本），不用自己管复制；每天一版、最终一致。状态表用 <span class="tm" data-k="iceberg" tabindex="0">Iceberg</span> 的事务提交，读的人永远看到完整的一版，不会读到写一半。</p>
 <p class="en">For a daily batch output, eventual consistency is fine: readers see yesterday's complete version until today's commit lands atomically. I'd keep the data in object storage, which already replicates, and use a table format for atomic commits.</p>
 </div>
 
@@ -171,13 +177,13 @@ flowchart LR
 <div class="card">
 <p>比方：车牌 = 省份 + 城市 + 序号，各段各管各的，不用全国排队领号。</p>
 <ul>
-<li><b>Snowflake</b>：64 位 = 1 位符号 + 41 位时间戳（毫秒）+ 10 位机器号 + 12 位每毫秒序号。每台机器自己发号，不用中心协调；按时间大致有序。</li>
+<li><b><span class="tm" data-k="snowflake" tabindex="0">Snowflake</span></b>：64 位 = 1 位符号 + 41 位时间戳（毫秒）+ 10 位机器号 + 12 位每毫秒序号。每台机器自己发号，不用中心协调；按时间大致有序。</li>
 <li><b>为什么不用自增 ID（auto-increment）</b>：要一个中心数据库发号，所有机器都来排队拿号，它成了瓶颈；它挂了谁都发不了号，成了单点。</li>
-<li><b>UUID 是什么</b>：一串随机生成的 128 位数字，长这样 <code>550e8400-e29b-41d4-a716-446655440000</code>。好处是谁都能自己生成、几乎不会撞。</li>
+<li><b><span class="tm" data-k="uuid" tabindex="0">UUID</span> 是什么</b>：一串随机生成的 128 位数字，长这样 <code>550e8400-e29b-41d4-a716-446655440000</code>。好处是谁都能自己生成、几乎不会撞。</li>
 <li><b>为什么不用 UUID，三个原因</b>：
 <ul>
 <li><b>太长</b>：128 位 = 16 字节，Snowflake 是 64 位 = 8 字节，差一倍。id 会出现在每一行、每个索引、每个外键里，10 亿行就多占 8 GB，而且传输、比较都慢一倍。</li>
-<li><b>无序</b>：UUID 是随机的，新生成的号可能比旧的小。比方：往一本按编号排好的账本里插条目。编号递增的话，永远往最后一页加，很快。随机编号就要翻到中间某一页插进去，页满了还要把页拆开（数据库叫页分裂）。数据库的主键索引（B 树）就是这本账本，随机 id 让写入慢几倍，索引也变得松散、占更多空间。</li>
+<li><b>无序</b>：UUID 是随机的，新生成的号可能比旧的小。比方：往一本按编号排好的账本里插条目。编号递增的话，永远往最后一页加，很快。随机编号就要翻到中间某一页插进去，页满了还要把页拆开（数据库叫页分裂）。数据库的主键索引（<span class="tm" data-k="btree" tabindex="0">B 树</span>）就是这本账本，随机 id 让写入慢几倍，索引也变得松散、占更多空间。</li>
 <li><b>不带信息</b>：Snowflake 的高位是时间戳，看 id 就知道大概什么时候生成的，按 id 排序 = 按时间排序，查「最近一天的记录」直接按 id 范围扫。UUID 看不出任何东西。</li>
 </ul></li>
 <li><b>什么时候 UUID 也行</b>：数据量小、不做范围查询、或者用新版 UUID v7（前面带时间戳，有序了，只剩「太长」一个缺点）。</li>
@@ -192,9 +198,9 @@ flowchart LR
 <div class="card">
 <p>比方：常用的调料放灶台边，不每次去储藏室拿。</p>
 <ul>
-<li><b>cache-aside</b>（最常用）：先查缓存，没有就查库，查到后写进缓存。写数据时删掉缓存里的旧值。</li>
+<li><b><span class="tm" data-k="cachecore" tabindex="0">cache-aside</span></b>（最常用）：先查缓存，没有就查库，查到后写进缓存。写数据时删掉缓存里的旧值。</li>
 <li><b>TTL</b>：缓存多久过期。短 = 新鲜但命中低；长 = 命中高但可能旧。</li>
-<li><b>淘汰策略（eviction policy）</b>：满了删谁。LRU 删最久没用的；LFU 删用得最少的。</li>
+<li><b>淘汰策略（eviction policy）</b>：满了删谁。<span class="tm" data-k="lru" tabindex="0">LRU</span> 删最久没用的；LFU 删用得最少的。</li>
 <li><b>三个坑</b>：<b>穿透（cache penetration）</b>（查不存在的 key，每次打到库 → 缓存空值）；<b>雪崩（cache avalanche）</b>（大量 key 同时过期 → TTL 加随机抖动（jitter））。展开：比方，一栋楼所有人的牛奶都订在早上 8 点整送到，8 点电梯就挤爆。缓存也一样：凌晨 0 点一次性把 100 万个 key 写进缓存、都设 1 小时过期，那 1 点整它们同时失效，100 万个请求同一秒全打到数据库，库被压垮。办法：过期时间别设成固定的 1 小时，设成「1 小时 ± 随机几分钟」，比如 55 到 65 分钟之间随机取。这样 100 万个 key 在 10 分钟内零零散散地过期，数据库每秒只多一点点压力。代码就一行：<code>ttl = 3600 + random.randint(-300, 300)</code>。<span class="en" style="font-size:15px">Jitter means adding a small random offset to each TTL so keys that were cached together don't all expire in the same second and stampede the database.</span>；<b>击穿（hot-key breakdown）</b>（一个热 key 过期瞬间大量请求 → 加锁只让一个去查）。</li>
 <li><b>命中率（hit rate）</b>：命中次数 ÷ 总次数；80% 命中就把库的压力降到 1/5。</li>
 </ul>
@@ -208,7 +214,7 @@ flowchart LR
 <ul>
 <li><b>三个用处</b>：<b>解耦（decoupling）</b>（生产方和消费方不用同时在线）、<b>削峰（buffering peaks）</b>（高峰先排队）、<b>可重放（replayable）</b>（消费方挂了从上次的位置接着读）。</li>
 <li><b>Topic / 分区 / offset</b>：一个 topic 切成多个分区；<u>同一个分区内有序</u>，跨分区无序；每个消费者记自己读到的位置（offset）。按 key（比如 user_id）分区，同一个人的消息就在同一分区、按顺序到。<br><b>为什么分区内有序、跨分区无序</b>：比方，银行开了 4 个窗口，每个窗口前排一条队。同一条队里，先来的一定先办（这条队有序）。但 1 号窗口的第 5 个人和 3 号窗口的第 2 个人谁先办完，没人管，看各窗口快慢（跨队无序）。Kafka 的每个分区（partition）就是一个窗口：它是一个只往末尾追加的日志（append-only log），每条消息拿一个递增的位置号 offset，消费者按 offset 从小到大读，所以分区内天然有序。不同分区在不同机器上、由不同消费者并行读，没有一个全局的顺序号把它们串起来；要做全局有序，就只能所有消息排同一条队，也就失去了并行（throughput）。<u>所以做法是：需要有序的东西放进同一个分区</u>。用 user_id 当分区键（partition key），同一个人的消息哈希到同一个分区，他自己的事件就保序；不同人之间本来就不需要顺序。<span class="en" style="font-size:15px">Each partition is an append-only log with increasing offsets, so order holds inside it. Partitions are read in parallel with no global sequence across them; global order would mean one partition and no parallelism. So you choose the partition key to match what must stay ordered: user_id keeps each person's events in order.</span></li>
-<li><b>投递语义（delivery semantics）</b>：至多一次（at-most-once）（可能丢）、至少一次（at-least-once）（可能重）、恰好一次（贵）。常用做法：<u>至少一次 + 消费端幂等</u>。</li>
+<li><b>投递语义（delivery semantics）</b>：<span class="tm" data-k="delivery" tabindex="0">至多一次</span>（at-most-once）（可能丢）、至少一次（at-least-once）（可能重）、恰好一次（贵）。常用做法：<u>至少一次 + 消费端<span class="tm" data-k="idem" tabindex="0">幂等</span></u>。</li>
 <li><b>消费者组（consumer group）</b>：一组消费者分摊一个 topic 的分区，加消费者就加吞吐，但消费者数不能超过分区数。</li>
 <li><b>积压（lag）（consumer lag）</b>：生产比消费快，offset 落后越来越多，是最重要的监控指标。</li>
 </ul>
@@ -220,11 +226,11 @@ flowchart LR
 <div class="card">
 <p>比方：批处理是每天晚上结一次账；流处理是每笔交易当场记。</p>
 <ul>
-<li><b>批</b>（Spark、MapReduce）：吞吐大、简单、延迟小时到天。<b>流</b>（Flink、Kafka Streams）：秒级延迟，但要处理乱序、迟到、状态管理，运维重。</li>
-<li><b>事件时间 vs 处理时间（event time vs processing time）</b>：事情发生的时间 vs 系统看到的时间。两者差 = 迟到。<b>水位线（watermark）</b>：系统宣布「X 时刻之前的事件应该都到了」，之后再来的算迟到，要单独处理（丢、或者回头更正）。</li>
-<li><b>Lambda 架构</b>：批 + 流两套，流给实时近似，批晚上修正。<b>Kappa 架构</b>：只用流，要重算就从队列头重放。</li>
+<li><b>批</b>（Spark、<span class="tm" data-k="mapreduce" tabindex="0">MapReduce</span>）：吞吐大、简单、延迟小时到天。<b>流</b>（<span class="tm" data-k="flink" tabindex="0">Flink</span>、<span class="tm" data-k="kafkastreams" tabindex="0">Kafka Streams</span>）：秒级延迟，但要处理乱序、迟到、状态管理，运维重。</li>
+<li><b><span class="tm" data-k="watermark" tabindex="0">事件时间</span> vs 处理时间（event time vs processing time）</b>：事情发生的时间 vs 系统看到的时间。两者差 = 迟到。<b>水位线（watermark）</b>：系统宣布「X 时刻之前的事件应该都到了」，之后再来的算迟到，要单独处理（丢、或者回头更正）。</li>
+<li><b><span class="tm" data-k="lambda" tabindex="0">Lambda 架构</span></b>：批 + 流两套，流给实时近似，批晚上修正。<b>Kappa 架构</b>：只用流，要重算就从队列头重放。</li>
 <li><b>MapReduce 核心</b>：map 按 key 打散 → shuffle 把同 key 聚到一台 → reduce 处理。贵的是 shuffle（网络搬数据）。</li>
-<li><b>数据倾斜（data skew）</b>：某个 key 的数据特别多，一台机器干到天亮别的都闲着。办法：热 key 加盐拆开（salting）、两阶段聚合（two-phase aggregation）、或者单独处理大 key。</li>
+<li><b><span class="tm" data-k="skew" tabindex="0">数据倾斜</span>（data skew）</b>：某个 key 的数据特别多，一台机器干到天亮别的都闲着。办法：热 key 加盐拆开（salting）、两阶段聚合（two-phase aggregation）、或者单独处理大 key。</li>
 </ul>
 <p class="me">你的项目里：选批，因为题目只要每天更新，流的复杂度用不上。observed_ts 是事件时间、到达日期是处理时间，迟到 = 两者不一致，你的处理是「只重放那一个人」，相当于迟到数据的回头更正。Spark 的 repartition by user_id 就是 shuffle；人均 29 条、最多 166 条，没有倾斜；真有超级用户就单独处理。</p>
 <p class="en">The brief needs daily freshness, so batch is the right tool; streaming would add ordering and state complexity for no gain. observed_ts is event time, arrival is processing time, and late data is handled by replaying just that person, which is the batch version of a watermark correction.</p>
@@ -250,7 +256,7 @@ flowchart LR
 <li><b>对象存储（S3）（object storage）</b>：便宜、无限、自带多副本；但没有「追加」和「改一行」，只能整文件写。延迟高（几十毫秒），适合批不适合点查。</li>
 <li><b>列式（parquet）（columnar）</b>：同一列存在一起。好处：只读需要的列（你 conform 只读 10 列）；同列压缩率高；带统计信息（每块的最大最小值）能跳过整块（<b>谓词下推（predicate pushdown）</b>）。坏处：改一行要重写文件。</li>
 <li><b>行式（row-oriented）</b>（数据库表）：一行存一起，点查快、改一行快。</li>
-<li><b>表格式（Iceberg / Delta / Hudi）（table format）</b>：在一堆 parquet 文件上加一层元数据，提供：<b>ACID 提交（ACID commit）</b>（一次写入要么全可见要么全不可见）、<b>快照 / 时间旅行（snapshot / time travel）</b>（回到任何一版）、<b>MERGE</b>（按键更新）、<b>分区裁剪（partition pruning）</b>（按分区只读需要的文件）、<b>schema 演进（schema evolution）</b>（加列不重写）、<b>小文件合并（compaction）</b>。</li>
+<li><b>表格式（Iceberg / Delta / Hudi）（table format）</b>：在一堆 parquet 文件上加一层元数据，提供：<b><span class="tm" data-k="acid" tabindex="0">ACID</span> 提交（ACID commit）</b>（一次写入要么全可见要么全不可见）、<b>快照 / 时间旅行（snapshot / time travel）</b>（回到任何一版）、<b>MERGE</b>（按键更新）、<b>分区裁剪（partition pruning）</b>（按分区只读需要的文件）、<b>schema 演进（schema evolution）</b>（加列不重写）、<b>小文件合并（compaction）</b>。</li>
 <li><b>Iceberg 的「事务提交」具体是怎么做到的</b>：
 <ul>
 <li>比方：仓库里放着一堆箱子（parquet 文件），墙上有一块公告板，贴着一张清单：「当前这一版 = 这 500 个箱子」。读的人只认清单，清单上没有的箱子当不存在。</li>
@@ -272,10 +278,10 @@ flowchart LR
 <div class="card">
 <p>比方：两本通讯录合并，「张伟 13800」和「Zhang Wei 138-00」是不是同一个人。</p>
 <ul>
-<li><b>三步</b>：<b>Blocking（blocking / candidate generation）</b>（先用便宜的键把候选缩小，比如同雇主）→ <b>成对比较（pairwise comparison）</b>（打分：相似度 + 规则或模型）→ <b>聚类 / 传递闭包（clustering / transitive closure）</b>（A=B、B=C → A=C，合成一簇）。</li>
+<li><b>三步</b>：<b><span class="tm" data-k="blocking" tabindex="0">Blocking</span>（blocking / candidate generation）</b>（先用便宜的键把候选缩小，比如同雇主）→ <b>成对比较（pairwise comparison）</b>（打分：相似度 + 规则或模型）→ <b>聚类 / 传递闭包（clustering / transitive closure）</b>（A=B、B=C → A=C，合成一簇）。</li>
 <li><b>Blocking 为什么必须</b>：N 条两两比是 N²；1000 亿行不可能。按 user_id 和雇主分块后，每人只有几十条。</li>
 <li><b>规则 vs 模型</b>：规则可解释、可复现、快；模型（逻辑回归 / 梯度提升 / embedding）召回高但要标注、要可复现地部署。常见做法：规则做主、模型只用在规则拿不准的那层。</li>
-<li><b>评估</b>：成对指标（pairwise metrics）（配对的精确率 / 召回）vs 簇指标（B-cubed）（cluster metrics, B-cubed）；没有标准答案时抽样 + 判官 + 人工 + 无标注健康度。</li>
+<li><b>评估</b>：成对指标（pairwise metrics）（配对的精确率 / 召回）vs 簇指标（<span class="tm" data-k="bcubed" tabindex="0">B-cubed</span>）（cluster metrics, B-cubed）；没有标准答案时抽样 + 判官 + 人工 + 无标注健康度。</li>
 <li><b>传递性的坑（chaining problem）</b>：A 像 B、B 像 C，但 A 和 C 一点不像，链式合并会把不相关的合成一团。要么限制簇大小，要么要求和簇里多数相似。</li>
 </ul>
 <p class="me">你的项目里：规则 2 就是 blocking（同雇主 + 日期兼容才算候选）；规则 4–5 是成对比较；规则 6 是把已发出的 id 做传递合并，但只在被动过的职位上做、且要同开始日期，避免链式乱合。学习打分器试过、没上线，下一步只用在弱点层。</p>
@@ -288,10 +294,10 @@ flowchart LR
 <ul>
 <li><b>三类指标（volume · quality · freshness）</b>：<b>量</b>（行数、人数、文件数，和昨天比差多少）、<b>质</b>（空值率、重复率、日期倒序数、覆盖率）、<b>时效</b>（数据几点到、跑了多久）。</li>
 <li><b>告警规则</b>：和历史同期比，偏离 3 个标准差或者某个百分比就报警；绝不能为 0 的指标（主键重复、倒序日期）直接硬断言。</li>
-<li><b>数据契约（data contract）</b>：上游保证 schema 和含义不变，变了要通知；你的 conform 「缺列直接报错」就是契约的硬执行。</li>
+<li><b><span class="tm" data-k="contract" tabindex="0">数据契约</span>（data contract）</b>：上游保证 schema 和含义不变，变了要通知；你的 conform 「缺列直接报错」就是契约的硬执行。</li>
 <li><b>金丝雀 / 回归测试（canary / regression test）</b>：固定一小份输入，每次跑完对比输出是否变化。</li>
 <li><b>隔离而不是整体失败（quarantine, partial failure）</b>：坏的一小部分进隔离区，其余照常出，事后看隔离区。</li>
-<li><b>血缘（lineage）</b>：这列数据从哪来、经过哪些步骤，出了问题能追。</li>
+<li><b><span class="tm" data-k="lineage" tabindex="0">血缘</span>（lineage）</b>：这列数据从哪来、经过哪些步骤，出了问题能追。</li>
 </ul>
 <p class="me">你的项目里：run.json 里的指标（输入行、输出行、丢弃行按规则、修复格数、合并数、重放人数、隔离人数）就是质量看板；覆盖率 99.94%、倒序日期 0、可疑拆分 3.7 万是无标注健康度；quarantine 目录是隔离区；51 个测试里的金丝雀。被问「上线后怎么知道结果还好」：每天看这几个数的走势，突变就查。</p>
 <p class="en">Every run emits metrics: rows in and out, drops per rule, repairs, merges, replays, quarantined users. I'd chart those daily and alert on deviations, hard-fail on anything that must be zero like duplicate keys or inverted dates, and keep the quarantine folder so one bad user never blocks the run.</p>
@@ -301,7 +307,7 @@ flowchart LR
 <div class="card">
 <p>比方：仓库里的货要上货架，顾客才拿得到。批处理的结果要有人能查。</p>
 <ul>
-<li><b>两种读法</b>：<b>分析查询（analytical query）</b>（整表扫描、聚合）→ 直接读 parquet / 数据仓库（BigQuery、Snowflake、Trino）；<b>点查（point lookup）</b>（给我这个人的履历）→ 要 KV 存储（DynamoDB、Cassandra、Redis），按 user_id 做键，毫秒级。</li>
+<li><b>两种读法</b>：<b>分析查询（analytical query）</b>（整表扫描、聚合）→ 直接读 parquet / 数据仓库（<span class="tm" data-k="trino" tabindex="0">BigQuery</span>、Snowflake、Trino）；<b>点查（point lookup）</b>（给我这个人的履历）→ 要 KV 存储（<span class="tm" data-k="kv" tabindex="0">DynamoDB</span>、Cassandra、<span class="tm" data-k="redis" tabindex="0">Redis</span>），按 user_id 做键，毫秒级。</li>
 <li><b>批到线上的搬运</b>：每天跑完把结果批量写进 KV（bulk load），或者只写动过的人。</li>
 <li><b>API 设计</b>：GET /users/{id}/positions?asof=2026-10-01；分页；版本号；限流（rate limiting）。</li>
 <li><b>Cassandra / DynamoDB 一句话</b>：按分区键哈希分片、多副本、最终一致、写快读快，不擅长复杂查询和 join。</li>
@@ -336,7 +342,7 @@ flowchart LR
   MON -.- OUT
 </pre>
 <ul>
-<li><b>核心</b>：和作业一样的 coalesce_bucket，Spark mapInArrow 调同一个函数；按 user_id 分区所以状态 join 不用跨机器。</li>
+<li><b>核心</b>：和作业一样的 coalesce_bucket，Spark mapIn<span class="tm" data-k="arrow" tabindex="0">Arrow</span> 调同一个函数；按 user_id 分区所以状态 join 不用跨机器。</li>
 <li><b>状态</b>：Iceberg 按 user_id 分区、只 MERGE 动过的人、一次运行一次提交、旧快照留着回退；history 只追加、只给迟到的人读。</li>
 <li><b>迟到</b>：事件时间 observed_ts；比状态旧的只重放那一个人，restated 告诉 KV 加载器整体替换。</li>
 <li><b>隔离</b>：一个人出错回滚进隔离区，不阻塞当天运行。</li>
@@ -411,14 +417,14 @@ flowchart LR
 <h2 id="s13">13 · 其他常被问的一页</h2>
 <div class="card">
 <ul>
-<li><b>负载均衡（load balancer）</b>：把请求分给多台机器（轮询 / 最少连接 / 按哈希）；本身要双活防单点。</li>
-<li><b>限流</b>：令牌桶（token bucket）（匀速放令牌，有令牌才能过，允许短突发）；滑动窗口计数。</li>
-<li><b>CDN</b>：静态内容放到离用户近的节点。</li>
+<li><b><span class="tm" data-k="lb" tabindex="0">负载均衡</span>（load balancer）</b>：把请求分给多台机器（轮询 / 最少连接 / 按哈希）；本身要双活防单点。</li>
+<li><b>限流</b>：<span class="tm" data-k="ratelimit" tabindex="0">令牌桶</span>（token bucket）（匀速放令牌，有令牌才能过，允许短突发）；滑动窗口计数。</li>
+<li><b><span class="tm" data-k="cdn" tabindex="0">CDN</span></b>：静态内容放到离用户近的节点。</li>
 <li><b>数据库索引（B-tree index）</b>：B 树，像书的目录；加速读、拖慢写；查什么就按什么建。</li>
-<li><b>SQL vs NoSQL</b>：要事务和复杂查询用 SQL；要水平扩展、简单键值、灵活 schema 用 NoSQL。</li>
-<li><b>分布式锁 / 单写者（distributed lock / single writer）</b>：同一时刻只允许一个人改，租约 + 过期防止持锁者挂掉。</li>
+<li><b>SQL vs <span class="tm" data-k="sqlnosql" tabindex="0">NoSQL</span></b>：要事务和复杂查询用 SQL；要水平扩展、简单键值、灵活 schema 用 NoSQL。</li>
+<li><b><span class="tm" data-k="lock" tabindex="0">分布式锁</span> / 单写者（distributed lock / single writer）</b>：同一时刻只允许一个人改，租约 + 过期防止持锁者挂掉。</li>
 <li><b>隐私</b>：被遗忘权 → 删除名单在输出时过滤；日志不打描述原文。</li>
-<li><b>容错（fault tolerance: retry, backoff, circuit breaker）</b>：重试 + 退避 + 幂等；超时；断路器（下游挂了就先别打）；单桶重试而不是整体重跑。</li>
+<li><b>容错（fault tolerance: retry, backoff, circuit breaker）</b>：重试 + 退避 + 幂等；超时；<span class="tm" data-k="breaker" tabindex="0">断路器</span>（下游挂了就先别打）；单桶重试而不是整体重跑。</li>
 </ul>
 </div>
 
@@ -430,12 +436,12 @@ flowchart LR
 <tr><td>指纹跳过 57.5%</td><td>内容哈希去重</td></tr>
 <tr><td>user_id &lt;&lt; 16 | 序号</td><td>Snowflake 式分段 ID、可复现</td></tr>
 <tr><td>规则 2 找候选 → 规则 5 打分 → 规则 6 折叠</td><td>Blocking → 成对比较 → 受限的传递合并（record linkage）</td></tr>
-<tr><td>state-in / state-out、只处理有新数据的人</td><td>增量计算、检查点</td></tr>
+<tr><td>state-in / state-out、只处理有新数据的人</td><td>增量计算、<span class="tm" data-k="checkpoint" tabindex="0">检查点</span></td></tr>
 <tr><td>迟到数据只重放一个人</td><td>事件时间 vs 处理时间、水位线后的更正</td></tr>
 <tr><td>全量 = 半量 + 增量、跑两次一样</td><td>幂等、确定性</td></tr>
 <tr><td>一个人出错回滚进隔离</td><td>故障隔离、部分失败不阻塞</td></tr>
 <tr><td>先写临时文件再改名</td><td>原子写</td></tr>
-<tr><td>cgroup CPU 配额、每进程 1 线程</td><td>容器资源感知、避免线程超订</td></tr>
+<tr><td><span class="tm" data-k="cgroup" tabindex="0">cgroup</span> CPU 配额、每进程 1 线程</td><td>容器资源感知、避免线程超订</td></tr>
 <tr><td>Spark mapInArrow 跑同一函数</td><td>MapReduce / shuffle by key、Arrow 零拷贝</td></tr>
 <tr><td>状态放 Iceberg 按 user_id 分区</td><td>数据湖表格式：ACID、MERGE、分区裁剪、时间旅行</td></tr>
 <tr><td>run.json 指标、覆盖率、倒序日期 0</td><td>数据质量监控、无标注健康度</td></tr>
@@ -455,7 +461,509 @@ flowchart LR
 <li>Trade-off line: "I chose X over Y because of Z; the cost is W, and here's how I'd notice if W becomes a problem."</li>
 </ul>
 </div>
+<h2 id="gloss">名词详解（附录：网页里点名词会就地展开；PDF 看这里）</h2>
+<div class="card"><h3 id="g-spark">Spark</h3>
+<p>一个<b>分布式计算引擎</b>（distributed compute engine）：把一份大数据切成很多块，分给一群机器同时算，最后把结果合起来。</p>
+<p><b>比方</b>：一万张试卷，一个老师改要一个月；分给 100 个老师，每人 100 张，一天改完。Spark 就是那个分卷子、收卷子、谁请假了把他那叠重新分给别人的教务处。</p>
+<ul>
+<li><b>driver（驱动程序）</b>：总指挥，一台机器，决定怎么切、谁算哪块。</li>
+<li><b>executor（执行器）</b>：干活的进程，分布在很多机器上，每个处理几个分区（partition）。</li>
+<li><b>DataFrame</b>：Spark 里的表，写法像 pandas/SQL，背后自动分布式执行。</li>
+<li><b>惰性执行（lazy evaluation）</b>：你写的操作先记下来，最后要结果时才一起优化、一起跑。</li>
+<li><b>shuffle（洗牌）</b>：按 key 重新分配数据，让同一个 key 的行到同一台机器。最贵的一步，因为要走网络。你的 repartition by user_id 就是一次 shuffle。</li>
+<li><b>容错</b>：某台机器挂了，Spark 记得这块数据是怎么算出来的，换台机器重算这一块就行。</li>
+</ul>
+<p><b>你的项目</b>：mapInArrow 把每个分区以 Arrow 表交给 Python 函数（你的 coalesce_bucket），返回 Arrow 表。Spark 只管分发和收集，逻辑全在你的函数里。</p>
+<p class="en">Spark is a distributed engine: a driver splits the data into partitions, executors on many machines process them in parallel, and a shuffle regroups rows by key across the network. It's lazy, so it plans the whole job before running, and it recovers from a lost machine by recomputing just that partition.</p></div>
+<div class="card"><h3 id="g-mapreduce">MapReduce</h3>
+<p>分布式计算最早的模型（Google 2004），Spark 是它的升级版。</p>
+<ul>
+<li><b>map</b>：每台机器各自处理自己那块数据，给每条输出打一个 key。比方：100 个老师各自改卷子，每张卷子贴上「班级」标签。</li>
+<li><b>shuffle</b>：按 key 把东西送到一起，同一个班的卷子都送到同一个老师那。</li>
+<li><b>reduce</b>：每个 key 的东西合并处理，算这个班的平均分。</li>
+</ul>
+<p>缺点：每一步都把中间结果写硬盘，慢。Spark 尽量放内存，所以快很多。</p>
+<p class="en">MapReduce is map each partition, shuffle by key, then reduce each key's group. Spark follows the same shape but keeps intermediate data in memory.</p></div>
+<div class="card"><h3 id="g-kafka">Kafka</h3>
+<p>一个<b>分布式消息队列 / 日志</b>（distributed log）：生产者往里写消息，消费者按自己的速度读，消息存几天不丢，可以倒回去重读。</p>
+<p><b>比方</b>：快递站的传送带。寄件人把包裹放上去就走；分拣员按自己的速度拿；传送带上的包裹存一周，分拣员请假回来可以从上次的位置接着拿。</p>
+<ul>
+<li><b>topic（主题）</b>：一类消息，比如「新抓到的档案」。</li>
+<li><b>partition（分区）</b>：一个 topic 切成多条传送带，并行。每条只往末尾追加。</li>
+<li><b>offset（偏移量）</b>：消息在分区里的位置号，递增。消费者记住自己读到第几号。</li>
+<li><b>broker</b>：存消息的服务器，一个集群有很多台，每个分区有几份副本（replica）防丢。</li>
+<li><b>producer / consumer（生产者 / 消费者）</b>；<b>consumer group（消费者组）</b>：一组消费者分摊一个 topic 的分区。</li>
+<li><b>保留期（retention）</b>：消息存多久，比如 7 天，过期删掉。</li>
+</ul>
+<p><b>它不是什么</b>：Kafka 不做计算，只负责「传送和暂存」。计算交给 Spark / Flink。</p>
+<p class="en">Kafka is a distributed append-only log. Producers write to topics split into partitions, each message gets an offset, and consumers track their own offsets, so they can read at their own pace and replay. It moves and stores data; computation happens in Spark or Flink.</p></div>
+<div class="card"><h3 id="g-flink">Flink</h3>
+<p>一个<b>流处理引擎</b>（stream processing engine）：数据一条一条来，一来就算，结果秒级更新。和 Spark（攒一批再算）相对。</p>
+<p><b>比方</b>：Spark 是每天晚上结一次账；Flink 是收银台每笔交易当场入账。</p>
+<ul>
+<li><b>状态（state）</b>：流处理要记住之前的东西（比如这个人目前有哪些职位），Flink 帮你存、帮你做检查点（checkpoint）防丢。</li>
+<li><b>事件时间与水位线（event time & watermark）</b>：处理乱序和迟到。</li>
+<li><b>代价</b>：要一直开着跑、状态管理复杂、出错难排查，运维（operations）比批处理重得多。</li>
+</ul>
+<p class="en">Flink processes events one by one as they arrive, keeping per-key state with checkpoints, so results update in seconds. The cost is a long-running job with harder state management and operations than a daily batch.</p></div>
+<div class="card"><h3 id="g-kafkastreams">Kafka Streams</h3>
+<p>Kafka 自带的一个<b>轻量流处理库</b>：直接在你的 Java 程序里读 Kafka、算、写回 Kafka，不需要单独的集群。比 Flink 简单，适合中小规模。</p>
+<p class="en">Kafka Streams is a library for stream processing inside your own app, reading from and writing back to Kafka without a separate cluster.</p></div>
+<div class="card"><h3 id="g-arrow">Arrow</h3>
+<p>一种<b>内存里摆放表格数据的标准格式</b>，按列摆（columnar in-memory format）。</p>
+<p><b>比方</b>：标准集装箱。Polars、Spark、pandas、DuckDB 都认这种箱子，交接数据时不用拆箱重装，叫<b>零拷贝（zero-copy）</b>。</p>
+<p><b>你的项目</b>：Spark 把每个分区以 Arrow 表交给 Polars，你的函数处理完再以 Arrow 表交回，中间不做转换，所以单机和 Spark 能跑同一个函数。</p>
+<p class="en">Arrow is a standard columnar layout for data in memory, so Spark, Polars and pandas can hand tables to each other without copying or converting.</p></div>
+<div class="card"><h3 id="g-parquet">Parquet</h3>
+<p>一种<b>列式文件格式</b>（columnar file format），存在硬盘 / S3 上。</p>
+<ul>
+<li><b>按列存</b>：同一列的值放在一起。只要 3 列就只读 3 列（列裁剪，column pruning）。</li>
+<li><b>压缩好</b>：同一列类型一样、值相似，压缩率高。</li>
+<li><b>带统计信息</b>：每块记最大最小值，查「日期 &gt; 2025」时整块能跳过（谓词下推，predicate pushdown）。</li>
+<li><b>不能改</b>：要改一行只能重写整个文件。</li>
+</ul>
+<p class="en">Parquet stores data by column with compression and per-block min-max statistics, so a query reads only the columns it needs and skips blocks that can't match. Files are immutable; changing a row means rewriting the file.</p></div>
+<div class="card"><h3 id="g-iceberg">Iceberg（表格式）</h3>
+<p>一种<b>数据湖表格式</b>（table format）：在一堆 parquet 文件上面加一层「目录 / 清单」，让它们像一张数据库表一样能事务提交、回退、按键更新。同类：Delta Lake、Hudi。</p>
+<ul>
+<li><b>ACID 提交</b>：写新文件 → 写新清单 → 原子地把指针换到新清单。读的人永远看到完整的一版。</li>
+<li><b>快照 / 时间旅行（snapshot / time travel）</b>：每次提交是一个版本，能回到任何一版。</li>
+<li><b>MERGE INTO</b>：按键更新，只改动过的行（底层是写新文件 + 标记旧的作废）。</li>
+<li><b>分区（partitioning）</b>：按某列分目录，查询只读相关分区。</li>
+<li><b>catalog（目录服务）</b>：存「每张表当前指向哪份清单」的地方，比如 AWS Glue、Hive Metastore。</li>
+</ul>
+<p class="en">Iceberg is a table format over parquet files: it tracks which files make up each version, commits atomically by swapping a pointer in the catalog, supports MERGE, partition pruning and time travel.</p></div>
+<div class="card"><h3 id="g-s3">S3 / 对象存储</h3>
+<p>AWS 的<b>对象存储</b>（object storage）：一个几乎无限大的网盘，按「桶 + 路径」存文件。</p>
+<ul>
+<li>便宜、自动多副本、几乎不会丢。</li>
+<li>只能整文件读写，不能改文件中间的一行，也不能追加。</li>
+<li>一次读几十毫秒，适合批量读大文件，不适合频繁点查。</li>
+</ul>
+<p class="en">S3 is object storage: cheap, durable, replicated, whole-file reads and writes, good for batch data and bad for small random updates.</p></div>
+<div class="card"><h3 id="g-kv">KV 存储：DynamoDB / Cassandra / Redis</h3>
+<p><b>键值存储</b>（key-value store）：给一个 key 拿一个 value，毫秒级。</p>
+<ul>
+<li><b>DynamoDB</b>：AWS 托管，不用自己管机器，按分区键（partition key）哈希分片。</li>
+<li><b>Cassandra</b>：开源，自己部署，多副本、写入很快、最终一致。</li>
+<li><b>Redis</b>：数据放内存，最快（微秒级），常用作缓存。</li>
+<li>共同缺点：不擅长复杂查询、join、按别的字段查。</li>
+</ul>
+<p class="en">Key-value stores like DynamoDB, Cassandra and Redis answer get-by-key in milliseconds by hashing the key to a partition. They're fast for point lookups and poor at joins or queries on other fields.</p></div>
+<div class="card"><h3 id="g-redis">Redis</h3>
+<p>把数据放在<b>内存</b>里的键值存储，读写微秒级，最常用作<b>缓存</b>（cache）。也能做计数器、排行榜、分布式锁。数据主要在内存，断电要靠持久化配置才不丢。</p>
+<p class="en">Redis is an in-memory key-value store, usually used as a cache, with microsecond reads.</p></div>
+<div class="card"><h3 id="g-trino">数据仓库 / 查询引擎：BigQuery / Snowflake / Trino</h3>
+<p>给分析师写 SQL 查大表用的系统（data warehouse / query engine）。</p>
+<ul>
+<li><b>BigQuery、Snowflake</b>：云上托管的数仓，存储和计算都帮你管。</li>
+<li><b>Trino</b>：开源查询引擎，直接查 S3 上的 parquet / Iceberg 表，不搬数据。</li>
+<li>擅长：整表扫描、聚合、join。不擅长：毫秒级点查。</li>
+</ul>
+<p class="en">Warehouses and query engines run SQL over large tables for analysis; they're good at scans and aggregations, not millisecond lookups.</p></div>
+<div class="card"><h3 id="g-btree">B 树索引</h3>
+<p>数据库最常用的<b>索引结构</b>（B-tree index）：一棵很矮很胖的排序树，像书的目录，几次跳转就能找到任何一行。</p>
+<ul>
+<li>数据按 key 排好序存在一页一页里（每页几 KB）。</li>
+<li>key 递增插入：总是写最后一页，很快。</li>
+<li>key 随机插入：要找到中间某页插进去，页满了要拆成两页（<b>页分裂，page split</b>），慢，而且页都半空，占空间。这就是 UUID 当主键慢的原因。</li>
+</ul>
+<p class="en">A B-tree keeps keys sorted in pages so lookups take a few hops. Increasing keys append to the last page; random keys like UUIDs insert in the middle and cause page splits.</p></div>
+<div class="card"><h3 id="g-hash">哈希（hash）</h3>
+<p>把任意内容变成一个固定长度数字的函数（hash function）。同样的输入永远得到同样的数字；输入差一点，数字就完全不同。</p>
+<p><b>用处</b>：分区（hash(key) % N 决定去哪台机器）、去重（内容一样哈希就一样，你的指纹）、快速比较（比数字比比整段文字快）。</p>
+<p><b>撞号（collision）</b>：两个不同输入得到同一个数，64 位哈希概率极低。</p>
+<p class="en">A hash function maps any input to a fixed-size number deterministically; it's used to route keys to partitions, detect duplicates and compare content quickly.</p></div>
+<div class="card"><h3 id="g-qps">QPS / 延迟 / 吞吐</h3>
+<ul>
+<li><b>QPS（queries per second）</b>：每秒多少个请求。</li>
+<li><b>延迟（latency）</b>：一个请求从发出到拿到结果用多久。常看 p99：最慢的那 1% 有多慢。</li>
+<li><b>吞吐（throughput）</b>：单位时间处理多少数据，批处理更看这个。</li>
+</ul>
+<p>比方：高速收费站。QPS = 每秒过几辆车；延迟 = 一辆车排队加缴费用多久；吞吐 = 一小时总共过多少车。</p>
+<p class="en">QPS is requests per second, latency is how long one request takes, often measured at p99, and throughput is how much work gets done per unit of time.</p></div>
+<div class="card"><h3 id="g-replica">复制：主从（leader–follower）</h3>
+<p>同一份数据存在好几台机器上（replication）。</p>
+<ul>
+<li><b>主（leader）</b>：只有它能写。</li>
+<li><b>从（follower / replica）</b>：从主那里抄改动，可以分担读。</li>
+<li><b>复制延迟（replication lag）</b>：从库抄得慢一点，刚写完去从库读可能读到旧值。</li>
+<li><b>故障切换（failover）</b>：主挂了，选一个从升为主。</li>
+</ul>
+<p class="en">In leader-follower replication one node takes writes and followers copy them; reads can go to followers but may be slightly stale, and a follower is promoted if the leader fails.</p></div>
+<div class="card"><h3 id="g-cachecore">缓存（cache）和 cache-aside</h3>
+<p>缓存 = 把常用数据放在更快的地方（通常是内存，比如 Redis），省得每次去慢的数据库拿。</p>
+<p><b>cache-aside（旁路缓存）</b>，最常用的用法，三步：</p>
+<ol><li>读：先查缓存，有就直接返回（命中，hit）。</li><li>没有（未命中，miss）：去数据库查，查到后写进缓存再返回。</li><li>写数据库时：把缓存里的旧值删掉，下次读时重新加载。</li></ol>
+<p><b>TTL（time to live）</b>：每个缓存条目的存活时间，到点自动删除。</p>
+<p class="en">With cache-aside, the app reads the cache first, falls back to the database on a miss and fills the cache, and deletes the cached value when the data changes. Each entry has a TTL.</p></div>
+<div class="card"><h3 id="g-lru">淘汰策略：LRU / LFU</h3>
+<p>缓存满了要删一些，删谁？</p>
+<ul><li><b>LRU（least recently used）</b>：删最久没被访问的。像衣柜里一年没穿的衣服先扔。</li>
+<li><b>LFU（least frequently used）</b>：删访问次数最少的。</li></ul>
+<p>你的代码里 Python 的 <code>lru_cache</code> 就是 LRU：缓存 title_key 等函数的结果，满了扔最久没用的。</p>
+<p class="en">LRU evicts the entry unused for the longest time; LFU evicts the one used least often.</p></div>
+<div class="card"><h3 id="g-snowflake">Snowflake ID</h3>
+<p>Twitter 发明的<b>分布式唯一 ID</b>方案（不是 Snowflake 数据仓库那家公司）。</p>
+<p>64 位拆成几段：1 位符号 + 41 位毫秒时间戳 + 10 位机器号 + 12 位序号（同一毫秒内的第几个）。每台机器只用自己的机器号发号，互不冲突，不用中心协调；高位是时间所以大致按时间递增。</p>
+<p><b>你的项目</b>：同样「拆段各管各的」，但用 user_id + 每人序号，不放时间戳，因为要可复现。</p>
+<p class="en">A Snowflake id packs a timestamp, a machine id and a per-millisecond sequence into 64 bits, so every machine can issue unique, roughly time-ordered ids without coordination.</p></div>
+<div class="card"><h3 id="g-uuid">UUID</h3>
+<p>128 位的随机唯一号，例如 <code>550e8400-e29b-41d4-a716-446655440000</code>。谁都能自己生成、几乎不会撞。缺点：长一倍、随机无序（B 树插入慢）、不含时间信息。新版 UUID v7 前面带时间戳，变成有序。</p>
+<p class="en">A UUID is a 128-bit random identifier anyone can generate without coordination; it's large and unordered, which hurts index performance, unless you use time-ordered UUID v7.</p></div>
+<div class="card"><h3 id="g-cap">CAP 定理</h3>
+<p>分布式系统的一个定理：<b>C 一致性（consistency）</b>所有机器读到一样的值；<b>A 可用性（availability）</b>任何时候请求都有回应；<b>P 分区容忍（partition tolerance）</b>机器之间网络断了还能工作。网络一定会偶尔断，所以 P 必须要，实际是在断网那段时间选 C 还是 A。</p>
+<p>比方：两家分店电话线断了，要么停业等恢复（保 C），要么照常卖之后再对账（保 A）。</p>
+<p class="en">When the network splits, a distributed system has to choose between consistency and availability; partition tolerance isn't optional.</p></div>
+<div class="card"><h3 id="g-idem">幂等（idempotent）</h3>
+<p>同一个操作做一次和做十次，结果一样。比方：电梯按钮按一下和按十下都一样；但「账户加 100 元」不是幂等的，做两次就多加了。</p>
+<p><b>为什么重要</b>：分布式系统里网络超时了你不知道对方收没收到，只能重试；只有幂等的操作才能放心重试。</p>
+<p><b>怎么做到</b>：每个操作带唯一 id，处理过的记下来，再来就跳过；或者把「加 100」改成「设成 X」。</p>
+<p class="en">An idempotent operation has the same effect no matter how many times it runs, which is what makes retries safe.</p></div>
+<div class="card"><h3 id="g-delivery">投递语义（delivery semantics）</h3>
+<ul>
+<li><b>至多一次（at-most-once）</b>：发了就不管，可能丢，不会重。</li>
+<li><b>至少一次（at-least-once）</b>：没确认就重发，不会丢，可能重复。</li>
+<li><b>恰好一次（exactly-once）</b>：不丢不重，最贵。</li>
+</ul>
+<p>实际最常用：至少一次 + 消费端幂等 = 效果上的恰好一次。比方：快递没签收就再送一次，收件人看到重复的包裹编号就拒收第二个。</p>
+<p class="en">Most systems use at-least-once delivery with an idempotent consumer, which gives effectively-once results without the cost of true exactly-once.</p></div>
+<div class="card"><h3 id="g-watermark">事件时间 / 处理时间 / 水位线</h3>
+<ul>
+<li><b>事件时间（event time）</b>：事情真正发生的时间。你的 observed_ts（抓取日期）。</li>
+<li><b>处理时间（processing time）</b>：系统收到 / 处理它的时间。你的「数据到达那天」。</li>
+<li>两者之差就是迟到。</li>
+<li><b>水位线（watermark）</b>：系统宣布「X 时刻之前的事件应该都到齐了」，可以出结果了。水位线之后才到的旧事件 = 迟到数据，要么丢、要么回头更正已出的结果。</li>
+</ul>
+<p>比方：老师定周五 5 点收作业（水位线），5 点后交的要么不收，要么改完再补分。</p>
+<p class="en">Event time is when something happened, processing time is when the system sees it, and a watermark declares that everything before a given time has arrived; anything older after that is late.</p></div>
+<div class="card"><h3 id="g-lambda">Lambda / Kappa 架构</h3>
+<ul><li><b>Lambda</b>：两套系统并行，流处理给秒级的近似结果，批处理晚上算准确结果覆盖掉。缺点：同一套逻辑写两遍。</li>
+<li><b>Kappa</b>：只要流处理，要重算就从 Kafka 开头重放一遍。</li></ul>
+<p>你的情况：只要天级，一套批就够，两者都不需要。</p>
+<p class="en">Lambda runs a fast streaming path and a correct batch path side by side; Kappa keeps only streaming and replays the log to recompute.</p></div>
+<div class="card"><h3 id="g-skew">数据倾斜（data skew）</h3>
+<p>某个 key 的数据特别多，分到它的那台机器要干一整晚，别的机器早干完在等。比方：100 个老师改卷，一个老师分到 5000 张，其他人每人 50 张。</p>
+<p><b>办法</b>：加盐（salting）把大 key 拆成几份分给几台机器；两阶段聚合（先局部合并再全局合并）；大 key 单独处理。</p>
+<p>你的数据：每人平均 29 条、最多 166 条，没有倾斜。</p>
+<p class="en">Skew is when one key has far more data than others, so one worker becomes the bottleneck; salting or two-phase aggregation spreads it out.</p></div>
+<div class="card"><h3 id="g-cgroup">cgroup</h3>
+<p>Linux 用来<b>限制一组进程能用多少资源</b>的机制（control groups）。Docker 的 --cpus 4、--memory 16g 底层就是 cgroup。</p>
+<p>坑：程序里调 os.cpu_count() 看到的是整台机器的核数（比如 14），不是容器被限的 4 核，开 14 个进程就超了。要读 /sys/fs/cgroup/cpu.max 里的配额。</p>
+<p class="en">cgroups are how Linux limits a container's CPU and memory; os.cpu_count reports the host, so you read the cgroup quota to size the worker pool.</p></div>
+<div class="card"><h3 id="g-docker">Docker</h3>
+<p>把程序和它需要的所有依赖打包成一个<b>镜像</b>（image），在任何机器上都能一模一样地运行。运行起来的叫<b>容器</b>（container）。比方：搬家时把整个房间连家具一起装进集装箱，到哪都一样。</p>
+<p class="en">Docker packages an app and all its dependencies into an image that runs identically anywhere as a container.</p></div>
+<div class="card"><h3 id="g-lb">负载均衡（load balancer）</h3>
+<p>站在一群服务器前面，把进来的请求分给它们。比方：银行大堂经理把客户分到各个窗口。</p>
+<p>分法：轮询（round robin，挨个分）、最少连接（谁最闲给谁）、按哈希（同一用户总去同一台）。它自己也要有备份，否则它一挂全挂。</p>
+<p class="en">A load balancer spreads incoming requests across servers by round robin, least connections or hashing.</p></div>
+<div class="card"><h3 id="g-ratelimit">限流：令牌桶（token bucket）</h3>
+<p>一个桶，每秒匀速往里放 N 个令牌，桶最多装 M 个。每个请求要拿一个令牌才能通过，没令牌就拒绝或排队。效果：平均每秒最多 N 个，允许短时间突发 M 个。</p>
+<p>比方：游乐园每分钟放 10 张票，攒着的票最多 50 张。</p>
+<p class="en">A token bucket refills at a fixed rate up to a cap; each request takes a token, so it allows short bursts but limits the average rate.</p></div>
+<div class="card"><h3 id="g-breaker">断路器（circuit breaker）/ 重试退避（retry with backoff）</h3>
+<ul><li><b>重试退避</b>：失败了等 1 秒重试，再失败等 2 秒、4 秒……，越等越久，别把对方打死。</li>
+<li><b>断路器</b>：下游连续失败太多次，就先「断开」一段时间，直接返回失败不再调用，过一会儿试探一下恢复了再接上。比方：家里保险丝，短路了先跳闸，别把整栋楼烧了。</li></ul>
+<p class="en">Retries back off exponentially, and a circuit breaker stops calling a failing dependency for a while so it can recover.</p></div>
+<div class="card"><h3 id="g-blocking">Blocking（候选生成）</h3>
+<p>去重 / 实体消歧里的第一步：先用便宜的条件把「可能是同一个」的候选缩小，再对候选做贵的比较。</p>
+<p>为什么必须：N 条两两比是 N² 次。1000 万条就是 10<sup>14</sup> 次，算不完。按「同雇主」「同域名」分组后，每组只有几十条。</p>
+<p>你的项目：规则 2 找候选（同雇主 + 日期兼容）就是 blocking。</p>
+<p class="en">Blocking narrows comparisons to plausible candidates with a cheap key, so you avoid comparing every pair.</p></div>
+<div class="card"><h3 id="g-bcubed">B-cubed（簇指标）</h3>
+<p>评估「分组 / 聚类」好坏的指标。对每一条记录，看它所在的簇里：有多少比例真的和它是一组（精确率），它真正的组员有多少比例被分到了一起（召回）。所有记录取平均。</p>
+<p>和成对指标的区别：成对指标看每一对配没配对；B-cubed 按记录算，大簇里的错误不会被放大。</p>
+<p class="en">B-cubed scores each record by how much of its cluster truly belongs with it and how much of its true group it was clustered with, then averages.</p></div>
+<div class="card"><h3 id="g-embedding">embedding / 向量最近邻</h3>
+<p>用模型把一段文字变成一串数字（比如 384 个数），意思相近的文字数字也相近。「Software Engineer」和「软件工程师」的向量会很接近。</p>
+<p><b>最近邻（nearest neighbour）</b>：给一个新头衔的向量，在库里找最接近的那几个。<b>向量库</b>（vector database，如 FAISS）专门做这个，毫秒级。</p>
+<p class="en">An embedding turns text into a vector so similar meanings are close together; a vector index finds the nearest ones quickly.</p></div>
+<div class="card"><h3 id="g-cdn">CDN</h3>
+<p>内容分发网络（content delivery network）：把图片、视频这类静态文件复制到全世界很多节点，用户从最近的节点拿。比方：总部的书在各地都开分店。</p>
+<p class="en">A CDN caches static content at edge locations close to users.</p></div>
+<div class="card"><h3 id="g-sqlnosql">SQL vs NoSQL</h3>
+<ul><li><b>SQL（关系型数据库，PostgreSQL / MySQL）</b>：表结构固定、支持事务和 join、强一致。扩展主要靠一台更强的机器。</li>
+<li><b>NoSQL（DynamoDB / Cassandra / MongoDB）</b>：结构灵活、天生分布式、容易水平扩展（加机器），通常最终一致、不支持复杂 join。</li></ul>
+<p class="en">Relational databases give schemas, joins and transactions; NoSQL stores trade those for easy horizontal scaling.</p></div>
+<div class="card"><h3 id="g-lock">分布式锁 / 租约（lease）</h3>
+<p>多台机器同时想改同一份数据，用一把锁保证同一时刻只有一个人改。锁带<b>租约</b>（过期时间），持锁的机器挂了，锁到期自动释放，不会永远卡住。</p>
+<p class="en">A distributed lock lets only one worker modify something at a time, with a lease so a crashed holder doesn't block forever.</p></div>
+<div class="card"><h3 id="g-lineage">血缘（lineage）</h3>
+<p>记录每份数据「从哪来、经过哪些步骤」。比方：食品追溯码，扫一下知道哪个农场、哪个工厂。出了错能顺着找到是哪一步、哪份输入的问题，也知道改了上游会影响哪些下游。</p>
+<p class="en">Lineage records where each dataset came from and which steps produced it.</p></div>
+<div class="card"><h3 id="g-contract">数据契约（data contract）</h3>
+<p>上游和下游之间的「约定」：有哪些列、什么类型、什么含义、多久更新一次。上游要改必须提前通知。你的 conform「缺列直接报错」就是在执行契约：不符合就停，不悄悄出错数据。</p>
+<p class="en">A data contract fixes the schema and meaning a producer promises to consumers, and changes must be announced.</p></div>
+<div class="card"><h3 id="g-scatter">scatter-gather</h3>
+<p>把一个查询同时发给所有分区（scatter，撒出去），每个分区各自查，再把结果收回来合并（gather）。数据按 user_id 分区，却要按公司查时，只能这么做，分区越多越慢。</p>
+<p class="en">Scatter-gather sends a query to every partition and merges the answers, used when the query key isn't the partition key.</p></div>
+<div class="card"><h3 id="g-acid">ACID</h3>
+<p>事务的四个保证：<b>A 原子性（atomicity）</b>要么全成功要么全不算；<b>C 一致性（consistency）</b>不破坏规则；<b>I 隔离性（isolation）</b>并发的事务互不干扰；<b>D 持久性（durability）</b>提交了就不会丢。</p>
+<p class="en">ACID means a transaction is all-or-nothing, keeps the data valid, is isolated from concurrent ones, and survives crashes once committed.</p></div>
+<div class="card"><h3 id="g-checkpoint">检查点（checkpoint）</h3>
+<p>定期把当前的进度 / 状态存下来，挂了从最近的存档接着跑，不用从头。比方：游戏存档。你的 --state-out 就是每天一个检查点；bucket.py 里处理每个人前 deepcopy 一份状态，也是一个小检查点（出错回滚）。</p>
+<p class="en">A checkpoint saves progress so a job can resume from there instead of starting over.</p></div>
 </main>
+<template id="tm-spark"><div class="tmh">Spark</div>
+<p>一个<b>分布式计算引擎</b>（distributed compute engine）：把一份大数据切成很多块，分给一群机器同时算，最后把结果合起来。</p>
+<p><b>比方</b>：一万张试卷，一个老师改要一个月；分给 100 个老师，每人 100 张，一天改完。Spark 就是那个分卷子、收卷子、谁请假了把他那叠重新分给别人的教务处。</p>
+<ul>
+<li><b>driver（驱动程序）</b>：总指挥，一台机器，决定怎么切、谁算哪块。</li>
+<li><b>executor（执行器）</b>：干活的进程，分布在很多机器上，每个处理几个分区（partition）。</li>
+<li><b>DataFrame</b>：Spark 里的表，写法像 pandas/SQL，背后自动分布式执行。</li>
+<li><b>惰性执行（lazy evaluation）</b>：你写的操作先记下来，最后要结果时才一起优化、一起跑。</li>
+<li><b>shuffle（洗牌）</b>：按 key 重新分配数据，让同一个 key 的行到同一台机器。最贵的一步，因为要走网络。你的 repartition by user_id 就是一次 shuffle。</li>
+<li><b>容错</b>：某台机器挂了，Spark 记得这块数据是怎么算出来的，换台机器重算这一块就行。</li>
+</ul>
+<p><b>你的项目</b>：mapInArrow 把每个分区以 Arrow 表交给 Python 函数（你的 coalesce_bucket），返回 Arrow 表。Spark 只管分发和收集，逻辑全在你的函数里。</p>
+<p class="en">Spark is a distributed engine: a driver splits the data into partitions, executors on many machines process them in parallel, and a shuffle regroups rows by key across the network. It's lazy, so it plans the whole job before running, and it recovers from a lost machine by recomputing just that partition.</p></template>
+<template id="tm-mapreduce"><div class="tmh">MapReduce</div>
+<p>分布式计算最早的模型（Google 2004），Spark 是它的升级版。</p>
+<ul>
+<li><b>map</b>：每台机器各自处理自己那块数据，给每条输出打一个 key。比方：100 个老师各自改卷子，每张卷子贴上「班级」标签。</li>
+<li><b>shuffle</b>：按 key 把东西送到一起，同一个班的卷子都送到同一个老师那。</li>
+<li><b>reduce</b>：每个 key 的东西合并处理，算这个班的平均分。</li>
+</ul>
+<p>缺点：每一步都把中间结果写硬盘，慢。Spark 尽量放内存，所以快很多。</p>
+<p class="en">MapReduce is map each partition, shuffle by key, then reduce each key's group. Spark follows the same shape but keeps intermediate data in memory.</p></template>
+<template id="tm-kafka"><div class="tmh">Kafka</div>
+<p>一个<b>分布式消息队列 / 日志</b>（distributed log）：生产者往里写消息，消费者按自己的速度读，消息存几天不丢，可以倒回去重读。</p>
+<p><b>比方</b>：快递站的传送带。寄件人把包裹放上去就走；分拣员按自己的速度拿；传送带上的包裹存一周，分拣员请假回来可以从上次的位置接着拿。</p>
+<ul>
+<li><b>topic（主题）</b>：一类消息，比如「新抓到的档案」。</li>
+<li><b>partition（分区）</b>：一个 topic 切成多条传送带，并行。每条只往末尾追加。</li>
+<li><b>offset（偏移量）</b>：消息在分区里的位置号，递增。消费者记住自己读到第几号。</li>
+<li><b>broker</b>：存消息的服务器，一个集群有很多台，每个分区有几份副本（replica）防丢。</li>
+<li><b>producer / consumer（生产者 / 消费者）</b>；<b>consumer group（消费者组）</b>：一组消费者分摊一个 topic 的分区。</li>
+<li><b>保留期（retention）</b>：消息存多久，比如 7 天，过期删掉。</li>
+</ul>
+<p><b>它不是什么</b>：Kafka 不做计算，只负责「传送和暂存」。计算交给 Spark / Flink。</p>
+<p class="en">Kafka is a distributed append-only log. Producers write to topics split into partitions, each message gets an offset, and consumers track their own offsets, so they can read at their own pace and replay. It moves and stores data; computation happens in Spark or Flink.</p></template>
+<template id="tm-flink"><div class="tmh">Flink</div>
+<p>一个<b>流处理引擎</b>（stream processing engine）：数据一条一条来，一来就算，结果秒级更新。和 Spark（攒一批再算）相对。</p>
+<p><b>比方</b>：Spark 是每天晚上结一次账；Flink 是收银台每笔交易当场入账。</p>
+<ul>
+<li><b>状态（state）</b>：流处理要记住之前的东西（比如这个人目前有哪些职位），Flink 帮你存、帮你做检查点（checkpoint）防丢。</li>
+<li><b>事件时间与水位线（event time & watermark）</b>：处理乱序和迟到。</li>
+<li><b>代价</b>：要一直开着跑、状态管理复杂、出错难排查，运维（operations）比批处理重得多。</li>
+</ul>
+<p class="en">Flink processes events one by one as they arrive, keeping per-key state with checkpoints, so results update in seconds. The cost is a long-running job with harder state management and operations than a daily batch.</p></template>
+<template id="tm-kafkastreams"><div class="tmh">Kafka Streams</div>
+<p>Kafka 自带的一个<b>轻量流处理库</b>：直接在你的 Java 程序里读 Kafka、算、写回 Kafka，不需要单独的集群。比 Flink 简单，适合中小规模。</p>
+<p class="en">Kafka Streams is a library for stream processing inside your own app, reading from and writing back to Kafka without a separate cluster.</p></template>
+<template id="tm-arrow"><div class="tmh">Arrow</div>
+<p>一种<b>内存里摆放表格数据的标准格式</b>，按列摆（columnar in-memory format）。</p>
+<p><b>比方</b>：标准集装箱。Polars、Spark、pandas、DuckDB 都认这种箱子，交接数据时不用拆箱重装，叫<b>零拷贝（zero-copy）</b>。</p>
+<p><b>你的项目</b>：Spark 把每个分区以 Arrow 表交给 Polars，你的函数处理完再以 Arrow 表交回，中间不做转换，所以单机和 Spark 能跑同一个函数。</p>
+<p class="en">Arrow is a standard columnar layout for data in memory, so Spark, Polars and pandas can hand tables to each other without copying or converting.</p></template>
+<template id="tm-parquet"><div class="tmh">Parquet</div>
+<p>一种<b>列式文件格式</b>（columnar file format），存在硬盘 / S3 上。</p>
+<ul>
+<li><b>按列存</b>：同一列的值放在一起。只要 3 列就只读 3 列（列裁剪，column pruning）。</li>
+<li><b>压缩好</b>：同一列类型一样、值相似，压缩率高。</li>
+<li><b>带统计信息</b>：每块记最大最小值，查「日期 &gt; 2025」时整块能跳过（谓词下推，predicate pushdown）。</li>
+<li><b>不能改</b>：要改一行只能重写整个文件。</li>
+</ul>
+<p class="en">Parquet stores data by column with compression and per-block min-max statistics, so a query reads only the columns it needs and skips blocks that can't match. Files are immutable; changing a row means rewriting the file.</p></template>
+<template id="tm-iceberg"><div class="tmh">Iceberg（表格式）</div>
+<p>一种<b>数据湖表格式</b>（table format）：在一堆 parquet 文件上面加一层「目录 / 清单」，让它们像一张数据库表一样能事务提交、回退、按键更新。同类：Delta Lake、Hudi。</p>
+<ul>
+<li><b>ACID 提交</b>：写新文件 → 写新清单 → 原子地把指针换到新清单。读的人永远看到完整的一版。</li>
+<li><b>快照 / 时间旅行（snapshot / time travel）</b>：每次提交是一个版本，能回到任何一版。</li>
+<li><b>MERGE INTO</b>：按键更新，只改动过的行（底层是写新文件 + 标记旧的作废）。</li>
+<li><b>分区（partitioning）</b>：按某列分目录，查询只读相关分区。</li>
+<li><b>catalog（目录服务）</b>：存「每张表当前指向哪份清单」的地方，比如 AWS Glue、Hive Metastore。</li>
+</ul>
+<p class="en">Iceberg is a table format over parquet files: it tracks which files make up each version, commits atomically by swapping a pointer in the catalog, supports MERGE, partition pruning and time travel.</p></template>
+<template id="tm-s3"><div class="tmh">S3 / 对象存储</div>
+<p>AWS 的<b>对象存储</b>（object storage）：一个几乎无限大的网盘，按「桶 + 路径」存文件。</p>
+<ul>
+<li>便宜、自动多副本、几乎不会丢。</li>
+<li>只能整文件读写，不能改文件中间的一行，也不能追加。</li>
+<li>一次读几十毫秒，适合批量读大文件，不适合频繁点查。</li>
+</ul>
+<p class="en">S3 is object storage: cheap, durable, replicated, whole-file reads and writes, good for batch data and bad for small random updates.</p></template>
+<template id="tm-kv"><div class="tmh">KV 存储：DynamoDB / Cassandra / Redis</div>
+<p><b>键值存储</b>（key-value store）：给一个 key 拿一个 value，毫秒级。</p>
+<ul>
+<li><b>DynamoDB</b>：AWS 托管，不用自己管机器，按分区键（partition key）哈希分片。</li>
+<li><b>Cassandra</b>：开源，自己部署，多副本、写入很快、最终一致。</li>
+<li><b>Redis</b>：数据放内存，最快（微秒级），常用作缓存。</li>
+<li>共同缺点：不擅长复杂查询、join、按别的字段查。</li>
+</ul>
+<p class="en">Key-value stores like DynamoDB, Cassandra and Redis answer get-by-key in milliseconds by hashing the key to a partition. They're fast for point lookups and poor at joins or queries on other fields.</p></template>
+<template id="tm-redis"><div class="tmh">Redis</div>
+<p>把数据放在<b>内存</b>里的键值存储，读写微秒级，最常用作<b>缓存</b>（cache）。也能做计数器、排行榜、分布式锁。数据主要在内存，断电要靠持久化配置才不丢。</p>
+<p class="en">Redis is an in-memory key-value store, usually used as a cache, with microsecond reads.</p></template>
+<template id="tm-trino"><div class="tmh">数据仓库 / 查询引擎：BigQuery / Snowflake / Trino</div>
+<p>给分析师写 SQL 查大表用的系统（data warehouse / query engine）。</p>
+<ul>
+<li><b>BigQuery、Snowflake</b>：云上托管的数仓，存储和计算都帮你管。</li>
+<li><b>Trino</b>：开源查询引擎，直接查 S3 上的 parquet / Iceberg 表，不搬数据。</li>
+<li>擅长：整表扫描、聚合、join。不擅长：毫秒级点查。</li>
+</ul>
+<p class="en">Warehouses and query engines run SQL over large tables for analysis; they're good at scans and aggregations, not millisecond lookups.</p></template>
+<template id="tm-btree"><div class="tmh">B 树索引</div>
+<p>数据库最常用的<b>索引结构</b>（B-tree index）：一棵很矮很胖的排序树，像书的目录，几次跳转就能找到任何一行。</p>
+<ul>
+<li>数据按 key 排好序存在一页一页里（每页几 KB）。</li>
+<li>key 递增插入：总是写最后一页，很快。</li>
+<li>key 随机插入：要找到中间某页插进去，页满了要拆成两页（<b>页分裂，page split</b>），慢，而且页都半空，占空间。这就是 UUID 当主键慢的原因。</li>
+</ul>
+<p class="en">A B-tree keeps keys sorted in pages so lookups take a few hops. Increasing keys append to the last page; random keys like UUIDs insert in the middle and cause page splits.</p></template>
+<template id="tm-hash"><div class="tmh">哈希（hash）</div>
+<p>把任意内容变成一个固定长度数字的函数（hash function）。同样的输入永远得到同样的数字；输入差一点，数字就完全不同。</p>
+<p><b>用处</b>：分区（hash(key) % N 决定去哪台机器）、去重（内容一样哈希就一样，你的指纹）、快速比较（比数字比比整段文字快）。</p>
+<p><b>撞号（collision）</b>：两个不同输入得到同一个数，64 位哈希概率极低。</p>
+<p class="en">A hash function maps any input to a fixed-size number deterministically; it's used to route keys to partitions, detect duplicates and compare content quickly.</p></template>
+<template id="tm-qps"><div class="tmh">QPS / 延迟 / 吞吐</div>
+<ul>
+<li><b>QPS（queries per second）</b>：每秒多少个请求。</li>
+<li><b>延迟（latency）</b>：一个请求从发出到拿到结果用多久。常看 p99：最慢的那 1% 有多慢。</li>
+<li><b>吞吐（throughput）</b>：单位时间处理多少数据，批处理更看这个。</li>
+</ul>
+<p>比方：高速收费站。QPS = 每秒过几辆车；延迟 = 一辆车排队加缴费用多久；吞吐 = 一小时总共过多少车。</p>
+<p class="en">QPS is requests per second, latency is how long one request takes, often measured at p99, and throughput is how much work gets done per unit of time.</p></template>
+<template id="tm-replica"><div class="tmh">复制：主从（leader–follower）</div>
+<p>同一份数据存在好几台机器上（replication）。</p>
+<ul>
+<li><b>主（leader）</b>：只有它能写。</li>
+<li><b>从（follower / replica）</b>：从主那里抄改动，可以分担读。</li>
+<li><b>复制延迟（replication lag）</b>：从库抄得慢一点，刚写完去从库读可能读到旧值。</li>
+<li><b>故障切换（failover）</b>：主挂了，选一个从升为主。</li>
+</ul>
+<p class="en">In leader-follower replication one node takes writes and followers copy them; reads can go to followers but may be slightly stale, and a follower is promoted if the leader fails.</p></template>
+<template id="tm-cachecore"><div class="tmh">缓存（cache）和 cache-aside</div>
+<p>缓存 = 把常用数据放在更快的地方（通常是内存，比如 Redis），省得每次去慢的数据库拿。</p>
+<p><b>cache-aside（旁路缓存）</b>，最常用的用法，三步：</p>
+<ol><li>读：先查缓存，有就直接返回（命中，hit）。</li><li>没有（未命中，miss）：去数据库查，查到后写进缓存再返回。</li><li>写数据库时：把缓存里的旧值删掉，下次读时重新加载。</li></ol>
+<p><b>TTL（time to live）</b>：每个缓存条目的存活时间，到点自动删除。</p>
+<p class="en">With cache-aside, the app reads the cache first, falls back to the database on a miss and fills the cache, and deletes the cached value when the data changes. Each entry has a TTL.</p></template>
+<template id="tm-lru"><div class="tmh">淘汰策略：LRU / LFU</div>
+<p>缓存满了要删一些，删谁？</p>
+<ul><li><b>LRU（least recently used）</b>：删最久没被访问的。像衣柜里一年没穿的衣服先扔。</li>
+<li><b>LFU（least frequently used）</b>：删访问次数最少的。</li></ul>
+<p>你的代码里 Python 的 <code>lru_cache</code> 就是 LRU：缓存 title_key 等函数的结果，满了扔最久没用的。</p>
+<p class="en">LRU evicts the entry unused for the longest time; LFU evicts the one used least often.</p></template>
+<template id="tm-snowflake"><div class="tmh">Snowflake ID</div>
+<p>Twitter 发明的<b>分布式唯一 ID</b>方案（不是 Snowflake 数据仓库那家公司）。</p>
+<p>64 位拆成几段：1 位符号 + 41 位毫秒时间戳 + 10 位机器号 + 12 位序号（同一毫秒内的第几个）。每台机器只用自己的机器号发号，互不冲突，不用中心协调；高位是时间所以大致按时间递增。</p>
+<p><b>你的项目</b>：同样「拆段各管各的」，但用 user_id + 每人序号，不放时间戳，因为要可复现。</p>
+<p class="en">A Snowflake id packs a timestamp, a machine id and a per-millisecond sequence into 64 bits, so every machine can issue unique, roughly time-ordered ids without coordination.</p></template>
+<template id="tm-uuid"><div class="tmh">UUID</div>
+<p>128 位的随机唯一号，例如 <code>550e8400-e29b-41d4-a716-446655440000</code>。谁都能自己生成、几乎不会撞。缺点：长一倍、随机无序（B 树插入慢）、不含时间信息。新版 UUID v7 前面带时间戳，变成有序。</p>
+<p class="en">A UUID is a 128-bit random identifier anyone can generate without coordination; it's large and unordered, which hurts index performance, unless you use time-ordered UUID v7.</p></template>
+<template id="tm-cap"><div class="tmh">CAP 定理</div>
+<p>分布式系统的一个定理：<b>C 一致性（consistency）</b>所有机器读到一样的值；<b>A 可用性（availability）</b>任何时候请求都有回应；<b>P 分区容忍（partition tolerance）</b>机器之间网络断了还能工作。网络一定会偶尔断，所以 P 必须要，实际是在断网那段时间选 C 还是 A。</p>
+<p>比方：两家分店电话线断了，要么停业等恢复（保 C），要么照常卖之后再对账（保 A）。</p>
+<p class="en">When the network splits, a distributed system has to choose between consistency and availability; partition tolerance isn't optional.</p></template>
+<template id="tm-idem"><div class="tmh">幂等（idempotent）</div>
+<p>同一个操作做一次和做十次，结果一样。比方：电梯按钮按一下和按十下都一样；但「账户加 100 元」不是幂等的，做两次就多加了。</p>
+<p><b>为什么重要</b>：分布式系统里网络超时了你不知道对方收没收到，只能重试；只有幂等的操作才能放心重试。</p>
+<p><b>怎么做到</b>：每个操作带唯一 id，处理过的记下来，再来就跳过；或者把「加 100」改成「设成 X」。</p>
+<p class="en">An idempotent operation has the same effect no matter how many times it runs, which is what makes retries safe.</p></template>
+<template id="tm-delivery"><div class="tmh">投递语义（delivery semantics）</div>
+<ul>
+<li><b>至多一次（at-most-once）</b>：发了就不管，可能丢，不会重。</li>
+<li><b>至少一次（at-least-once）</b>：没确认就重发，不会丢，可能重复。</li>
+<li><b>恰好一次（exactly-once）</b>：不丢不重，最贵。</li>
+</ul>
+<p>实际最常用：至少一次 + 消费端幂等 = 效果上的恰好一次。比方：快递没签收就再送一次，收件人看到重复的包裹编号就拒收第二个。</p>
+<p class="en">Most systems use at-least-once delivery with an idempotent consumer, which gives effectively-once results without the cost of true exactly-once.</p></template>
+<template id="tm-watermark"><div class="tmh">事件时间 / 处理时间 / 水位线</div>
+<ul>
+<li><b>事件时间（event time）</b>：事情真正发生的时间。你的 observed_ts（抓取日期）。</li>
+<li><b>处理时间（processing time）</b>：系统收到 / 处理它的时间。你的「数据到达那天」。</li>
+<li>两者之差就是迟到。</li>
+<li><b>水位线（watermark）</b>：系统宣布「X 时刻之前的事件应该都到齐了」，可以出结果了。水位线之后才到的旧事件 = 迟到数据，要么丢、要么回头更正已出的结果。</li>
+</ul>
+<p>比方：老师定周五 5 点收作业（水位线），5 点后交的要么不收，要么改完再补分。</p>
+<p class="en">Event time is when something happened, processing time is when the system sees it, and a watermark declares that everything before a given time has arrived; anything older after that is late.</p></template>
+<template id="tm-lambda"><div class="tmh">Lambda / Kappa 架构</div>
+<ul><li><b>Lambda</b>：两套系统并行，流处理给秒级的近似结果，批处理晚上算准确结果覆盖掉。缺点：同一套逻辑写两遍。</li>
+<li><b>Kappa</b>：只要流处理，要重算就从 Kafka 开头重放一遍。</li></ul>
+<p>你的情况：只要天级，一套批就够，两者都不需要。</p>
+<p class="en">Lambda runs a fast streaming path and a correct batch path side by side; Kappa keeps only streaming and replays the log to recompute.</p></template>
+<template id="tm-skew"><div class="tmh">数据倾斜（data skew）</div>
+<p>某个 key 的数据特别多，分到它的那台机器要干一整晚，别的机器早干完在等。比方：100 个老师改卷，一个老师分到 5000 张，其他人每人 50 张。</p>
+<p><b>办法</b>：加盐（salting）把大 key 拆成几份分给几台机器；两阶段聚合（先局部合并再全局合并）；大 key 单独处理。</p>
+<p>你的数据：每人平均 29 条、最多 166 条，没有倾斜。</p>
+<p class="en">Skew is when one key has far more data than others, so one worker becomes the bottleneck; salting or two-phase aggregation spreads it out.</p></template>
+<template id="tm-cgroup"><div class="tmh">cgroup</div>
+<p>Linux 用来<b>限制一组进程能用多少资源</b>的机制（control groups）。Docker 的 --cpus 4、--memory 16g 底层就是 cgroup。</p>
+<p>坑：程序里调 os.cpu_count() 看到的是整台机器的核数（比如 14），不是容器被限的 4 核，开 14 个进程就超了。要读 /sys/fs/cgroup/cpu.max 里的配额。</p>
+<p class="en">cgroups are how Linux limits a container's CPU and memory; os.cpu_count reports the host, so you read the cgroup quota to size the worker pool.</p></template>
+<template id="tm-docker"><div class="tmh">Docker</div>
+<p>把程序和它需要的所有依赖打包成一个<b>镜像</b>（image），在任何机器上都能一模一样地运行。运行起来的叫<b>容器</b>（container）。比方：搬家时把整个房间连家具一起装进集装箱，到哪都一样。</p>
+<p class="en">Docker packages an app and all its dependencies into an image that runs identically anywhere as a container.</p></template>
+<template id="tm-lb"><div class="tmh">负载均衡（load balancer）</div>
+<p>站在一群服务器前面，把进来的请求分给它们。比方：银行大堂经理把客户分到各个窗口。</p>
+<p>分法：轮询（round robin，挨个分）、最少连接（谁最闲给谁）、按哈希（同一用户总去同一台）。它自己也要有备份，否则它一挂全挂。</p>
+<p class="en">A load balancer spreads incoming requests across servers by round robin, least connections or hashing.</p></template>
+<template id="tm-ratelimit"><div class="tmh">限流：令牌桶（token bucket）</div>
+<p>一个桶，每秒匀速往里放 N 个令牌，桶最多装 M 个。每个请求要拿一个令牌才能通过，没令牌就拒绝或排队。效果：平均每秒最多 N 个，允许短时间突发 M 个。</p>
+<p>比方：游乐园每分钟放 10 张票，攒着的票最多 50 张。</p>
+<p class="en">A token bucket refills at a fixed rate up to a cap; each request takes a token, so it allows short bursts but limits the average rate.</p></template>
+<template id="tm-breaker"><div class="tmh">断路器（circuit breaker）/ 重试退避（retry with backoff）</div>
+<ul><li><b>重试退避</b>：失败了等 1 秒重试，再失败等 2 秒、4 秒……，越等越久，别把对方打死。</li>
+<li><b>断路器</b>：下游连续失败太多次，就先「断开」一段时间，直接返回失败不再调用，过一会儿试探一下恢复了再接上。比方：家里保险丝，短路了先跳闸，别把整栋楼烧了。</li></ul>
+<p class="en">Retries back off exponentially, and a circuit breaker stops calling a failing dependency for a while so it can recover.</p></template>
+<template id="tm-blocking"><div class="tmh">Blocking（候选生成）</div>
+<p>去重 / 实体消歧里的第一步：先用便宜的条件把「可能是同一个」的候选缩小，再对候选做贵的比较。</p>
+<p>为什么必须：N 条两两比是 N² 次。1000 万条就是 10<sup>14</sup> 次，算不完。按「同雇主」「同域名」分组后，每组只有几十条。</p>
+<p>你的项目：规则 2 找候选（同雇主 + 日期兼容）就是 blocking。</p>
+<p class="en">Blocking narrows comparisons to plausible candidates with a cheap key, so you avoid comparing every pair.</p></template>
+<template id="tm-bcubed"><div class="tmh">B-cubed（簇指标）</div>
+<p>评估「分组 / 聚类」好坏的指标。对每一条记录，看它所在的簇里：有多少比例真的和它是一组（精确率），它真正的组员有多少比例被分到了一起（召回）。所有记录取平均。</p>
+<p>和成对指标的区别：成对指标看每一对配没配对；B-cubed 按记录算，大簇里的错误不会被放大。</p>
+<p class="en">B-cubed scores each record by how much of its cluster truly belongs with it and how much of its true group it was clustered with, then averages.</p></template>
+<template id="tm-embedding"><div class="tmh">embedding / 向量最近邻</div>
+<p>用模型把一段文字变成一串数字（比如 384 个数），意思相近的文字数字也相近。「Software Engineer」和「软件工程师」的向量会很接近。</p>
+<p><b>最近邻（nearest neighbour）</b>：给一个新头衔的向量，在库里找最接近的那几个。<b>向量库</b>（vector database，如 FAISS）专门做这个，毫秒级。</p>
+<p class="en">An embedding turns text into a vector so similar meanings are close together; a vector index finds the nearest ones quickly.</p></template>
+<template id="tm-cdn"><div class="tmh">CDN</div>
+<p>内容分发网络（content delivery network）：把图片、视频这类静态文件复制到全世界很多节点，用户从最近的节点拿。比方：总部的书在各地都开分店。</p>
+<p class="en">A CDN caches static content at edge locations close to users.</p></template>
+<template id="tm-sqlnosql"><div class="tmh">SQL vs NoSQL</div>
+<ul><li><b>SQL（关系型数据库，PostgreSQL / MySQL）</b>：表结构固定、支持事务和 join、强一致。扩展主要靠一台更强的机器。</li>
+<li><b>NoSQL（DynamoDB / Cassandra / MongoDB）</b>：结构灵活、天生分布式、容易水平扩展（加机器），通常最终一致、不支持复杂 join。</li></ul>
+<p class="en">Relational databases give schemas, joins and transactions; NoSQL stores trade those for easy horizontal scaling.</p></template>
+<template id="tm-lock"><div class="tmh">分布式锁 / 租约（lease）</div>
+<p>多台机器同时想改同一份数据，用一把锁保证同一时刻只有一个人改。锁带<b>租约</b>（过期时间），持锁的机器挂了，锁到期自动释放，不会永远卡住。</p>
+<p class="en">A distributed lock lets only one worker modify something at a time, with a lease so a crashed holder doesn't block forever.</p></template>
+<template id="tm-lineage"><div class="tmh">血缘（lineage）</div>
+<p>记录每份数据「从哪来、经过哪些步骤」。比方：食品追溯码，扫一下知道哪个农场、哪个工厂。出了错能顺着找到是哪一步、哪份输入的问题，也知道改了上游会影响哪些下游。</p>
+<p class="en">Lineage records where each dataset came from and which steps produced it.</p></template>
+<template id="tm-contract"><div class="tmh">数据契约（data contract）</div>
+<p>上游和下游之间的「约定」：有哪些列、什么类型、什么含义、多久更新一次。上游要改必须提前通知。你的 conform「缺列直接报错」就是在执行契约：不符合就停，不悄悄出错数据。</p>
+<p class="en">A data contract fixes the schema and meaning a producer promises to consumers, and changes must be announced.</p></template>
+<template id="tm-scatter"><div class="tmh">scatter-gather</div>
+<p>把一个查询同时发给所有分区（scatter，撒出去），每个分区各自查，再把结果收回来合并（gather）。数据按 user_id 分区，却要按公司查时，只能这么做，分区越多越慢。</p>
+<p class="en">Scatter-gather sends a query to every partition and merges the answers, used when the query key isn't the partition key.</p></template>
+<template id="tm-acid"><div class="tmh">ACID</div>
+<p>事务的四个保证：<b>A 原子性（atomicity）</b>要么全成功要么全不算；<b>C 一致性（consistency）</b>不破坏规则；<b>I 隔离性（isolation）</b>并发的事务互不干扰；<b>D 持久性（durability）</b>提交了就不会丢。</p>
+<p class="en">ACID means a transaction is all-or-nothing, keeps the data valid, is isolated from concurrent ones, and survives crashes once committed.</p></template>
+<template id="tm-checkpoint"><div class="tmh">检查点（checkpoint）</div>
+<p>定期把当前的进度 / 状态存下来，挂了从最近的存档接着跑，不用从头。比方：游戏存档。你的 --state-out 就是每天一个检查点；bucket.py 里处理每个人前 deepcopy 一份状态，也是一个小检查点（出错回滚）。</p>
+<p class="en">A checkpoint saves progress so a job can resume from there instead of starting over.</p></template>
+<script>
+(function(){
+document.addEventListener('click',function(e){
+ var x=e.target.closest('.tmbox .x'); if(x){var b=x.closest('.tmbox'); var t=document.querySelector('.tm[data-open="'+b.dataset.id+'"]'); if(t){t.classList.remove('on');t.removeAttribute('data-open');} b.remove(); return;}
+ var t=e.target.closest('.tm'); if(!t) return;
+ if(t.dataset.open){var ob=document.getElementById(t.dataset.open); if(ob) ob.remove(); t.classList.remove('on'); t.removeAttribute('data-open'); return;}
+ var tp=document.getElementById('tm-'+t.dataset.k); if(!tp) return;
+ var host=t.closest('li,p,td,div.card')||t.parentNode;
+ var box=document.createElement('div'); box.className='tmbox'; box.id='tmb'+Math.random().toString(36).slice(2); box.dataset.id=box.id;
+ box.innerHTML='<button class="x">×</button>'+tp.innerHTML;
+ if(host.tagName==='TD'){host.appendChild(box);} else {host.insertAdjacentElement('afterend',box);}
+ t.dataset.open=box.id; t.classList.add('on');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('tm'))e.target.click();});
+})();
+</script>
+
 <aside id="toc"><div class="t">目录</div></aside>
 <button id="tocbtn" onclick="document.getElementById('toc').classList.toggle('open')">目录</button>
 <script>
