@@ -102,6 +102,17 @@ pre.d{font-family:Menlo,Consolas,"PingFang SC",monospace;font-size:13px;line-hei
 <li>高频的几千个：人工或规则直接映射，覆盖大部分流量。</li>
 <li>长尾：用文本向量找最近的标准职位，置信度低的交给大模型判断，再低的进人工审核。</li>
 <li>评估：分层抽样，按频次高低分层看准确率；大模型当评委时要用人工样本校准。</li>
+<li><b>人工校准具体怎么做</b>（你 take-home 里做过的，照实说）：
+<ol style="margin:4px 0;padding-left:20px">
+<li><b>人工先标一小批</b>：从判官要判的那批里抽 60 对，分层抽（每类 15 对），自己逐对标「同一个 / 不同 / 拿不准」。这 60 对就是「金标准」（gold labels）。</li>
+<li><b>让判官判同一批</b>：同样的 60 对、同样的提示词，看它和人工一致多少。你的结果：52/60 一致，kappa 0.66。</li>
+<li><b>算一致性要用 kappa，不用简单百分比</b>：如果 90% 的对本来就是「同一个」，判官闭眼全答「同一个」也有 90% 一致。kappa 把这种碰巧一致扣掉，0.6 以上算可靠，0.8 以上算很好。</li>
+<li><b>看分歧集中在哪</b>：你的 8 对分歧全在「同雇主同开始却分开」那一层。结论：判官在别的层可信，在这一层不可信，这一层的判官结果要打折或者多用人工。</li>
+<li><b>按分歧修提示词</b>：判官系统性判错的，改提示词里的定义（比如明确「升职算同一份工作」），再在金标准上重跑，看 kappa 有没有涨。</li>
+<li><b>两个判官互相对照</b>：Claude 和 GPT 用同一提示词判同一批，一致 kappa 0.66；两个都说对的更可信，两个不一致的那部分送人工。</li>
+<li><b>上线后持续</b>：每个月再标一小批新的，看判官有没有漂移。</li>
+</ol>
+<span class="en" style="font-size:15px">Calibration means hand-labelling a small stratified gold set, having the judge label the same pairs, and measuring agreement with kappa rather than raw accuracy so chance agreement is removed. Then I look at where disagreements cluster, trust the judge only on strata where it agrees with humans, fix the prompt where it's systematically wrong, and cross-check two judges, sending their disagreements to humans. In the take-home that was 60 pairs, 52 agreed, kappa 0.66, with every disagreement in one stratum.</span></li>
 <li>版本化：分类表更新时要能回算历史数据，不然时间序列会断。</li>
 </ol>
 <p class="en">Normalize first: case, punctuation, abbreviations and languages, which is what my title key and glossary did. Map the head of the distribution with rules and review, use embeddings to find the nearest standard title for the long tail, send low-confidence cases to an LLM, and the lowest to humans. Evaluate with stratified samples by frequency, calibrate the LLM judge against human labels, and version the taxonomy so history can be recomputed.</p>
