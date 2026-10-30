@@ -1,0 +1,268 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>系统设计速成</title>
+<style>
+:root{--bg:#fbfaf7;--ink:#1d1f24;--muted:#6b7280;--accent:#155e75;--card:#fff;--line:#e3e0d8;--zh:#7a4b12;--hl:#fff3c4;--code:#f3f1ec}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#16181c;--ink:#e9e7e2;--muted:#a3a9b5;--accent:#5cc3c3;--card:#1f2228;--line:#30343c;--zh:#e0b277;--hl:#4a4020;--code:#23262c;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.65 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif;padding:20px 16px 80px}
+main{max-width:880px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px}
+h2{font-size:23px;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:4px;margin:40px 0 10px;scroll-margin-top:12px}
+h3{font-size:18.5px;margin:18px 0 6px;scroll-margin-top:12px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:16px}
+ul{margin:4px 0 10px;padding-left:24px} li{margin:5px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:10px 0}
+.en{font-size:16.5px;margin:8px 0 2px} .zh{color:var(--zh);font-size:15px}
+.me{background:var(--hl);border-radius:6px;padding:6px 10px;font-size:15.5px;margin:8px 0}
+u{text-decoration:none;background:var(--hl);padding:0 2px;border-radius:3px}
+code{font-family:Menlo,monospace;font-size:14px;background:var(--code);padding:1px 4px;border-radius:4px}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0} td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+#toc{position:fixed;top:0;left:0;bottom:0;width:240px;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 12px 40px;font-size:14px;line-height:1.5;box-sizing:border-box;z-index:10}
+#toc .t{font-weight:700;color:var(--accent);margin-bottom:8px}
+#toc a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:5px}
+#toc a.h3{padding-left:18px;color:var(--muted);font-size:13px}
+#toc a:hover,#toc a.on{background:var(--hl)}
+#tocbtn{display:none;position:fixed;right:14px;bottom:18px;z-index:11;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:10px 16px;font-size:15px}
+@media (min-width:1000px){body{padding-left:260px}}
+@media (max-width:999px){#toc{display:none;width:82%}#toc.open{display:block}#tocbtn{display:block}}
+@media print{#toc,#tocbtn{display:none!important}body{padding-left:16px}h2{break-before:page}h2:first-of-type{break-before:auto}.card{break-inside:avoid}}
+</style></head><body><main>
+<h1>系统设计速成 · 替代 Alex Xu，一晚上能看完</h1>
+<div class="sub">给 11–12 点 Kyle 那一小时（写代码 + 系统设计）。每个概念：先比方，再要点，再一个数字，最后一句英文。黄底「你的项目里」= 答题时拿来当例子的东西。不重复代码对照页和补充手册已有的内容。</div>
+
+<h2 id="s0">0 · 系统设计题怎么答（4 步，30 分钟分法）</h2>
+<div class="card">
+<ul>
+<li><b>第 1 步 · 问清楚要求（3–5 分钟）</b>：功能要什么、不要什么；规模多大（用户数、每天多少数据、读多写多）；延迟要求（秒级还是天级）；一致性要求（能不能晚一点看到）。<u>先问再画，别一上来就画框</u>。</li>
+<li><b>第 2 步 · 估算（3 分钟）</b>：QPS、存储、带宽，算到数量级就行（见第 1 节）。</li>
+<li><b>第 3 步 · 画高层图（10 分钟）</b>：数据从哪来 → 经过什么 → 存哪 → 谁来读。每个框一句话说为什么要它。</li>
+<li><b>第 4 步 · 深挖 1–2 个点（10 分钟）</b>：他最关心的那个瓶颈。说清取舍：选了 A 放弃了 B，因为 C。</li>
+<li>最后 2 分钟：瓶颈在哪、怎么扩、怎么监控、下一步。</li>
+</ul>
+<p class="en">Before I draw anything, can I check a few things: what's the daily volume, how fresh does the result need to be, and who reads it? Then I'll estimate the numbers, sketch the pipeline, and go deep on the part you care most about.</p>
+<p class="zh">开口模板。他们是数据公司，题目八成是「数据流水线」而不是「设计 Twitter」。</p>
+</div>
+
+<h2 id="s1">1 · 估算（back-of-envelope）</h2>
+<div class="card">
+<p>比方：装修前先量房间，不用精确到毫米，知道是 50 平还是 500 平就够。</p>
+<div class="tbl"><table>
+<tr><th>记住这几个数</th><th>用法</th></tr>
+<tr><td>1 天 ≈ 86,400 秒 ≈ <b>10 万秒</b></td><td>每天 1 亿请求 ÷ 10 万秒 ≈ 1,000 QPS</td></tr>
+<tr><td>1 KB × 10 亿 = 1 TB</td><td>每行 1 KB、10 亿行 = 1 TB</td></tr>
+<tr><td>一台机器：内存 64–256 GB，SSD 几 TB，网卡 1–10 Gbps</td><td>超过就要分机器</td></tr>
+<tr><td>内存读 100 ns、SSD 读 100 µs、跨机房网络 100 ms</td><td>每差 1000 倍；能放内存就别读盘</td></tr>
+<tr><td>一个 CPU 核每秒处理简单行：几万到几十万</td><td>你实测 Polars 3.5 万行/核秒（含模糊匹配）</td></tr>
+</table></div>
+<p class="me">你的项目里：1000 亿行 × 约 500 字节 ≈ 50 TB 输入；3.5 万行/核秒 → 1000 亿 ÷ 3.5 万 ≈ 286 万核秒 ≈ 800 核时；64 核约 12 小时。输出约 1.08 倍输入。</p>
+<p class="en">At roughly 500 bytes a row, 100 billion rows is about 50 terabytes. At 35 thousand rows per core-second that's about 800 core-hours, so 12 hours on 64 cores or a bit over an hour on 640.</p>
+</div>
+
+<h2 id="s2">2 · 分区 / 分片 + 一致性哈希</h2>
+<div class="card">
+<p>比方：一个图书馆放不下，按书名首字母分到 26 个馆。分区就是「按什么键把数据切开放到不同机器」。</p>
+<ul>
+<li><b>按键取模</b>（你的 user_id % 64）：简单、均匀。<u>缺点</u>：桶数一变，几乎所有数据都要搬家（100 % 64 = 36，100 % 65 = 35）。</li>
+<li><b>按范围</b>（user_id 1–100 万一台）：范围查询方便，但容易热点（新用户都挤在最后一台）。</li>
+<li><b>一致性哈希</b>：把哈希值想成一个钟面，机器和数据都落在钟面上，数据归顺时针最近的机器。加一台机器只搬它前面那一小段，约 1/N 的数据。<b>虚拟节点</b>：每台机器在钟面上放 100–200 个点，分得更均匀，机器性能不同还能放不同数量的点。</li>
+<li><b>热点键</b>：某个 key 流量特别大（名人）。办法：key 后面加随机后缀拆开，或单独给它一台。</li>
+<li><b>二级索引</b>：按 user_id 分区后，想按公司查就得问所有分区（scatter-gather），或者另建一份按公司分区的索引。</li>
+</ul>
+<p class="me">你的项目里：取模是对的，因为状态按桶存、同一个人必须回到同一桶，而且桶数你自己定、_meta.json 守着。被问「桶数要变怎么办」：用 history 全量重跑一次换桶数；生产上要平滑扩容就上一致性哈希或者表格式自带的分区。Spark 版 4096 分区；按 user_id 分区让 join 状态表时同一个人在同一台机器上，不用网络搬数据。</p>
+<p class="en">I partition by user_id mod 64 because state is stored per bucket and the same user must land in the same bucket next time. Modulo doesn't rebalance gracefully, so for elastic scaling I'd use consistent hashing with virtual nodes, or let the table format own the partitioning.</p>
+</div>
+
+<h2 id="s3">3 · 复制与一致性</h2>
+<div class="card">
+<p>比方：一份账本抄三份放三个地方，一处烧了别处还在。复制 = 同一份数据存多份。</p>
+<ul>
+<li><b>主从（leader–follower）</b>：写只去主，从库跟着抄；读可以分给从库。抄有延迟 → 刚写完去从库读可能读不到（<b>复制延迟</b>）。</li>
+<li><b>强一致</b>：写完所有人立刻看到同样的值。<b>最终一致</b>：一会儿之后大家才一样。数据流水线的输出通常接受最终一致（按天/按小时更新）。</li>
+<li><b>CAP 一句话</b>：网络断了（P 一定会发生）的时候，只能二选一：要么拒绝服务保证一致（C），要么继续服务但可能读到旧值（A）。</li>
+<li><b>多副本写冲突</b>：两边同时改同一条 → 要定规则：最后写入赢（丢数据）、或者按版本号合并。</li>
+</ul>
+<p class="me">你的项目里：输出 parquet 放对象存储（S3 自带多副本），不用自己管复制；每天一版、最终一致。状态表用 Iceberg 的事务提交，读的人永远看到完整的一版，不会读到写一半。</p>
+<p class="en">For a daily batch output, eventual consistency is fine: readers see yesterday's complete version until today's commit lands atomically. I'd keep the data in object storage, which already replicates, and use a table format for atomic commits.</p>
+</div>
+
+<h2 id="s4">4 · 唯一 ID（Snowflake）</h2>
+<div class="card">
+<p>比方：车牌 = 省份 + 城市 + 序号，各段各管各的，不用全国排队领号。</p>
+<ul>
+<li><b>Snowflake</b>：64 位 = 1 位符号 + 41 位时间戳（毫秒）+ 10 位机器号 + 12 位每毫秒序号。每台机器自己发号，不用中心协调；按时间大致有序。</li>
+<li><b>为什么不用自增</b>：要一个中心数据库发号，成了瓶颈和单点。<b>为什么不用 UUID</b>：128 位太长、无序、索引不友好。</li>
+<li><b>时钟回拨</b>是 Snowflake 的经典坑：机器时间往回跳会发重号，要等时间追上来再发。</li>
+</ul>
+<p class="me">你的项目里：user_id &lt;&lt; 16 | 每人序号。同样是「拆段、各管各的」，但不用时间戳，因为要<b>可复现</b>：同样输入每次必须发出同样的 id。user_id 最大 32 位 + 16 位序号 = 48 位，64 位放得下；每人上限 65,536，超了报错进隔离，不静默撞号；id 可以因规则 6 合并而退役，退役后永不复用。</p>
+<p class="en">Ids are user_id shifted left 16 bits plus a per-user sequence. It's the Snowflake idea, split the bits and let each part be issued independently, but without a timestamp, because the ids must be reproducible from the input.</p>
+</div>
+
+<h2 id="s5">5 · 缓存</h2>
+<div class="card">
+<p>比方：常用的调料放灶台边，不每次去储藏室拿。</p>
+<ul>
+<li><b>cache-aside</b>（最常用）：先查缓存，没有就查库，查到后写进缓存。写数据时删掉缓存里的旧值。</li>
+<li><b>TTL</b>：缓存多久过期。短 = 新鲜但命中低；长 = 命中高但可能旧。</li>
+<li><b>淘汰策略</b>：满了删谁。LRU 删最久没用的；LFU 删用得最少的。</li>
+<li><b>三个坑</b>：<b>穿透</b>（查不存在的 key，每次打到库 → 缓存空值）；<b>雪崩</b>（大量 key 同时过期 → TTL 加随机抖动）；<b>击穿</b>（一个热 key 过期瞬间大量请求 → 加锁只让一个去查）。</li>
+<li><b>命中率</b>：命中次数 ÷ 总次数；80% 命中就把库的压力降到 1/5。</li>
+</ul>
+<p class="me">你的项目里：lru_cache 缓存 title_key / sim_key / desc_tokens 的结果（同一个头衔反复出现）；TikTok 那段的在线特征链路用过 20 分钟 TTL + 哈希降级，可以拿来当缓存设计的例子。</p>
+<p class="en">I'd put a read cache in front of the serving store with cache-aside and a TTL, add jitter to the TTL so keys don't all expire together, and cache negative results so missing keys don't hammer the database.</p>
+</div>
+
+<h2 id="s6">6 · 消息队列（Kafka）</h2>
+<div class="card">
+<p>比方：快递站的传送带。寄件人放上去就走，分拣员按自己的速度拿，带子上的包裹还能倒回去重看。</p>
+<ul>
+<li><b>三个用处</b>：<b>解耦</b>（生产方和消费方不用同时在线）、<b>削峰</b>（高峰先排队）、<b>可重放</b>（消费方挂了从上次的位置接着读）。</li>
+<li><b>Topic / 分区 / offset</b>：一个 topic 切成多个分区；<u>同一个分区内有序</u>，跨分区无序；每个消费者记自己读到的位置（offset）。按 key（比如 user_id）分区，同一个人的消息就在同一分区、按顺序到。</li>
+<li><b>投递语义</b>：至多一次（可能丢）、至少一次（可能重）、恰好一次（贵）。常用做法：<u>至少一次 + 消费端幂等</u>。</li>
+<li><b>消费者组</b>：一组消费者分摊一个 topic 的分区，加消费者就加吞吐，但消费者数不能超过分区数。</li>
+<li><b>积压（lag）</b>：生产比消费快，offset 落后越来越多，是最重要的监控指标。</li>
+</ul>
+<p class="me">你的项目里：每天的新观测可以从 Kafka 进来，按 user_id 分区，这样迟到数据和正常数据在同一个人的分区里；消费端用你的 step 函数，它本来就是幂等可重放的（同样的输入同样的输出）。</p>
+<p class="en">New observations would arrive on a Kafka topic partitioned by user_id, so one person's events stay ordered. Delivery is at-least-once and the consumer is idempotent, because step is deterministic, so a redelivered message can't produce a different result.</p>
+</div>
+
+<h2 id="s7">7 · 批处理 vs 流处理，迟到数据</h2>
+<div class="card">
+<p>比方：批处理是每天晚上结一次账；流处理是每笔交易当场记。</p>
+<ul>
+<li><b>批</b>（Spark、MapReduce）：吞吐大、简单、延迟小时到天。<b>流</b>（Flink、Kafka Streams）：秒级延迟，但要处理乱序、迟到、状态管理，运维重。</li>
+<li><b>事件时间 vs 处理时间</b>：事情发生的时间 vs 系统看到的时间。两者差 = 迟到。<b>水位线（watermark）</b>：系统宣布「X 时刻之前的事件应该都到了」，之后再来的算迟到，要单独处理（丢、或者回头更正）。</li>
+<li><b>Lambda 架构</b>：批 + 流两套，流给实时近似，批晚上修正。<b>Kappa 架构</b>：只用流，要重算就从队列头重放。</li>
+<li><b>MapReduce 核心</b>：map 按 key 打散 → shuffle 把同 key 聚到一台 → reduce 处理。贵的是 shuffle（网络搬数据）。</li>
+<li><b>数据倾斜</b>：某个 key 的数据特别多，一台机器干到天亮别的都闲着。办法：热 key 加盐拆开、两阶段聚合、或者单独处理大 key。</li>
+</ul>
+<p class="me">你的项目里：选批，因为题目只要每天更新，流的复杂度用不上。observed_ts 是事件时间、到达日期是处理时间，迟到 = 两者不一致，你的处理是「只重放那一个人」，相当于迟到数据的回头更正。Spark 的 repartition by user_id 就是 shuffle；人均 29 条、最多 166 条，没有倾斜；真有超级用户就单独处理。</p>
+<p class="en">The brief needs daily freshness, so batch is the right tool; streaming would add ordering and state complexity for no gain. observed_ts is event time, arrival is processing time, and late data is handled by replaying just that person, which is the batch version of a watermark correction.</p>
+</div>
+
+<h2 id="s8">8 · 幂等、恰好一次、确定性重算</h2>
+<div class="card">
+<p>比方：电梯按钮按十次和按一次一样。幂等 = 同一个操作做多次，结果和做一次一样。</p>
+<ul>
+<li><b>为什么重要</b>：分布式里重试不可避免（网络超时不知道成没成功），只有幂等才能放心重试。</li>
+<li><b>怎么做到</b>：操作带唯一 id，做过就跳过（去重表）；或者操作本身是「设置成 X」而不是「加 1」。</li>
+<li><b>恰好一次</b>通常 = 至少一次 + 幂等，或者事务性写入（输出和 offset 一起提交）。</li>
+<li><b>确定性</b>：同样输入同样输出，没有随机、没有依赖时间或机器。有了确定性，<u>重跑就是最简单的修复手段</u>。</li>
+</ul>
+<p class="me">你的项目里：id 从 user_id 和首次出现顺序算出来，没有全局计数器 → 确定性；测试「跑两次结果一样」「全量 = 半量 + 增量」就是幂等和确定性的证明；输出文件先写临时再改名（原子写），跑一半挂了不会留半个文件；迟到数据直接重放，因为重放是安全的。</p>
+<p class="en">The pipeline is deterministic: same input, same ids, same output, with no global counter and no randomness. That's what makes retries and replays safe, and it's covered by tests: run twice equals once, and full equals half plus incremental.</p>
+</div>
+
+<h2 id="s9">9 · 存储：对象存储、列式文件、数据湖表格式</h2>
+<div class="card">
+<p>比方：S3 是无限大的仓库，parquet 是按列装箱的货物，Iceberg 是仓库的账本（哪些箱子算当前这一版）。</p>
+<ul>
+<li><b>对象存储（S3）</b>：便宜、无限、自带多副本；但没有「追加」和「改一行」，只能整文件写。延迟高（几十毫秒），适合批不适合点查。</li>
+<li><b>列式（parquet）</b>：同一列存在一起。好处：只读需要的列（你 conform 只读 10 列）；同列压缩率高；带统计信息（每块的最大最小值）能跳过整块（<b>谓词下推</b>）。坏处：改一行要重写文件。</li>
+<li><b>行式</b>（数据库表）：一行存一起，点查快、改一行快。</li>
+<li><b>表格式（Iceberg / Delta / Hudi）</b>：在一堆 parquet 文件上加一层元数据，提供：<b>ACID 提交</b>（一次写入要么全可见要么全不可见）、<b>快照 / 时间旅行</b>（回到任何一版）、<b>MERGE</b>（按键更新）、<b>分区裁剪</b>（按分区只读需要的文件）、<b>schema 演进</b>（加列不重写）、<b>小文件合并</b>。</li>
+<li><b>小文件问题</b>：几百万个 1 MB 文件比几千个 1 GB 文件慢得多（打开文件有固定开销）。目标每个文件 128 MB–1 GB。</li>
+</ul>
+<p class="me">你的项目里：输出 parquet、每桶一个文件（64 个），大小合适；状态现在是 parquet 每天整份重写，生产应放 Iceberg 按 user_id 分区、MERGE 只更新动过的人、一次运行一次提交、旧版本留着回退；history 只追加。桶太多 = 小文件问题，所以桶数不是越多越好。</p>
+<p class="en">Output goes to parquet on object storage, one file per bucket. For state I'd use Iceberg partitioned by user_id: merge only touched users, one atomic commit per run, and snapshots so a bad run rolls back. Parquet's column pruning and min-max statistics are why reading only ten columns is cheap.</p>
+</div>
+
+<h2 id="s10">10 · 实体消歧 / 去重系统（record linkage）</h2>
+<div class="card">
+<p>比方：两本通讯录合并，「张伟 13800」和「Zhang Wei 138-00」是不是同一个人。</p>
+<ul>
+<li><b>三步</b>：<b>Blocking</b>（先用便宜的键把候选缩小，比如同雇主）→ <b>成对比较</b>（打分：相似度 + 规则或模型）→ <b>聚类 / 传递闭包</b>（A=B、B=C → A=C，合成一簇）。</li>
+<li><b>Blocking 为什么必须</b>：N 条两两比是 N²；1000 亿行不可能。按 user_id 和雇主分块后，每人只有几十条。</li>
+<li><b>规则 vs 模型</b>：规则可解释、可复现、快；模型（逻辑回归 / 梯度提升 / embedding）召回高但要标注、要可复现地部署。常见做法：规则做主、模型只用在规则拿不准的那层。</li>
+<li><b>评估</b>：成对指标（配对的精确率 / 召回）vs 簇指标（B-cubed）；没有标准答案时抽样 + 判官 + 人工 + 无标注健康度。</li>
+<li><b>传递性的坑</b>：A 像 B、B 像 C，但 A 和 C 一点不像，链式合并会把不相关的合成一团。要么限制簇大小，要么要求和簇里多数相似。</li>
+</ul>
+<p class="me">你的项目里：规则 2 就是 blocking（同雇主 + 日期兼容才算候选）；规则 4–5 是成对比较；规则 6 是把已发出的 id 做传递合并，但只在被动过的职位上做、且要同开始日期，避免链式乱合。学习打分器试过、没上线，下一步只用在弱点层。</p>
+<p class="en">It's a standard record-linkage shape: blocking by employer and date to keep candidates small, pairwise scoring with rules, then a constrained merge of duplicate ids. Rules first because they're reproducible and explainable; a learned scorer only where the rules are unsure.</p>
+</div>
+
+<h2 id="s11">11 · 数据质量监控与可观测性</h2>
+<div class="card">
+<p>比方：工厂流水线上的质检员，不等客户投诉才发现次品。</p>
+<ul>
+<li><b>三类指标</b>：<b>量</b>（行数、人数、文件数，和昨天比差多少）、<b>质</b>（空值率、重复率、日期倒序数、覆盖率）、<b>时效</b>（数据几点到、跑了多久）。</li>
+<li><b>告警规则</b>：和历史同期比，偏离 3 个标准差或者某个百分比就报警；绝不能为 0 的指标（主键重复、倒序日期）直接硬断言。</li>
+<li><b>数据契约（data contract）</b>：上游保证 schema 和含义不变，变了要通知；你的 conform 「缺列直接报错」就是契约的硬执行。</li>
+<li><b>金丝雀 / 回归测试</b>：固定一小份输入，每次跑完对比输出是否变化。</li>
+<li><b>隔离而不是整体失败</b>：坏的一小部分进隔离区，其余照常出，事后看隔离区。</li>
+<li><b>血缘（lineage）</b>：这列数据从哪来、经过哪些步骤，出了问题能追。</li>
+</ul>
+<p class="me">你的项目里：run.json 里的指标（输入行、输出行、丢弃行按规则、修复格数、合并数、重放人数、隔离人数）就是质量看板；覆盖率 99.94%、倒序日期 0、可疑拆分 3.7 万是无标注健康度；quarantine 目录是隔离区；51 个测试里的金丝雀。被问「上线后怎么知道结果还好」：每天看这几个数的走势，突变就查。</p>
+<p class="en">Every run emits metrics: rows in and out, drops per rule, repairs, merges, replays, quarantined users. I'd chart those daily and alert on deviations, hard-fail on anything that must be zero like duplicate keys or inverted dates, and keep the quarantine folder so one bad user never blocks the run.</p>
+</div>
+
+<h2 id="s12">12 · 服务层：把结果给下游用</h2>
+<div class="card">
+<p>比方：仓库里的货要上货架，顾客才拿得到。批处理的结果要有人能查。</p>
+<ul>
+<li><b>两种读法</b>：<b>分析查询</b>（整表扫描、聚合）→ 直接读 parquet / 数据仓库（BigQuery、Snowflake、Trino）；<b>点查</b>（给我这个人的履历）→ 要 KV 存储（DynamoDB、Cassandra、Redis），按 user_id 做键，毫秒级。</li>
+<li><b>批到线上的搬运</b>：每天跑完把结果批量写进 KV（bulk load），或者只写动过的人。</li>
+<li><b>API 设计</b>：GET /users/{id}/positions?asof=2026-10-01；分页；版本号；限流。</li>
+<li><b>Cassandra / DynamoDB 一句话</b>：按分区键哈希分片、多副本、最终一致、写快读快，不擅长复杂查询和 join。</li>
+<li><b>读写分离</b>：批处理写一份，线上读另一份，互不影响。</li>
+</ul>
+<p class="me">你的项目里：下游要查「某人截至某天的履历」→ 按 (user_id, asof_ts) 做键放 KV；每天只有动过的人要更新，正好和增量输出对上；restated 名单告诉下游哪些人的历史行要整体替换。</p>
+<p class="en">For point lookups I'd load the daily output into a key-value store keyed by user and as-of date, updating only the users touched that day, and the restated list tells the loader which users need their history replaced.</p>
+</div>
+
+<h2 id="s13">13 · 其他常被问的一页</h2>
+<div class="card">
+<ul>
+<li><b>负载均衡</b>：把请求分给多台机器（轮询 / 最少连接 / 按哈希）；本身要双活防单点。</li>
+<li><b>限流</b>：令牌桶（匀速放令牌，有令牌才能过，允许短突发）；滑动窗口计数。</li>
+<li><b>CDN</b>：静态内容放到离用户近的节点。</li>
+<li><b>数据库索引</b>：B 树，像书的目录；加速读、拖慢写；查什么就按什么建。</li>
+<li><b>SQL vs NoSQL</b>：要事务和复杂查询用 SQL；要水平扩展、简单键值、灵活 schema 用 NoSQL。</li>
+<li><b>分布式锁 / 单写者</b>：同一时刻只允许一个人改，租约 + 过期防止持锁者挂掉。</li>
+<li><b>隐私</b>：被遗忘权 → 删除名单在输出时过滤；日志不打描述原文。</li>
+<li><b>容错</b>：重试 + 退避 + 幂等；超时；断路器（下游挂了就先别打）；单桶重试而不是整体重跑。</li>
+</ul>
+</div>
+
+<h2 id="s14">14 · 你的项目 ↔ 概念 速查</h2>
+<div class="card"><div class="tbl"><table>
+<tr><th>你做了的</th><th>概念名（答题时点名）</th></tr>
+<tr><td>user_id % 64 分桶、同人同桶</td><td>按键分区 / 分片；取模扩容要搬家 → 一致性哈希</td></tr>
+<tr><td>每人状态机、按日期一次一个快照</td><td>有状态处理、事件时间、不用未来信息</td></tr>
+<tr><td>指纹跳过 57.5%</td><td>内容哈希去重</td></tr>
+<tr><td>user_id &lt;&lt; 16 | 序号</td><td>Snowflake 式分段 ID、可复现</td></tr>
+<tr><td>规则 2 找候选 → 规则 5 打分 → 规则 6 折叠</td><td>Blocking → 成对比较 → 受限的传递合并（record linkage）</td></tr>
+<tr><td>state-in / state-out、只处理有新数据的人</td><td>增量计算、检查点</td></tr>
+<tr><td>迟到数据只重放一个人</td><td>事件时间 vs 处理时间、水位线后的更正</td></tr>
+<tr><td>全量 = 半量 + 增量、跑两次一样</td><td>幂等、确定性</td></tr>
+<tr><td>一个人出错回滚进隔离</td><td>故障隔离、部分失败不阻塞</td></tr>
+<tr><td>先写临时文件再改名</td><td>原子写</td></tr>
+<tr><td>cgroup CPU 配额、每进程 1 线程</td><td>容器资源感知、避免线程超订</td></tr>
+<tr><td>Spark mapInArrow 跑同一函数</td><td>MapReduce / shuffle by key、Arrow 零拷贝</td></tr>
+<tr><td>状态放 Iceberg 按 user_id 分区</td><td>数据湖表格式：ACID、MERGE、分区裁剪、时间旅行</td></tr>
+<tr><td>run.json 指标、覆盖率、倒序日期 0</td><td>数据质量监控、无标注健康度</td></tr>
+<tr><td>判官 + 人工 + 回归测试</td><td>离线评估、金丝雀</td></tr>
+</table></div></div>
+
+<h2 id="s15">15 · 英文口述版 · 一句话库</h2>
+<div class="card">
+<ul>
+<li>Partitioning: "I'd partition by user_id so all of one person's data lands on one worker; nothing is shared across people, so it scales linearly."</li>
+<li>Consistency: "It's a daily batch, so eventual consistency is fine as long as each day's output is published atomically."</li>
+<li>Queue: "A Kafka topic partitioned by user_id keeps one person's events in order; the consumer is idempotent so at-least-once delivery is safe."</li>
+<li>Batch vs stream: "The freshness requirement is daily, so batch wins; streaming would add ordering and state complexity with no benefit."</li>
+<li>Late data: "observed_ts is event time; when something arrives late I replay only that user, which is cheap and verifiable."</li>
+<li>Storage: "Parquet on object storage for the output; Iceberg for the state so I can merge only touched users and roll back a bad run."</li>
+<li>Monitoring: "Each run emits counts per rule; I'd alert on deviations and hard-fail on anything that must be zero."</li>
+<li>Trade-off line: "I chose X over Y because of Z; the cost is W, and here's how I'd notice if W becomes a problem."</li>
+</ul>
+</div>
+</main>
+<aside id="toc"><div class="t">目录</div></aside>
+<button id="tocbtn" onclick="document.getElementById('toc').classList.toggle('open')">目录</button>
+<script>
+(function(){var toc=document.getElementById('toc');
+document.querySelectorAll('main h2, main h3').forEach(function(h){var a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent;if(h.tagName==='H3')a.className='h3';a.onclick=function(){if(window.innerWidth<1000)toc.classList.remove('open');};toc.appendChild(a);});
+var links=[].slice.call(toc.querySelectorAll('a'));
+addEventListener('scroll',function(){var cur=null;document.querySelectorAll('main h2, main h3').forEach(function(h){if(h.getBoundingClientRect().top<120)cur=h.id;});links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+cur);});},{passive:true});
+})();
+</script>
+</body></html>
