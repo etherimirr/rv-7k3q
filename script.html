@@ -1,0 +1,247 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revelio 演讲稿</title>
+<style>
+:root{--bg:#fbfaf7;--ink:#1d1f24;--muted:#6b7280;--accent:#155e75;--card:#fff;--line:#e3e0d8;--zh:#7a4b12;--hl:#fff3c4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#16181c;--ink:#e9e7e2;--muted:#a3a9b5;--accent:#5cc3c3;--card:#1f2228;--line:#30343c;--zh:#e0b277;--hl:#4a4020;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.6 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif;padding:20px 16px 80px}
+main{max-width:860px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px}
+h2{font-size:23px;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:4px;margin:40px 0 10px;scroll-margin-top:12px}
+h3{font-size:19px;margin:20px 0 6px;scroll-margin-top:12px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:16px}
+ul{margin:4px 0 10px;padding-left:24px}
+li{margin:6px 0}
+.zh{color:var(--zh);font-size:15px}
+u{text-decoration:none;background:var(--hl);padding:0 2px;border-radius:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:10px 0}
+.q{color:var(--muted);font-size:15px;margin-top:8px}
+#toc{position:fixed;top:0;left:0;bottom:0;width:230px;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 12px 40px;font-size:14px;line-height:1.5;box-sizing:border-box;z-index:10}
+#toc .t{font-weight:700;color:var(--accent);margin-bottom:8px}
+#toc a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:5px}
+#toc a.h3{padding-left:18px;color:var(--muted);font-size:13px}
+#toc a:hover,#toc a.on{background:var(--hl)}
+#tocbtn{display:none;position:fixed;right:14px;bottom:18px;z-index:11;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:10px 16px;font-size:15px}
+@media (min-width:1000px){body{padding-left:250px}}
+@media (max-width:999px){#toc{display:none;width:82%}#toc.open{display:block}#tocbtn{display:block}}
+@media print{#toc,#tocbtn{display:none!important}body{padding-left:16px}}
+</style></head><body><main>
+<h1>Revelio · 10/30 9:00 · Patrick 作业讲解 · 演讲稿</h1>
+<div class="sub">每一节对应一页 Slides。黑字是你要说的话（英文，bullet），棕字是中文提示和被追问时的补充。带 <u>高亮</u> 的是重点句。</div>
+
+<h2 id="s0">Slide 0 · 开场</h2>
+<div class="card"><ul>
+<li>Thanks for having me. I put the main diagrams in a short deck so it's easier to follow. I'll walk through it on screen and drop the link in the chat so you can keep it.</li>
+<li>Plan for the hour: the overall design first, then what the data told me, then the matching rules, then scale, daily updates, and how I evaluated it. Please stop me anytime.</li>
+</ul><p class="zh">先说流程，让他知道你有主线。他打断就停在那一页答，别跳去翻代码。</p></div>
+
+<h2 id="s1">Slide 1 · The problem</h2>
+<div class="card"><ul>
+<li>The input is 11.5 million rows of job-profile scrapes for about 150 thousand people. Each person is scraped many times, and each scrape is a partial, sometimes edited copy of the profile.</li>
+<li>The output is, for every person and every scrape date, the most complete work history we know on that date, with one stable id per position.</li>
+<li><u>The constraint is no future information</u>, including the ids: what I output for January can only use what was scraped up to January.</li>
+<li>Two cases the brief named: Case A, a scrape misses a job that was there before, so I carry it forward. Case B, the person edits a job, say the title changes, and it has to keep the same id.</li>
+</ul><p class="zh">题目一句话：每人每天最完整履历 + 稳定 id + 不用未来信息。</p></div>
+
+<h2 id="s2">Slide 2 · One state machine per person</h2>
+<div class="card"><ul>
+<li><u>The core idea is one state machine per person.</u> I sort a person's snapshots by date and feed them one at a time into a function called step.</li>
+<li>step only sees the current snapshot and the state built from earlier ones. So it cannot use future information, not because I'm careful, but <u>by construction</u>. There's also a test that plants a 2030 snapshot and checks it never shows up earlier.</li>
+<li>57.5 percent of snapshots are identical to the previous one. I hash the rows into a fingerprint, and if it equals the last one I skip matching and just re-emit the positions with the new date.</li>
+<li>The fingerprint is a blake2b hash of the row contents, sorted first so that a reordered profile still hashes the same, and it's deterministic across processes so it can be saved in state. If two different snapshots ever collided, the only effect would be treating one as unchanged until the next change.</li>
+<li>Ids are user_id shifted left 16 bits plus a per-user sequence number. That's reproducible from the input, needs no global counter, and different users can never collide.</li>
+</ul>
+<p class="zh">被问「指纹怎么算」：7 个字段 repr 成字符串、排序、blake2b 哈希成 64 位；排序是因为快照是集合，行序变了不算变；不用 Python 的 hash() 是因为它每个进程加随机盐，存进状态第二天读回来会对不上。</p>
+<p class="zh">被问「为什么 65536」：数据里 user_id 最大 32 位，加 16 位共 48 位，64 位整数放得下；每人最多 166 个职位，99 分位 29，超了报错进隔离，绝不静默撞号。借鉴 Snowflake：把 64 位拆成几段、各管各的。</p></div>
+
+<h2 id="s3">Slide 3 · Pipeline</h2>
+<div class="card"><ul>
+<li>Reading from the top: conform renames company_website to company_linkedin_url, since the brief and the sample data disagree, fails fast if any of the ten columns is missing, casts types with bad values becoming null, and truncates text to 4,000 characters.</li>
+<li>Then I partition by user_id mod 64, one input file at a time, so a person's rows from different files end up in the same bucket.</li>
+<li>Each bucket is cleaned, seven row-level rules, and garbled text is repaired losslessly, about 16 thousand cells.</li>
+<li>Then the state machine runs per person, per snapshot in date order, and writes one output parquet per bucket.</li>
+<li>With state-out, each bucket also saves its state, which is what makes daily runs possible. One person's error is quarantined and that person rolled back; nobody else is affected.</li>
+<li>Concretely, <u>state-out</u> writes three parquet files per bucket: positions, every person's current positions with their alias sets; users, a small ledger per person with the next sequence number, the last fingerprint and the last date processed; and history, the cleaned input rows so far. Plus a meta file with the bucket count.</li>
+<li><u>state-in</u> is the same folder read back the next day. The run first checks the bucket count in the meta file and refuses to start if it differs, because the same person would land in a different bucket and their state wouldn't be found.</li>
+<li>The CLI is just --input, --output, --state-in, --state-out, and --report-dir for metrics, quarantine and the restated list, so the output folder holds nothing but result files.</li>
+</ul>
+<p class="zh">桶 = 一个文件夹，里面每个输入文件一个小 parquet；桶内按 user_id、observed_ts、order_in_profile 排序，桶和桶之间不排序（不需要，人和人独立）。桶数是参数，默认 64，不是写死：数据量和机器内存变了要能调；_meta.json 防止换了桶数还接着增量。</p>
+<p class="zh">被问「为什么分桶」：内存有上限，一次只装一桶；人和人独立可并行；输入文件是按行切的不是按人切的，同一个人散在好几个文件里，所以必须先按 user_id 聚一次。</p>
+<p class="zh">被问「清洗哪 7 条」：user_id 或日期为空；公司和头衔都空；结束早于开始；开始或结束早于 1950；开始晚于抓取 1 年以上；结束晚于抓取 2 年以上。README 写了 six，代码是 7 条，少写了一条。</p></div>
+
+<h2 id="s4">Slide 4 · What the data said → what I did</h2>
+<div class="card"><ul>
+<li>Before writing rules I looked at the data, and most decisions came from it.</li>
+<li>52 percent of snapshots have a single row, and 30 percent of people never show more than one row. So "a job disappeared" usually means "this scrape only caught the top entry". <u>Carrying positions forward, Case A, is the normal case, not the exception.</u></li>
+<li>57.5 percent of snapshots repeat the previous one, hence the fingerprint.</li>
+<li>About 79 thousand groups share employer and start date but differ in title. Half are one job written twice, half are real parallel roles. So I can't decide on employer and start alone; <u>I have to compare titles.</u></li>
+<li>About 20 percent of start dates are January 1st, which really means "only the year was entered". So two starts in the same year count as compatible when either is January 1st.</li>
+<li>Some scrapes have every title null. A missing title matches any title, <u>but only within that row</u>, never stored as an alias. I'll come back to why.</li>
+<li>Garbled text, like UTF-8 read as Latin-1, and lost backslashes in escapes like Lloyd-u2019-s. I repair both losslessly during cleaning.</li>
+<li>Bad rows are under 0.1 percent, so <u>I drop the row, not the whole snapshot</u>. A snapshot is dropped only if every row is bad, 2,539 out of 3.9 million.</li>
+</ul><p class="zh">你的决定：只丢坏行不丢整次快照（「整次丢掉很可惜」）。</p></div>
+
+<h2 id="s5">Slide 5 · Tech choices</h2>
+<div class="card"><ul>
+<li>Polars for the data work. Not pandas: it's mostly single-threaded and strings are Python objects, so 2.5 gigabytes of input would blow up well past 16 gigabytes. Not DuckDB: the core is a per-person state machine with fuzzy matching, which is awkward in SQL and would mean two engines. Not local Spark: slow JVM start, a one-gigabyte-plus image, and slower than Polars on one machine.</li>
+<li>Polars hands Arrow tables to Spark with zero copy, so <u>the same function runs in both</u>. Spark is the production path.</li>
+<li>rapidfuzz, a C++ library, for title similarity. uv lock so the build is reproducible. Docker pinned by digest, non-root, input mounted read-only, and it runs with network disabled.</li>
+<li>One more: regular Polars needs AVX2 and hung under x86 emulation on my Mac, so the image uses the lts-cpu build.</li>
+</ul></div>
+
+<h2 id="s6">Slide 6 · Six rules（总图）</h2>
+<div class="card"><ul>
+<li>This is what happens to one snapshot of one person. First the fingerprint check. If it's new, rule 1 merges duplicate rows inside the snapshot. Rule 2 finds candidate positions for each row. Rule 3 excludes a rehire. Rule 4 matches an uncontested candidate directly. Rule 5 scores the contested ones. Then absorb updates fields and aliases, and rule 6 folds duplicate ids.</li>
+<li>Let me go through them one by one. The details are in the linked doc if you want to see each decision tree.</li>
+</ul></div>
+
+<h3 id="r1">Rule 1 · Dedupe inside the snapshot</h3>
+<div class="card"><ul>
+<li>People really do list one job twice in the same profile: two wordings like Sales Representative and Representatives, two titles for one role like Owner and Optometrist, a second-language copy of the profile, or a scrape duplicate. If I don't merge those first, the same job gets two ids.</li>
+<li>Two rows merge when three things hold: the same start date, or one side missing; the same employer, a shared URL or a normalised name that's equal or a whole-word prefix, like Honeywell and Honeywell Aerospace USA; and a matching title.</li>
+<li>Matching title means any of: identical or one side empty; similarity at least 90; the same description; or the same start and end date with a different title.</li>
+<li>Within one snapshot neither row is newer, so <u>the first row's values win and later rows only fill empty fields</u>. The group also remembers every title folded into it.</li>
+<li>Deliberately kept apart: same start, different end, different title. That's usually a promotion split into two entries.</li>
+<li><u>The same-start-and-end clause was added after my own labelling.</u> I first said no to it, because I worried about real parallel roles. Then I labelled 60 pairs and every one of the 15 in that stratum was one job. Adding it merged 2,963 more groups, and when I sampled the new merges, 55 of 71 were right. The misses are real simultaneous roles. Leaving them apart was wrong about three times as often as merging.</li>
+</ul>
+<p class="zh">候选 = 「嫌疑名单」比方放在规则 2。被问头衔相似度：规范化 → 缩写 90 → 约 170 个职位词 9 种语言翻成英文、中日文按字切 → rapidfuzz token_set_ratio；不用 Jaccard 因为头衔太短，加个 Senior 就掉到 67，复数掉到 33。描述用 Jaccard ≥ 0.5 因为是长文本。韩文词表在但编码范围漏了，实际没生效，一行修法。</p></div>
+
+<h3 id="r2">Rule 2 · Candidates</h3>
+<div class="card"><ul>
+<li>A candidate is a shortlist entry: an existing position that could plausibly be the same job as this row. It's not a match yet. Think of it as screening resumes before the interview; rules 4 and 5 are the interview.</li>
+<li>A position is a candidate if it shares the employer, under any name or URL it has ever had, and either the row's title is one the position has used, or the start is compatible: within 62 days, missing, or the same year with a January 1st.</li>
+<li>There's a fallback for renamed employers with no URL: identical title and identical start, different name. That came from a real case, Polar Truck becoming Polar Transportes Grupo DHL.</li>
+<li>Why shortlist first: scoring is the expensive part, and it also prevents matching across different employers just because titles look alike.</li>
+</ul><p class="zh">「同雇主看的是职位历史上用过的所有别名」这句要说，它是别名集合的用处。</p></div>
+
+<h3 id="r3">Rule 3 · Rehire</h3>
+<div class="card"><ul>
+<li>If a row starts after a position's known end date, it can't be an edit of that position. Someone who was a barista in 2019 to 2020 and came back in 2022 has two positions.</li>
+<li>Without this, the second stint would match the first and absorb would overwrite its dates, erasing the first one.</li>
+<li>It's not validation, the data is fine; it only decides which position a row belongs to. Both dates must be known; an open-ended position doesn't block.</li>
+<li>Effect: 1,579 more ids, 939 ids whose dates jumped around went to zero, 57 of 58 sampled were right, and it was 5 percent faster.</li>
+</ul><p class="zh">你的决定，中途改的主意：「我现在感觉更对」。</p></div>
+
+<h3 id="r4">Rule 4 · One uncontested candidate</h3>
+<div class="card"><ul>
+<li>If a row has exactly one candidate and no other row wants that candidate, I match it directly, without scoring, <u>even if the title changed</u>. That's how Case B keeps its id: Machine Learning Engineer becoming MLE at the same employer with nobody else competing.</li>
+<li>This is the main place the trade-off shows: when there's no competing explanation, merge.</li>
+</ul></div>
+
+<h3 id="r5">Rule 5 · Scoring the contested ones</h3>
+<div class="card"><ul>
+<li>When several rows or positions compete, I score every remaining pair: title similarity from 0 to 100, plus 25 for the same employer, 10 for the same start, 5 for the same end. Then I pair greedily from the highest score down.</li>
+<li>Below 55 the row opens a new position. At 120 or more, that's an identical title at the same employer, it joins a position even if another row already took it, because that's a scrape duplicate.</li>
+<li>Example: known Google, Software Engineer, March 2022. A row Senior Software Engineer, March 2022 scores 100 plus 25 plus 10, 135, match. Product Manager, July 2023 isn't even a candidate: start is over a year away and the title was never used.</li>
+<li>Why 55: at the same employer that means a title similarity of at least 30; across employers it's almost impossible to reach. Why 120: 100 for an identical title plus 25 for the employer can only come from a true duplicate row.</li>
+<li><u>The trade-off throughout is merge when in doubt.</u> A missed merge is a duplicate id carried forward forever; a wrong merge loses one title. The first was far more common.</li>
+</ul><p class="zh">被问「为什么 55」：同雇主时头衔至少 30 分才配；不同雇主几乎配不上。被问「为什么贪心」：一行只配一个职位、一个职位只给一行，分高的先定。</p></div>
+
+<h3 id="r6">Rule 6 · Fold duplicate ids</h3>
+<div class="card"><ul>
+<li>Rules 2 to 5 match one row to one position, so they can't merge two ids that were already issued. And aliases build up over time: early on, two ids can look like different jobs; a later snapshot adds a URL or a title that links them. Rule 6 is the repair step for that.</li>
+<li>After each snapshot, for positions touched this time, if another position has the same start, the same employer under any alias, and the same end or similar titles or the same description, the newer id folds into the older one and is retired for good.</li>
+<li>Real case: one profile wrote the same job as Jeppesen, Jeppesen Sanderson and Jeppesen slash Boeing and got five ids on the first scrape.</li>
+<li>Effect: 965 merges, suspected duplicate groups from 49 thousand down to 37 thousand, 52 of 64 sampled were right. The errors are two roles with identical dates, same trade-off as rule 1.</li>
+<li>One promise changed: an id never changes, but it can retire through a fold and is never reissued. Downstream has to handle an id that stops appearing.</li>
+</ul><p class="zh">比方：前面是「新来的人分到哪个房间」，规则 6 是「发现两个房间住的是同一个人，合并房间」。</p></div>
+
+<h3 id="ab">absorb · 字段怎么更新（讲完规则顺带）</h3>
+<div class="card"><ul>
+<li>When a row matches a position, each field takes the latest non-null value, and the position remembers every employer name, URL and title it has had. <u>Match on all aliases, display the latest.</u></li>
+<li>Two things I got wrong first. An empty end date was treated as "still ongoing" and it erased 43 thousand known end dates, because a degraded scrape simply drops fields. Now an empty end means "no information" and never overwrites a known end.</li>
+<li>And an empty title was being stored as an alias, so one degraded scrape made a position match every later title at that employer. A 2018 Consultant swallowed a 2024 Senior Director. Now a missing title is a wildcard for that row only.</li>
+</ul><p class="zh">结束日期这条是你一开始主张「空 = 至今」，数据证明错了才改的。</p></div>
+
+<h2 id="s7">Slide 7 · Scale</h2>
+<div class="card"><ul>
+<li>People are independent: nothing is shared between them, no global counter. So the work is linear in people and buckets run in parallel.</li>
+<li>Why buckets at all: memory is bounded by one bucket, and 64 buckets over 4 workers balances load, about 16 each.</li>
+<li>Why 64 and not 32: 32 ran out of memory in a 7.6 gigabyte container and only wrote 750 thousand rows. With 64, peak is about 2 gigabytes and it never crashed again.</li>
+<li>Why user_id mod 64 and not a library hash: state is saved per bucket, so the same person must land in the same bucket tomorrow. Polars' hash changes across versions; modulo doesn't. A meta file records the bucket count and the run refuses to start on a mismatch.</li>
+<li>Why a power of two: not required, but doubling splits each bucket cleanly in two, and it divides evenly across 1, 2, 4, 8 workers.</li>
+<li>Measured: 10 million rows in 75 to 78 seconds on 4 processes, about 2 gigabytes. In Docker under x86 emulation about 190 seconds, identical output.</li>
+<li>100 billion rows: about 35 thousand rows per core-second, so roughly 800 core-hours, about 12 hours on 64 cores.</li>
+<li>Spark: the adapter is about 70 lines. It repartitions by user_id and calls the same coalesce_bucket through mapInArrow, so there's one copy of the logic. On two input files it matched the single-machine output row for row. <u>I haven't run it on a real cluster</u>, and incremental state isn't wired into it yet. At that scale I'd also raise the partition count so each partition stays at a few hundred thousand rows.</li>
+<li>In production the state belongs in a user-partitioned, append-only table like Iceberg or Delta: merge only the touched users, one atomic commit per run, old versions kept for rollback and as-of queries.</li>
+</ul><p class="zh">桶数不是越多越好：文件太小太多读写开销上来；Spark 版默认 4096。</p></div>
+
+<h2 id="s7a">Slide 7a · Three fixes</h2>
+<div class="card"><ul>
+<li>Thread oversubscription: four workers each spinning up a full Polars thread pool, so the CPU spent most of its time switching. One Polars thread per worker took it from 104 to 65 seconds.</li>
+<li>The container was limited to 4 CPUs but os.cpu_count saw 14, so I got 14 workers and 5.5 gigabytes. Reading the cgroup CPU quota fixed that: 4 workers, 3.7 gigabytes.</li>
+<li>And the 32-to-64 bucket change I mentioned.</li>
+<li>Three smaller ones: regular Polars hung under x86 emulation, so the image uses the lts-cpu build; merging produced start-after-end dates, 733 of them, fixed by the end-date guard in absorb, now zero; and Spark executors picked up an old system Polars, fixed by pointing PYSPARK_PYTHON at the venv.</li>
+</ul></div>
+
+<h2 id="s8">Slide 8 · Daily updates and late data</h2>
+<div class="card"><ul>
+<li>state-out saves, per bucket, each person's positions with their aliases, a small ledger with the next sequence number, last fingerprint and last date, plus the cleaned history. state-in loads it the next day.</li>
+<li>Only people with new snapshots are processed, continuing from where they left off, same ids.</li>
+<li>Late data means a snapshot dated on or before what I've already processed for that person: a crawler retry, a weekly vendor drop, a backfill. Feeding it into step would break date order and could overwrite newer values with older ones. So <u>I replay just that person from history</u>, re-emit all their rows, and list them under restated so downstream replaces them. Without history they're quarantined.</li>
+<li>Tests: a full run equals a half run plus an incremental run on the other half, which also proves no future data is used. And 128 late users replayed on real data matched a full run exactly.</li>
+<li>I started with quarantining late data and changed to replay: late data is routine, quarantine leaves that person's output wrong until someone looks, and replaying one person is cheap and verifiable.</li>
+<li>Why not just quarantine late data: it's routine, quarantine leaves that person's output wrong until someone looks, replaying one person is cheap, and the result can be checked against a full run.</li>
+<li>Known weak spot: today I load a bucket's whole history every run and rewrite it. That grows daily. The fix is to append one file per day and read history only for the few late users.</li>
+</ul></div>
+
+<h2 id="s9">Slide 9 · Evaluation</h2>
+<div class="card"><ul>
+<li>There's no ground truth, so I built three kinds of evidence.</li>
+<li>First, LLM judges. I sampled 75 decisions from each of four strata, showed both records and asked "one entry or two". Same prompt to Claude and GPT, all 300 pairs each, repeated after every rule change. The merge strata are at 95 to 97 percent. New id at a known employer, 97 and 87. The weak stratum is "same employer and start, kept apart": 38 and 8 percent. It's 0.26 percent of ids.</li>
+<li>Second, 60 pairs I labelled by hand. 52 of 60 agree with Claude, kappa 0.66, and every disagreement is in that weak stratum, which I read as one entry every time.</li>
+<li>Third, label-free checks counted on the output: coverage 99.94 percent, a unique primary key, zero inverted dates, and suspicious splits, one person, date, employer and start with two or more ids, down from 267 thousand with exact matching to 37 thousand, each step tied to one rule change.</li>
+<li>What each caught: a judge pass flagged three pairs with start after end, which led me to the two absorb bugs. My own labelling caught the garbled text the judges had passed, and it changed the same-start-and-end rule.</li>
+<li>What the judges are for, concretely: measure precision per stratum; surface the misjudged examples so I can read the raw data, change one rule and add one regression test; A/B every rule change by judging the newly merged and newly split pairs; and cross-check each other with the same prompt, kappa 0.66, calibrated against my 60 hand labels.</li>
+<li>The judges are offline graders. They're not in the pipeline and I didn't train anything on them, except one analysis: a logistic regression on 823 labelled pairs, which learned the same ordering as my rules, start date, then end, then description, then title, and only added 6 points of recall at equal precision on a biased sample. So I kept it as evidence rather than shipping it.</li>
+<li>51 tests overall, including the canary and about 20 regressions from real profiles.</li>
+</ul><p class="zh">被问 26.7 万 → 3.7 万怎么来的：第一版只精确匹配 26.7 万 → 四条漏配修法（改名兜底、URL 规范化、去重用前缀判雇主、去重不看结束）15.5 万 → 空头衔本行通配 12.6 万 → bug 修复 + Unicode + 乱码约 10.5 万 → 同开始同结束合并 5.5 万 → 微调 4.9 万 → 规则 6 折叠 3.7 万。</p>
+<p class="zh">两个 bug 的发现路径：第二轮 Claude 判官标 3 对「开始晚于结束」（Mercado Libre、Alcon、Veeva）→ 输出里明明没有倒序 → 顺着 Veeva 查输入 → 三次降级抓取只剩一行、头衔开始结束全空 → 并进 Consultant → 两个 bug 同时触发。修完抹掉的结束日期 43,356 → 53，两个回归测试。</p>
+<p class="zh">人工评估解决了什么：发现乱码（16,314 格）、发现评估数据缺字段、推翻一条规则（同开始同结束合并）、校准判官（52/60，kappa 0.66，分歧全在弱点层）。没解决的：弱点层判官之间也不一致（Claude 38%、GPT 8%），要更多标注。</p>
+<p class="zh">被问 kappa：判官之间的一致性，去掉碰巧一致的部分；0.66 算 substantial。</p></div>
+
+<h2 id="s10">Slide 10 · What I tried</h2>
+<div class="card"><ul>
+<li>Identity by latest value only: Febase renamed their employer and later renamed it back, and became two ids. That's why positions keep alias sets.</li>
+<li>ASCII-only normalisation: 228 thousand non-Latin titles became empty strings, and empty matched anything. Fixed with Unicode normalisation.</li>
+<li>Multilingual embeddings: 383 more groups merged, 72 of 75 right, but three times the run time and 1.2 gigabytes more image. Off by default; a glossary of about 170 job words gets the same gain for translations with no dependency.</li>
+<li>Descriptions as a signal: identical text is the same job 99 percent of the time, but different text is still the same job 82 percent of the time. So positive evidence only.</li>
+<li>The learned scorer I just mentioned. And rehire as a new position, and folding duplicate ids, both kept.</li>
+</ul></div>
+
+<h2 id="s11">Slide 11 · Summary</h2>
+<div class="card"><ul>
+<li>One state machine per person, fed in date order, so no future information by construction.</li>
+<li>Six rules and a score; merge when in doubt.</li>
+<li>People are independent, so bucket by user_id, linear scale, the same function on Spark.</li>
+<li>Daily runs touch only people with new data; late data replays one person.</li>
+<li>No ground truth, so judges plus hand labels plus label-free checks, and every finding became a rule and a test.</li>
+<li>Why not an LLM on every pair: at 100 billion rows that's not practical, ids must be reproducible and an LLM's answers aren't, and rules are explainable, each error points to one rule. So <u>the LLM sits offline as a grader on samples, not on the hot path</u>.</li>
+</ul></div>
+
+<h2 id="s12">Slide 12 · Next steps</h2>
+<div class="card"><ul>
+<li>Distil the judge and human labels into a small scorer, used only where the rules are unsure, the kept-apart stratum. More labels there.</li>
+<li>Precompute description embeddings offline.</li>
+<li>Spark on a real cluster with incremental state, in an append-only user-partitioned table.</li>
+<li>A deletion list for right-to-be-forgotten requests, because carrying positions forward keeps entries a user deleted.</li>
+<li>Small ones: the Korean glossary range, and initials matching for employer names, Revelio Labs versus RL.</li>
+</ul></div>
+
+<h2 id="ai">被问「怎么用 AI」</h2>
+<div class="card"><ul>
+<li>AI wrote code from my designs, drafted tests, ran exploration scripts, labelled pairs as a judge, and traced failures I pointed at.</li>
+<li>I decided every rule and threshold, defined what "same job" means, designed the sampling, and labelled 60 pairs by hand.</li>
+<li>The decisions I changed along the way: drop rows not snapshots, the same-start-and-end merge after labelling, rehire as a new id, replay instead of quarantine for late data.</li>
+<li>The garbled text came from my own labelling, not the judge, and my labels changed one of the rules.</li>
+</ul></div>
+</main>
+<aside id="toc"><div class="t">目录</div></aside>
+<button id="tocbtn" onclick="document.getElementById('toc').classList.toggle('open')">目录</button>
+<script>
+(function(){var toc=document.getElementById('toc');
+document.querySelectorAll('main h2, main h3').forEach(function(h){var a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent;if(h.tagName==='H3')a.className='h3';a.onclick=function(){if(window.innerWidth<1000)toc.classList.remove('open');};toc.appendChild(a);});
+var links=[].slice.call(toc.querySelectorAll('a'));
+addEventListener('scroll',function(){var cur=null;document.querySelectorAll('main h2, main h3').forEach(function(h){if(h.getBoundingClientRect().top<120)cur=h.id;});links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+cur);});},{passive:true});
+})();
+</script>
+</body></html>
