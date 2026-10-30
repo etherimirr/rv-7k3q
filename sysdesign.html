@@ -1,5 +1,6 @@
 <!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>系统设计速成</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <style>
 :root{--bg:#fbfaf7;--ink:#1d1f24;--muted:#6b7280;--accent:#155e75;--card:#fff;--line:#e3e0d8;--zh:#7a4b12;--hl:#fff3c4;--code:#f3f1ec}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#16181c;--ink:#e9e7e2;--muted:#a3a9b5;--accent:#5cc3c3;--card:#1f2228;--line:#30343c;--zh:#e0b277;--hl:#4a4020;--code:#23262c;color-scheme:dark}}
@@ -15,7 +16,8 @@ ul{margin:4px 0 10px;padding-left:24px} li{margin:5px 0}
 .me{background:var(--hl);border-radius:6px;padding:6px 10px;font-size:15.5px;margin:8px 0}
 u{text-decoration:none;background:var(--hl);padding:0 2px;border-radius:3px}
 code{font-family:Menlo,monospace;font-size:14px;background:var(--code);padding:1px 4px;border-radius:4px}
-.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0} td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.tbl{overflow-x:auto}
+.mermaid{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0;overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0} td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
 #toc{position:fixed;top:0;left:0;bottom:0;width:240px;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 12px 40px;font-size:14px;line-height:1.5;box-sizing:border-box;z-index:10}
 #toc .t{font-weight:700;color:var(--accent);margin-bottom:8px}
 #toc a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:5px}
@@ -41,6 +43,35 @@ code{font-family:Menlo,monospace;font-size:14px;background:var(--code);padding:1
 <p class="en">Before I draw anything, can I check a few things: what's the daily volume, how fresh does the result need to be, and who reads it? Then I'll estimate the numbers, sketch the pipeline, and go deep on the part you care most about.</p>
 <p class="zh">开口模板。他们是数据公司，题目八成是「数据流水线」而不是「设计 Twitter」。</p>
 </div>
+
+<h3 id="s0t">万能模板图（答不出来就画这个，再往里填）</h3>
+<p>任何「数据流水线」题都是这六个框。先把框画出来，再一个一个说每个框里用什么、为什么。</p>
+<pre class="mermaid">
+flowchart LR
+  SRC[/"1 来源 Sources<br>爬虫 · 合作方文件 · API"/] --> ING["2 接入 Ingest<br>Kafka 按 key 分区<br>或 S3 落地 + 每日批"]
+  ING --> CLN["3 清洗 Clean<br>schema 校验 · 丢坏行<br>修乱码 · 去重"]
+  CLN --> CORE["4 核心处理 Core<br>按 key 分区并行<br>有状态的逐 key 逻辑"]
+  CORE --> ST[("5 存储 Store<br>parquet / Iceberg<br>按 key 分区 · 版本化")]
+  ST --> SRV["6 服务 Serve<br>批：数据仓库<br>点查：KV 存储 + 缓存 + API"]
+  CORE -. 状态 .-> STATE[("状态表<br>按 key 分区 · 只追加")]
+  STATE -. 第二天 .-> CORE
+  CORE -. 坏数据 .-> Q[("隔离区")]
+  MON["7 监控 Monitor<br>量 · 质 · 时效<br>告警 · 血缘"] -.- CLN
+  MON -.- CORE
+  MON -.- ST
+</pre>
+<div class="card"><p><b>照着说的顺序（每框一句）</b>：</p>
+<ul>
+<li>1 来源：数据从哪来、每天多少、格式是什么、会不会迟到。</li>
+<li>2 接入：要秒级就 Kafka（按 user_id 分区保序），要天级就 S3 落文件每天跑一批。</li>
+<li>3 清洗：schema 契约、丢坏行不丢整批、修乱码、按内容哈希去重。</li>
+<li>4 核心：<u>按 key 分区</u>让同一个人的数据在一台机器上；逐 key 的有状态逻辑（这就是你的状态机）；一个 key 出错隔离不阻塞。</li>
+<li>5 存储：列式 parquet；表格式给事务、分区裁剪、时间旅行；状态按 key 分区只追加。</li>
+<li>6 服务：分析查询走仓库；点查走 KV + 缓存 + API。</li>
+<li>7 监控：每次运行出指标，突变告警，必须为 0 的硬断言。</li>
+<li>最后说三句：瓶颈在 4（算力线性加机器）和 5（小文件）；扩容靠分区数；<u>取舍是 X 换 Y 因为 Z</u>。</li>
+</ul>
+<p class="en">Any data pipeline is the same six boxes: sources, ingest, clean, core processing partitioned by key, storage, and serving, with monitoring across all of them and a state store feeding the next run. Let me draw that and then fill in each box for this problem.</p></div>
 
 <h2 id="s1">1 · 估算（back-of-envelope）</h2>
 <div class="card">
@@ -208,6 +239,103 @@ code{font-family:Menlo,monospace;font-size:14px;background:var(--code);padding:1
 <p class="en">For point lookups I'd load the daily output into a key-value store keyed by user and as-of date, updating only the users touched that day, and the restated list tells the loader which users need their history replaced.</p>
 </div>
 
+<h2 id="q">押题最终答案（三道，每道一张图 + 最优设计）</h2>
+<div class="sub">补充手册第 2 章有思路，这里给的是「最后要落到的那张图」。答不出来就画图、按框念。</div>
+
+<h3 id="qa">题 A · 每天几亿条档案进来，维护去重后的「每人职业经历」（= 你的 take-home 上生产）</h3>
+<div class="card">
+<p><b>先问</b>：每天多少条（设 3 亿）、新鲜度（天级够）、下游谁读（分析 + 点查）、要不要保留历史版本（要，as-of）。</p>
+<p><b>估算</b>：3 亿行/天 × 500 B = 150 GB/天；存量 1000 亿行 ≈ 50 TB；每天只有约 1% 的人有新数据；按 3.5 万行/核秒，每天增量 3 亿行 ≈ 2.4 核时，<u>几台机器半小时</u>。</p>
+<pre class="mermaid">
+flowchart LR
+  SRC[/"爬虫 + 合作方<br>3 亿行/天"/] --> K["Kafka<br>按 user_id 分区"]
+  K --> LAND[("S3 原始区<br>按日期分区 parquet")]
+  LAND --> SP["Spark 每日批<br>conform → clean → repair<br>repartition by user_id"]
+  ST[("状态表 Iceberg<br>按 user_id 分区<br>positions · users · history")] --> SP
+  SP -->|"MERGE 只动过的人"| ST
+  SP --> OUT[("输出表 Iceberg<br>按 asof 日期分区<br>每天一次原子提交")]
+  SP -. 迟到 .-> RP["重放那一个人<br>restated 名单"]
+  RP --> OUT
+  SP -. 出错 .-> Q[("隔离区")]
+  OUT --> DW["数据仓库 / Trino<br>分析查询"]
+  OUT --> KV["KV 存储 DynamoDB<br>key = user_id<br>只写动过的人"]
+  KV --> API["API + 缓存<br>GET /users/id/positions?asof="]
+  MON["监控：行数 · 丢弃 · 合并 · 重放 · 隔离<br>覆盖率 · 倒序日期=0 · 可疑拆分"] -.- SP
+  MON -.- OUT
+</pre>
+<ul>
+<li><b>核心</b>：和作业一样的 coalesce_bucket，Spark mapInArrow 调同一个函数；按 user_id 分区所以状态 join 不用跨机器。</li>
+<li><b>状态</b>：Iceberg 按 user_id 分区、只 MERGE 动过的人、一次运行一次提交、旧快照留着回退；history 只追加、只给迟到的人读。</li>
+<li><b>迟到</b>：事件时间 observed_ts；比状态旧的只重放那一个人，restated 告诉 KV 加载器整体替换。</li>
+<li><b>隔离</b>：一个人出错回滚进隔离区，不阻塞当天运行。</li>
+<li><b>服务</b>：分析走仓库；点查走 KV（key = user_id，value = 当前履历 + as-of 索引）+ 读缓存。</li>
+<li><b>扩容</b>：人独立 → 加 executor 线性；分区数调到每分区几十万行；超级用户单独处理。</li>
+<li><b>取舍</b>：天级批而不是流（新鲜度要求天级，流的乱序和状态管理不值）；规则而不是 LLM 逐对（可复现、可解释、1000 亿行成本）；merge when in doubt。</li>
+<li><b>隐私</b>：删除名单在输出时过滤。</li>
+</ul>
+<p class="en">Same core as the take-home, run under Spark partitioned by user_id, with state in an Iceberg table partitioned by user_id so each day merges only touched users and commits atomically. Late data replays one person; failures are quarantined. Output goes to a warehouse for analysis and a key-value store for point lookups, and every run emits the quality metrics I alert on.</p>
+</div>
+
+<h3 id="qb">题 B · 职位名 / 技能映射服务（1000 万种原始职位名 → 标准分类）</h3>
+<div class="card">
+<p><b>先问</b>：分类表多大（几千类）、延迟要求（线上毫秒 vs 离线批）、准确率目标、要不要多语言、分类表会不会改版。</p>
+<p><b>估算</b>：去重后约 1000 万种头衔，但<u>头部几千种覆盖 80% 流量</u>；线上 QPS 设 1 万；每个向量 384 维 × 4 B ≈ 1.5 KB，1000 万 × 1.5 KB = 15 GB，一台机器放得下。</p>
+<pre class="mermaid">
+flowchart TD
+  IN[/"原始头衔"/] --> N["规范化<br>大小写 · 标点 · 缩写 · 词表翻译<br>（= 你的 title_key + glossary）"]
+  N --> C{"精确缓存 / 规则表命中?<br>头部几千种"}
+  C -- 是 --> OUT[/"标准职位 + 置信度"/]
+  C -- 否 --> E["embedding 最近邻<br>向量库 · 返回 top-k + 距离"]
+  E --> T{"置信度 ≥ 阈值?"}
+  T -- 是 --> OUT
+  T -- 否 --> L["LLM 兜底<br>给 top-k 候选让它选<br>结果写回缓存"]
+  L --> T2{"还拿不准?"}
+  T2 -- 是 --> H["人工审核队列<br>审完进规则表"]
+  T2 -- 否 --> OUT
+  H --> N
+  OUT --> ST[("映射表 版本化<br>title → class · 来源 · 版本")]
+  EV["评估：按频次分层抽样<br>LLM 判官 + 人工校准<br>每次改版回算历史"] -.- ST
+</pre>
+<ul>
+<li><b>三层漏斗</b>：规则/缓存吃掉大头（毫秒、确定）；embedding 吃长尾（几毫秒）；LLM 只处理低置信（贵、慢、结果缓存后不再调）。</li>
+<li><b>为什么不全用 LLM</b>：1000 万次调用成本，答案不稳定，线上延迟；LLM 的价值是兜底 + 当判官。</li>
+<li><b>版本化</b>：分类表改版要能回算历史，不然时间序列断；映射表记来源（规则 / 向量 / LLM / 人工）。</li>
+<li><b>评估</b>：按频次分层抽样（头部错一个影响大）；LLM 判官用人工样本校准；监控「进 LLM 的比例」「进人工的比例」，涨了说明有新词。</li>
+<li><b>多语言</b>：多语言 embedding 模型；词表先翻译。</li>
+<li><b>取舍</b>：准确 vs 延迟 vs 成本，用置信度阈值调；阈值高 → 更多进 LLM/人工。</li>
+</ul>
+<p class="en">A three-tier funnel: normalise, then rules and a cache for the head of the distribution, embedding nearest-neighbour for the long tail, and an LLM only for low-confidence cases, with results cached and the lowest sent to human review. The mapping table is versioned so history can be recomputed, and I evaluate on frequency-stratified samples with an LLM judge calibrated against human labels.</p>
+</div>
+
+<h3 id="qc">题 C · 公司实体消歧 + 数据质量监控</h3>
+<div class="card">
+<p><b>先问</b>：公司实体来源（档案里的公司名、URL、官网、注册信息）、要合并到什么粒度（法人 vs 品牌 vs 子公司）、改名/并购怎么算、下游要什么（公司级统计）。</p>
+<p><b>估算</b>：几亿条公司提及，去重后几千万个名字，真实公司几百万；两两比不可能 → 必须 blocking。</p>
+<pre class="mermaid">
+flowchart LR
+  IN[/"公司提及<br>名字 · URL · 域名 · 地址"/] --> N["规范化<br>小写 · 去后缀 Inc LLC<br>URL 去 www · 域名"]
+  N --> B["Blocking<br>相同域名 / URL<br>名字前缀 / 首字母 / 音似"]
+  B --> P["成对打分<br>名字相似度 + 域名相同 + 地址 + 行业"]
+  P --> CL["聚类 受限传递<br>限制簇大小 · 要和多数相似"]
+  CL --> ID[("公司 ID 表 版本化<br>别名集合 · 改名历史 · 并购关系")]
+  ID --> OUT[/"每条提及 → 公司 ID"/]
+  SEED[("种子：官方注册 / 上市公司 / 域名库")] --> CL
+  MON["质量监控<br>新 ID 比例 · 合并比例 · 超大簇<br>覆盖率 · 抽样判官 · 漂移告警"] -.- CL
+  MON -.- OUT
+  HR["人工审核：超大簇 · 低置信合并 · 大公司"] -.-> ID
+</pre>
+<ul>
+<li><b>三步</b>：blocking（域名最强、名字前缀 / 首字母 / 音似兜底）→ 成对打分（名字 + 域名 + 地址 + 行业）→ 受限聚类（限制簇大小，防 A 像 B、B 像 C 的链式乱合）。</li>
+<li><b>别名集合 + 改名历史</b>：一个公司记所有叫过的名字和域名；并购是关系不是合并（Jeppesen/Boeing 那种）。</li>
+<li><b>种子数据</b>：官方注册库、上市公司、域名库当锚点，先把大公司钉死。</li>
+<li><b>质量监控</b>：每天看新 ID 比例、合并比例、最大簇大小、覆盖率；分层抽样 + 判官；突变告警（抓取器变了会先体现在这里）。</li>
+<li><b>人工</b>：只审三类：超大簇、低置信合并、头部大公司。</li>
+<li><b>版本化</b>：ID 永不复用、可退役；历史可回算。</li>
+<li><b>取舍</b>：合并错（两家公司算一家，统计错）比漏合并（一家算两家）更伤 → 这里<u>和作业相反，存疑就分开</u>，靠人工和种子来合。</li>
+</ul>
+<p class="en">Standard record linkage: normalise names and domains, block on domain and name prefix, score pairs on name similarity plus domain, address and industry, then cluster with a cap on cluster size to avoid chaining. Each company keeps an alias set and rename history; mergers are relationships, not merges. Official registries seed the big companies. For quality I track new-id and merge rates, max cluster size and coverage daily, sample with judges, and route oversized or low-confidence clusters to human review. Here a wrong merge hurts more than a missed one, so unlike the take-home I split when in doubt.</p>
+</div>
+
 <h2 id="s13">13 · 其他常被问的一页</h2>
 <div class="card">
 <ul>
@@ -259,6 +387,7 @@ code{font-family:Menlo,monospace;font-size:14px;background:var(--code);padding:1
 <aside id="toc"><div class="t">目录</div></aside>
 <button id="tocbtn" onclick="document.getElementById('toc').classList.toggle('open')">目录</button>
 <script>
+mermaid.initialize({startOnLoad:true,theme:'default'});
 (function(){var toc=document.getElementById('toc');
 document.querySelectorAll('main h2, main h3').forEach(function(h){var a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent;if(h.tagName==='H3')a.className='h3';a.onclick=function(){if(window.innerWidth<1000)toc.classList.remove('open');};toc.appendChild(a);});
 var links=[].slice.call(toc.querySelectorAll('a'));
