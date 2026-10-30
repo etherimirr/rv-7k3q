@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>后两小时精简 · Revelio 技术面补充</title>
+<style>
+:root{--bg:#fbfaf7;--ink:#1d1f24;--muted:#5b6170;--accent:#0f6e6e;--card:#ffffff;--line:#e3e0d8;--zh:#7a4b12;--warn:#b03a2e;--hl:#fff3c4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#16181c;--ink:#e9e7e2;--muted:#a3a9b5;--accent:#5cc3c3;--card:#1f2228;--line:#30343c;--zh:#e0b277;--warn:#ff8a7a;--hl:#4a4020;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.65 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif;padding:20px 16px 80px}
+main{max-width:800px;margin:0 auto}
+h1{font-size:27px;margin:0 0 4px;text-wrap:balance}
+h2{font-size:22px;margin:38px 0 10px;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:4px}
+h3{font-size:19px;margin:24px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.en{font-size:18.5px;margin:0 0 3px}
+.zh{color:var(--zh);font-size:15px;margin:0 0 14px}
+.tag{display:inline-block;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 10px;margin:4px 0 6px}
+u{text-decoration:none;background:var(--hl);padding:0 2px;border-radius:3px}
+.outline{font-size:15.5px;color:var(--muted);border-left:3px solid var(--accent);padding-left:10px;margin:8px 0 14px}
+.what{font-size:15px;color:var(--muted);margin-top:4px}
+.warn{color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0}
+td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--card)}
+.tbl{overflow-x:auto}
+ul,ol{padding-left:22px;margin:6px 0}
+li{margin:4px 0}
+nav{font-size:15px;line-height:1.9}
+nav a{color:var(--accent);text-decoration:none;margin-right:10px;white-space:nowrap}
+.res{font-family:Menlo,Consolas,monospace;font-size:13.5px;white-space:pre-wrap;background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:10px}
+pre{background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:10px;font-size:13.5px;overflow-x:auto}
+.q{font-weight:600;margin-top:14px}
+
+#toc{position:fixed;top:0;left:0;bottom:0;width:250px;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 12px 40px;font-size:14px;line-height:1.5;box-sizing:border-box;z-index:10}
+#toc .t{font-weight:700;color:var(--accent);margin-bottom:8px;font-size:15px}
+#toc a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:5px}
+#toc a.h3{padding-left:20px;color:var(--muted);font-size:13px}
+#toc a:hover,#toc a.on{background:var(--hl)}
+#tocbtn{display:none;position:fixed;right:14px;bottom:18px;z-index:11;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:10px 16px;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+@media (min-width:1000px){body{padding-left:270px}}
+@media (max-width:999px){#toc{display:none;width:82%;box-shadow:2px 0 12px rgba(0,0,0,.25)}#toc.open{display:block}#tocbtn{display:block}}
+@media print{#toc,#tocbtn{display:none!important}body{padding-left:16px}}
+h2,h3{scroll-margin-top:12px}
+</style>
+</head>
+:root[data-theme="dark"]{--bg:#16181c;--ink:#e9e7e2;--muted:#a3a9b5;--accent:#5cc3c3;--card:#1f2228;--line:#30343c;--zh:#e0b277;--warn:#ff8a7a;--hl:#4a4020;color-scheme:dark}
+pre.d{font-family:Menlo,Consolas,"PingFang SC",monospace;font-size:13px;line-height:1.45;white-space:pre;overflow-x:auto}
+.say{background:var(--card);border-left:4px solid var(--accent);border-radius:6px;padding:10px 14px;margin:10px 0}
+.say .en{font-size:18px}
+.fu{margin:6px 0 6px 10px;font-size:16px}
+.fu b{color:var(--accent)}
+.key{background:var(--hl);border-radius:8px;padding:10px 14px;margin:10px 0}
+@media print{pre.d{white-space:pre-wrap;font-size:11px}body{font-size:15px}.card,.say{break-inside:avoid}}
+</style>
+</head>
+<body><main>
+<h1>后两小时 · 精简版（Bruce 10–11 · Kyle 11–12）</h1>
+<div class="sub">只留会被问到的东西。Bruce：8 道押题，每题几条思路 + 一段英文。Kyle：8 个现场改代码的任务 + 系统设计看 <a href="sysdesign.html">系统设计速成</a> 第 0 节的 4 步。</div>
+<h2 id="cB">10–11 点 · Bruce：数据感觉和建模（8 道押题）</h2>
+<h3>B1 「我们的数据来自网上的职业档案，有什么偏差？怎么纠正？」</h3>
+<div class="card">
+<p><b>思路</b>：</p>
+<ol>
+<li>覆盖偏差：白领、科技、年轻人、美国更容易有档案；蓝领、小企业少。<br><span class="zh">Coverage bias: white-collar, tech, younger and US workers are over-represented.</span></li>
+<li>更新滞后：很多人换了工作很久才更新档案。<br><span class="zh">Reporting lag: people update profiles months after a change.</span></li>
+<li>纠正：按官方统计（比如美国劳工统计局 BLS 的职业 × 地区就业人数）做重新加权，也叫事后分层（post-stratification）。<br><span class="zh">Reweight to official statistics by occupation and region.</span></li>
+<li>验证：拿上市公司年报里披露的员工人数对一对。<br><span class="zh">Validate against headcounts in public filings.</span></li>
+</ol>
+<p class="en">Online profiles over-represent white-collar, tech and younger workers, and people update them late. I'd correct coverage by reweighting each occupation-by-region cell to official employment counts like BLS, and I'd handle lag separately with a nowcasting model. Then I'd validate the weighted headcounts against companies that report employee counts in their filings, and track that error over time.</p>
+<p class="zh">追问「权重太大怎么办」：某些格子样本很少，权重会特别大、噪声大，要截断权重或把相邻格子合并。</p>
+</div>
+
+<h3>B2 「档案更新滞后，怎么估计这个月的真实离职率 / 人数？」</h3>
+<div class="card">
+<p><b>思路（比方：快递还在路上）</b>：上个月发生的跳槽，现在只有一部分人更新了，剩下的「还在路上」。用历史数据算出「事情发生后第 k 个月有多少比例的人已经更新」，再把最近几个月观测到的数按这个比例放大。这叫 nowcasting。</p>
+<pre>历史上：事件发生后 1 个月内更新 40%，3 个月内 75%，12 个月内 95%
+这个月观测到 400 次跳槽（发生在上个月）→ 估计真实约 400 ÷ 0.40 = 1,000</pre>
+<p class="en">Recent changes are under-reported because people update late. From history I'd estimate the reporting-delay curve, what share of moves shows up after one, three, twelve months, and scale recent counts up by it. If 40 percent show up in the first month and we see 400 moves, the estimate is about 1,000. Then I'd revise the number as more data arrives and measure how much past estimates were revised.</p>
+<p class="zh">接你作业：你处理迟到快照的做法（只重放那个人）就是「数据晚到要能修正过去的结果」。</p>
+</div>
+
+<h3>B3 「很多职位没写薪资，怎么预测？」</h3>
+<div class="card">
+<ol>
+<li>标签：有薪资透明法的州（纽约、加州、科罗拉多）发布的岗位写了薪资范围，拿来当训练数据。</li>
+<li>特征：标准化后的职位、资历级别、地区、公司、行业、公司规模。</li>
+<li>目标取对数（log salary），因为薪资是右偏的。</li>
+<li>先做简单基线：按「职位 × 地区」取中位数；再上梯度提升树。</li>
+<li>评估：对数空间的 MAE，换算成百分比误差；按职位和地区分组看误差。</li>
+<li>坑：写了薪资的岗位本身就有偏（集中在某些州、某些公司），要检查迁移到别的州时误差会不会变大。</li>
+</ol>
+<p class="en">I'd train on postings from pay-transparency states, predict log salary from standardized title, seniority, location, company and industry, start from a title-by-location median baseline, then try gradient boosting. I'd report error as a percentage by segment, and check selection bias, because postings that disclose pay come from certain states and companies, so I'd test how well it transfers to states without those laws.</p>
+</div>
+
+<h3>B4 「怎么把一千万种原始职位名称映射到标准分类？」</h3>
+<div class="card">
+<ol>
+<li>先规范化：大小写、标点、缩写（MLE → machine learning engineer）、多语言。你作业里的 title_key 和词表就是这一步。</li>
+<li>高频的几千个：人工或规则直接映射，覆盖大部分流量。</li>
+<li>长尾：用文本向量找最近的标准职位，置信度低的交给大模型判断，再低的进人工审核。</li>
+<li>评估：分层抽样，按频次高低分层看准确率；大模型当评委时要用人工样本校准。</li>
+<li>版本化：分类表更新时要能回算历史数据，不然时间序列会断。</li>
+</ol>
+<p class="en">Normalize first: case, punctuation, abbreviations and languages, which is what my title key and glossary did. Map the head of the distribution with rules and review, use embeddings to find the nearest standard title for the long tail, send low-confidence cases to an LLM, and the lowest to humans. Evaluate with stratified samples by frequency, calibrate the LLM judge against human labels, and version the taxonomy so history can be recomputed.</p>
+</div>
+
+<h3>B5 「没有标签，线上怎么知道你的合并结果质量还好？」</h3>
+<div class="card">
+<p><b>直接讲你作业的做法</b>：</p>
+<ul>
+<li>不需要标签的检查：覆盖率（99.94%）、倒序日期（0）、可疑拆分数（同人同快照同雇主同起始却两个 id，267k → 37k）。每天算，设报警。</li>
+<li>定期抽样：按决定类型分层，每层抽 75 个，两个大模型评委加少量人工。</li>
+<li>漂移监控：每天新开 id 的比例、合并比例、每人平均职位数，突然变了就查。</li>
+</ul>
+<p class="en">Three layers. Label-free checks every run, like coverage, inverted dates and suspicious splits, with alerts. Periodic stratified samples judged by two LLMs and a few human labels. And drift monitoring on the share of new ids, merges and positions per person, so a scraper change shows up as a jump before anyone reads the data.</p>
+</div>
+
+<h3>B6 「某个指标这个月突然涨了 20%，你怎么查？」</h3>
+<div class="card">
+<ol>
+<li>先怀疑数据，后相信世界：上游抓取量、抓取器版本、去重逻辑、分类表版本有没有变。</li>
+<li>拆分：按地区、行业、公司、数据源往下拆，看涨幅是不是集中在一块。</li>
+<li>对照外部：同期的官方数据、新闻（比如某公司大裁员）。</li>
+<li>确认是数据问题就修，并加一条回归检查；是真的就写清楚原因。</li>
+</ol>
+<p class="en">I'd assume a data issue first. Did source volume, the scraper, dedup logic or the taxonomy version change? Then I'd slice by region, industry, company and source to see if the jump is concentrated. I'd compare with outside signals like official statistics or news. If it's a data bug, fix it and add a regression check, which is how I handled every judge finding in my take-home.</p>
+</div>
+
+<h3>B7 「从职位名称推断资历级别（seniority）怎么做？」</h3>
+<div class="card">
+<ol>
+<li>规则先行：intern、junior、senior、staff、principal、director、VP、C 级，各语言对应词。</li>
+<li>没有关键词的：用工作年限（第一份工作到现在）、团队规模、公司规模辅助，训练一个分类器。</li>
+<li>坑：不同公司的头衔通胀不一样（创业公司的 VP 可能只是第三个员工）。要按公司规模校准。</li>
+</ol>
+<p class="en">Start with keyword rules across languages, then for titles without seniority words use years since the first job and company size in a classifier. Watch for title inflation: a VP at a ten-person startup isn't a VP at a bank, so calibrate by company size.</p>
+</div>
+
+<h3>B8 万能收尾句</h3>
+<div class="card">
+<p class="en">My general approach is the same as in the take-home: define what "right" means, build the simplest baseline, measure it on stratified samples, and only add complexity where the errors are.</p>
+<p class="zh">先定义什么叫对，做最简单的基线，分层抽样衡量，只在错误集中的地方加复杂度。</p>
+</div>
+
+
+<h2 id="kyle">11–12 点 · Kyle：写代码 + 系统设计</h2>
+<div class="card"><ul>
+<li><b>写代码</b>：先说思路 → 写测试 → 改代码 → 跑测试，边做边说。下面 8 个任务是他最可能让你当场加的。</li>
+<li><b>系统设计</b>：问需求 → 估算 → 画高层图 → 深挖一个点。框架和素材在 <a href="sysdesign.html">系统设计速成</a>，题目八成是「每天几亿条档案的去重流水线」。</li>
+</ul></div>
+<h3>11–12 点 · Kyle：现场改代码（8 个可能的任务）</h3>
+<div class="key"><b>做法固定 5 步</b>：① 用一句话复述需求 ② 说在哪个文件改 ③ 先写一个会失败的测试 ④ 改代码 ⑤ 跑 <code>uv run pytest</code>，说说可能影响到哪些别的规则。</div>
+
+<p class="q">E1. 公司缩写没网址（RL / Revelio Labs）也要认出来</p>
+<p>改哪：match.py 的 is_candidate 兜底那一段。normalize.py 里已经有 <code>_initials</code>。</p>
+<pre>from .normalize import _initials
+
+def _initials_match(a: str, b: str) -> bool:
+    """'rl' vs 'revelio labs': a short key equal to the other's initials."""
+    ca, cb = a.replace(" ", ""), b.replace(" ", "")
+    return ((len(ca) &lt;= 5 and len(b.split()) >= 2 and ca == _initials(b))
+            or (len(cb) &lt;= 5 and len(a.split()) >= 2 and cb == _initials(a)))
+
+# in is_candidate, before the final rename fallback:
+ck = company_key(row["company_raw"])
+if ck and any(_initials_match(ck, k) for k in pos.company_keys) \
+        and start_compatible(row["startdate"], pos.startdate):
+    return True</pre>
+<p>测试（照 tests/test_match.py 的写法）：</p>
+<pre>def test_company_initials_without_url_keep_one_id():
+    from coalesce.step import step
+    st = UserState(9)
+    step(st, D(2026, 9, 1), [_row("Revelio Labs", "Machine Learning Engineer", D(2026, 8, 1))])
+    step(st, D(2026, 9, 16), [_row("RL", "MLE", D(2026, 8, 1))])
+    assert len(st.positions) == 1</pre>
+<p><b>要主动说的风险</b>：短缩写会撞（AB 可能是很多公司）。所以要求开始日期兼容，而且只在这个人自己的经历里比，范围很小。上线前用判官抽样看新合并的精确率。</p>
+
+<p class="q">E2. 旧经历没有结束日期，也要识别再入职</p>
+<p>思路：现在规则 3 只看「已知结束日期」。可以加：同一次快照里同时出现两行、同雇主同职位、开始日期相差很远 → 两条（简历上本来就是两行）。不同快照之间就难了：开始日期从 2015 变成 2022，可能是改日期，也可能是回来了。说法：<span class="en">"Across snapshots I can't tell an edited start date from a rehire without an end date, so I'd only split when both stints appear in the same snapshot."</span></p>
+
+<p class="q">E3. 把贪心换成最优配对</p>
+<p>先给他一个贪心会错的例子：</p>
+<pre class="d">          P0   P1
+   r0     60   58
+   r1     57   --  (不是候选)
+贪心: r0->P0 (60). r1 只能要 P0, 已被占 -> r1 开新编号. 配上 1 对.
+最优: r0->P1 (58) + r1->P0 (57) = 115 > 60. 配上 2 对.</pre>
+<pre>import numpy as np
+from scipy.optimize import linear_sum_assignment
+
+def optimal_pairs(rows, cands):  # cands: {row_index: [Position, ...]}
+    pos = list({p.position_id: p for ps in cands.values() for p in ps}.values())
+    idx = list(cands)
+    s = np.full((len(idx), len(pos)), -1.0)
+    for a, i in enumerate(idx):
+        for p in cands[i]:
+            s[a, pos.index(p)] = _score(rows[i], p)
+    r, c = linear_sum_assignment(-s)          # maximize total score
+    return {idx[a]: pos[b] for a, b in zip(r, c) if s[a, b] >= AMBIGUOUS_MIN_SCORE}</pre>
+<p>说：只对「有争抢」的那部分用；量一下翻转了多少个决定，抽样给判官看。</p>
+
+<p class="q">E4. 用输出算「每家公司每月在职人数」</p>
+<p><b>关键</b>：用每个人<u>最新</u>的 asof_ts 那一组行（否则同一段经历会被数很多次）。如果是给客户做回测，要用「当时」的 asof（时间点正确）。</p>
+<pre>-- DuckDB
+WITH latest AS (
+  SELECT user_id, MAX(asof_ts) AS ts FROM out GROUP BY user_id),
+cur AS (
+  SELECT o.* FROM out o JOIN latest l
+    ON o.user_id = l.user_id AND o.asof_ts = l.ts),
+months AS (
+  SELECT CAST(m AS DATE) AS m
+  FROM generate_series(DATE '2020-01-01', DATE '2026-09-01', INTERVAL 1 MONTH) t(m))
+SELECT company_raw, m, COUNT(DISTINCT user_id) AS headcount
+FROM cur JOIN months
+  ON cur.startdate &lt;= m AND (cur.enddate IS NULL OR cur.enddate >= m)
+GROUP BY company_raw, m
+ORDER BY company_raw, m;</pre>
+<p>要提：company_raw 还没做公司实体消歧，真实场景应该先映射成公司 id（第 2 章 c 题）。</p>
+
+<p class="q">E5. 加「被遗忘权」删除名单</p>
+<p>思路：一张 (user_id) 或 (position_id) 的删除表。在 runner 写输出前过滤掉；状态里也删，免得第二天又带回来。历史表里也要删，不然重放时会复活。说：<span class="en">"It has to be applied in three places: output, state and history. Otherwise a replay brings it back."</span></p>
+
+<p class="q">E6. 迟到数据重放后编号保持不变</p>
+<ul>
+<li>A：重放得到新的 positions 后，按别名重叠和开始日期，和旧 positions 一一对应，沿用旧编号；对不上的才发新号（序号从旧的 next_seq 往后接）。</li>
+<li>B：不重放，把迟到的快照当成「补丁」，只补空字段、不改配对。快，但不完全等于全量。</li>
+<li>C：照旧重放，但给数据加版本号，下游按版本读。</li>
+</ul>
+<p>推荐 A。说清代价：A 的对应关系本身也是一个小配对问题。</p>
+
+<p class="q">E7. 把学到的打分器接进去</p>
+<p>思路：在 _score 那里换成模型的概率，阈值按「精确率 ≥ 97%」选（之前的数：0.8 阈值时精确率 96.7%、召回 79.0%）。先只在「有争抢」那一步用，跑 A/B 对比脚本（eval/ab_semantic.py 就是干这个的），新合并和新拆开都抽样给判官。</p>
+
+<p class="q">E8. 让它更快</p>
+<ul>
+<li>先量：哪个阶段最慢（分桶、清洗、逐人循环、写文件）。runner 已经记了分桶耗时和每个桶的秒数。</li>
+<li>候选查找现在是「行 × position」两两比。人多经历多时，可以先按 company_key 建个小字典。</li>
+<li>相似度函数已经有 lru_cache。可以把 distinct 职位名对的相似度先批量算好。</li>
+<li>大规模时瓶颈在读写：减少中间落盘，比如分桶直接在 Spark shuffle 里做。</li>
+</ul>
+
+
+<h3>任何人问「弱点」时：自己先说</h3>
+<p>被问「有什么问题」时，主动说出 2–3 条，比被他挑出来强得多。</p>
+<div class="card">
+<ol>
+<li><b>同公司同开始日期却分开的那层</b>：大多是错的（Claude 38% 对，GPT 8% 对）。但只占 0.26% 的编号。下一步：多标注这一层，或者放宽快照内去重。</li>
+<li><b>同起止日期的两份真实并行工作会被合掉</b>：约 25%。例：Author / Psychologist。这是故意选的那一边的错。</li>
+<li><b>旧的那段没有结束日期时，后面同职位的再入职会被合进去</b>。因为规则 3 只在知道结束日期时生效。</li>
+<li><b>公司模板描述</b>：同公司两个不同角色用了一样的公司介绍，可能被合掉（Caterpillar 例子）。</li>
+<li><b>词典只覆盖常见词</b>。</li>
+<li><b>缩写的公司名 + 没网址 + 职位也改了 → 会变成两个编号</b>。例：「Revelio Labs, Machine Learning Engineer」变成「RL, MLE」且没有网址。<span class="warn">这条 README 没写，是今晚用你的代码跑出来的。</span>题目里的 Case B 能过，是因为两行网址一样。被问「没有网址怎么办」就说这条，再说 1.17 的修法 E1。</li>
+<li><b>迟到数据重放后，这个人的编号可能变</b>。已经写进 restated 让下游知道。</li>
+<li><b>阈值是手定的</b>（55、120、62 天、+25），用评估集核过，但没有系统调参。</li>
+<li><b>贪心不是最优配对</b>（1.17 E3 有例子）。快照里争抢的行很少，所以影响小，但没量过。</li>
+<li><b>Spark 没上真集群</b>；历史表每次整份重写，生产应该按用户分区、只追加。</li>
+</ol>
+</div>
+
+
+</main>
+<aside id="toc"><div class="t">目录</div></aside>
+<button id="tocbtn" onclick="document.getElementById('toc').classList.toggle('open')">目录</button>
+<script>
+(function(){var toc=document.getElementById('toc');var n=0;
+document.querySelectorAll('main h2, main h3').forEach(function(h){if(!h.id){h.id='s'+(++n);}var a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent;if(h.tagName==='H3')a.className='h3';a.onclick=function(){if(window.innerWidth<1000)toc.classList.remove('open');};toc.appendChild(a);});
+var links=[].slice.call(toc.querySelectorAll('a'));
+addEventListener('scroll',function(){var cur=null;document.querySelectorAll('main h2, main h3').forEach(function(h){if(h.getBoundingClientRect().top<120)cur=h.id;});links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+cur);});},{passive:true});
+})();
+</script></body></html>
