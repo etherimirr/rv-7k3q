@@ -172,7 +172,16 @@ flowchart LR
 <p>比方：车牌 = 省份 + 城市 + 序号，各段各管各的，不用全国排队领号。</p>
 <ul>
 <li><b>Snowflake</b>：64 位 = 1 位符号 + 41 位时间戳（毫秒）+ 10 位机器号 + 12 位每毫秒序号。每台机器自己发号，不用中心协调；按时间大致有序。</li>
-<li><b>为什么不用自增</b>：要一个中心数据库发号，成了瓶颈和单点。<b>为什么不用 UUID</b>：128 位太长、无序、索引不友好。</li>
+<li><b>为什么不用自增</b>：要一个中心数据库发号，所有机器都来排队拿号，它成了瓶颈；它挂了谁都发不了号，成了单点。</li>
+<li><b>UUID 是什么</b>：一串随机生成的 128 位数字，长这样 <code>550e8400-e29b-41d4-a716-446655440000</code>。好处是谁都能自己生成、几乎不会撞。</li>
+<li><b>为什么不用 UUID，三个原因</b>：
+<ul>
+<li><b>太长</b>：128 位 = 16 字节，Snowflake 是 64 位 = 8 字节，差一倍。id 会出现在每一行、每个索引、每个外键里，10 亿行就多占 8 GB，而且传输、比较都慢一倍。</li>
+<li><b>无序</b>：UUID 是随机的，新生成的号可能比旧的小。比方：往一本按编号排好的账本里插条目。编号递增的话，永远往最后一页加，很快。随机编号就要翻到中间某一页插进去，页满了还要把页拆开（数据库叫页分裂）。数据库的主键索引（B 树）就是这本账本，随机 id 让写入慢几倍，索引也变得松散、占更多空间。</li>
+<li><b>不带信息</b>：Snowflake 的高位是时间戳，看 id 就知道大概什么时候生成的，按 id 排序 = 按时间排序，查「最近一天的记录」直接按 id 范围扫。UUID 看不出任何东西。</li>
+</ul></li>
+<li><b>什么时候 UUID 也行</b>：数据量小、不做范围查询、或者用新版 UUID v7（前面带时间戳，有序了，只剩「太长」一个缺点）。</li>
+<li><b>英文</b>：<span class="en" style="font-size:15px">A UUID is 128 random bits. It's twice the size of a 64-bit id, which costs space in every row and index, and because it's random, inserts land in random places in the B-tree index and cause page splits, so writes get slower and the index gets fragmented. A Snowflake-style id is half the size and roughly time-ordered, so inserts append at the end and the id itself tells you when it was created.</span></li>
 <li><b>时钟回拨</b>是 Snowflake 的经典坑：机器时间往回跳会发重号，要等时间追上来再发。</li>
 </ul>
 <p class="me">你的项目里：user_id &lt;&lt; 16 | 每人序号。同样是「拆段、各管各的」，但不用时间戳，因为要<b>可复现</b>：同样输入每次必须发出同样的 id。user_id 最大 32 位 + 16 位序号 = 48 位，64 位放得下；每人上限 65,536，超了报错进隔离，不静默撞号；id 可以因规则 6 合并而退役，退役后永不复用。</p>
