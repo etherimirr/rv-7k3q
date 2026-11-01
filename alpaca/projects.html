@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>推理项目提纲</title>
+<style>
+:root{--bg:#f8f9fb;--fg:#1d2330;--muted:#5b6474;--card:#fff;--line:#e2e6ee;--acc:#2a5db0;--acc2:#b0532a;--hl:#fff1b8;--box:#eef3fb;--warn:#fcefe8;--ok:#e9f6ee}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15181e;--fg:#e4e7ec;--muted:#9aa3b2;--card:#1d2129;--line:#2d333e;--acc:#7fa8f0;--acc2:#ec9a74;--hl:#3d3618;--box:#1c2534;--warn:#33241d;--ok:#1b2c22;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15181e;--fg:#e4e7ec;--muted:#9aa3b2;--card:#1d2129;--line:#2d333e;--acc:#7fa8f0;--acc2:#ec9a74;--hl:#3d3618;--box:#1c2534;--warn:#33241d;--ok:#1b2c22;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding-block:24px 80px;padding-inline:16px}
+h1{font-size:1.75em;margin:.2em 0;text-wrap:balance}
+h2{font-size:1.3em;margin:2.2em 0 .5em;padding-top:.6em;border-top:2px solid var(--line);text-wrap:balance}
+h3{font-size:1.05em;margin:1.3em 0 .3em;color:var(--acc)}
+.sub{color:var(--muted)}
+.en{color:var(--muted);font-size:.93em}
+.outline{background:var(--box);border-left:4px solid var(--acc);border-radius:8px;padding:10px 14px;margin:10px 0}
+.outline b{color:var(--acc)}
+.say{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:10px 0}
+.say p{margin:.35em 0}
+.say .k{display:inline-block;font-size:.75em;font-weight:600;color:var(--acc);background:var(--box);border-radius:4px;padding:0 6px;margin-right:6px}
+.red{background:var(--warn);border-left:4px solid var(--acc2);border-radius:8px;padding:8px 14px;margin:10px 0}
+.red::before{content:"⚠️ 别说错 ";font-weight:600;color:var(--acc2)}
+.bridge{background:var(--ok);border-radius:8px;padding:8px 14px;margin:10px 0}
+.bridge::before{content:"🔗 接到 Alpaca ";font-weight:600}
+mark{background:var(--hl);color:inherit;padding:0 2px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.94em;margin:8px 0}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--box)}
+td:first-child{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.toc a{color:var(--acc);text-decoration:none}
+details{margin:6px 0}
+summary{cursor:pointer;font-weight:600;color:var(--acc)}
+</style>
+</head>
+<body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./">课件讲解</a><a href="manual.html">技术面手册</a><a href="manual.html#c3">8 道代码题</a><a href="projects.html">项目提纲</a><a href="intro.html">初聊手册</a><a href="../">返回 rv-7k3q</a></div><main>
+
+<h1>推理项目提纲</h1>
+<p class="sub">给 10/23 11:30 Alpaca Research 初聊用。每个项目都按「一句话 → 提纲 → 英文口述 → 追问 → 别说错」排。<br>
+Alpaca 在做「强模型跑在用户自己的硬件上」,所以这份把你所有和推理、设备、性能有关的经历放在一起。</p>
+
+<h2 id="map">0 · 一张总表:被问「你做过什么推理」时挑哪个</h2>
+<div class="scroll"><table>
+<tr><th>项目</th><th>推理引擎 / 工具</th><th>设备</th><th>核心数字</th><th>什么时候讲</th></tr>
+<tr><td>RCRI</td><td>ONNX → TensorRT FP16</td><td>Jetson Nano 2GB</td><td class="num">检测 12 FPS · 83 ms · 0.7 GB · 5 W</td><td>第一个讲。就是「不上云、跑在小设备上」</td></tr>
+<tr><td>E6792 课程</td><td>TensorRT、CUDA 主机端、nvprof</td><td>Jetson Nano</td><td class="num">TensorRT 比 PyTorch 快约 12 倍</td><td>技术追问时,证明你懂 GPU 底层</td></tr>
+<tr><td>E6792 CLIP</td><td>PyTorch + 文本嵌入缓存</td><td>Jetson Nano 实时摄像头</td><td>每帧只跑图像塔</td><td>聊到多模态 / 视觉语言模型</td></tr>
+<tr><td>iQIYI</td><td>PyTorch 批量推理</td><td>服务器 GPU</td><td class="num">端到端延迟 −30%,修 15+ 线上问题</td><td>聊到生产环境、显存溢出</td></tr>
+<tr><td>TaskMap</td><td>冻结 BF16 Qwen2.5-1.5B + LoRA 类适配</td><td>GPU</td><td class="num">最坏任务 −7.9 vs LoRA −26.7</td><td>聊到模型定制、个性化</td></tr>
+<tr><td>TikTok</td><td>LLM agent(LangGraph + MCP)</td><td>云端沙箱</td><td class="num">15 分钟 → 3 小时;1.6 GB 一两分钟</td><td>聊到应用层、先量再改</td></tr>
+<tr><td>BOLT 研究</td><td>LLVM BOLT(二进制布局优化)</td><td>CPU</td><td class="num">旧 profile 只剩约 30% 收益</td><td>聊到性能、内存布局、测量</td></tr>
+<tr><td>OTA 毕设</td><td>C 写的车端安装器</td><td>车载 Linux</td><td class="num">包小 60%+,更新快 70%+</td><td>他们说到固件 / 嵌入式</td></tr>
+</table></div>
+<div class="red">你没有自己写过 LLM 推理引擎。vLLM 你会用但没有项目案例;llama.cpp / MLX 记录里没有。被问就诚实说,然后接「我在小设备上碰到的瓶颈也是内存」。</div>
+
+<!-- RCRI -->
+<h2 id="rcri">1 · RCRI:攀岩路线识别,跑在 Jetson Nano 上</h2>
+<p><b>一句话:</b>拍一面攀岩墙,在一块 5 瓦的小板子上实时认出每条路线和难度,不上云。</p>
+<div class="outline">
+<b>S</b> 路线只靠岩点颜色区分,新手和色弱的人分不清哪些点是自己那条线<br>
+<b>T</b> 两人项目,你带头:实时识别路线 + 估难度,跑在小设备上<br>
+<b>A</b> ① GCP 上训练 YOLOv8,岩点检测 mAP50 0.825 → ② 导出 ONNX,在 Nano 上编译成 TensorRT FP16 引擎(Nano 的 GPU 没有 INT8,所以 FP16)→ ③ 难度特征改成不随拍摄距离变的比例<br>
+<b>R</b> 检测阶段 12 FPS、每帧 83 ms、内存 0.7 GB、5 W;六类全流程 5 FPS;和攀岩馆聊过落地
+</div>
+<div class="say">
+<p><span class="k">S</span>Climbing routes are marked only by hold color, and beginners often can't tell which holds belong to their route.</p>
+<p><span class="k">T</span>With one classmate, I led RCRI: recognize routes and estimate difficulty from a camera, in real time, on a small device, with no cloud upload.</p>
+<p><span class="k">A</span>We trained YOLOv8 on GCP, exported it to ONNX, and built a TensorRT FP16 engine on a 2-gigabyte Jetson Nano. Its GPU has fast FP16 but no INT8 path, so FP16 was the right precision.</p>
+<p><span class="k">R</span>Hold detection runs at 12 frames a second, 83 milliseconds a frame, in 0.7 gigabytes and 5 watts.</p>
+</div>
+<h3>最好的调试故事(很适合讲)</h3>
+<p>一开始每张图只检出约 10 个岩点,分数全挤在 0.5 附近。查下来是 ONNX 后处理多做了一次 sigmoid:分数本来已经过了 sigmoid,再过一次就全被压到 0.5 上下。去掉之后,每张图检出 40 多个。</p>
+<div class="say"><p>Early on, every image only showed about ten holds, and all the scores sat near 0.5. It turned out our ONNX post-processing applied sigmoid twice. Once I removed the extra one, we got over forty holds per image. Since then, when numbers look oddly uniform, I check the post-processing first.</p></div>
+<h3>追问</h3>
+<details><summary>TensorRT 到底做了什么?</summary><p>把 ONNX 计算图针对这块 GPU 编译成引擎:合并相邻的层、给每一层挑最快的实现、用 FP16。编出来的引擎绑死这块 GPU 和这个 TensorRT 版本,换设备要重编。</p></details>
+<details><summary>为什么全流程只有 5 FPS?</summary><p>每帧要跑两个模型:一个找岩点,另一个给岩点分类,再按重叠度对上标签。每帧从 83 ms 变成约 200 ms,而且是串行的。可以改:两个模型共用主干、只对新出现的岩点做分类,或者隔几帧分类一次。</p></details>
+<details><summary>2 GB 内存怎么够?</summary><p>Nano 的 CPU 和 GPU 共用这 2 GB。实测峰值:只检测 0.7 GB,六类 1.0 GB,给系统和摄像头留了余量。<b>这和个人 AI 设备是同一个问题:模型放不放得下。</b></p></details>
+<details><summary>0.825 和 0.77 为什么不一样?</summary><p>两次不同的测量:0.825 是 GCP 上训练后的验证分;0.77 是部署后的 FP16 引擎在 Nano 上、416×416 输入测的。各因素各占多少没有拆开测。</p></details>
+<details><summary>换更好的硬件会怎么做?</summary><p>Orin 这一代支持 INT8,可以量化到 8 位再提速;把两个模型合成一个引擎;用「每帧耗多少电」评估,不只看帧率。</p></details>
+<div class="red">12 FPS 只说「检测阶段」,别说全流程。代码里没找到「难负例挖掘」,别提。预处理在 CPU 上用 NumPy,别说「折进了计算图」。</div>
+<div class="bridge">「我在 2 GB 的板子上,最先撞到的就是内存放不放得下。你们要放 70B 的模型,是同一个问题放大几十倍。」</div>
+
+<!-- E6792 -->
+<h2 id="e6792">2 · E6792(边缘深度学习课):CUDA 主机端 + TensorRT 实测 + CLIP</h2>
+<p><b>一句话:</b>在 Jetson Nano 上把推理从 PyTorch 换到 TensorRT,实测快约 12 倍,并用 profiler 看清楚时间花在哪。</p>
+<h3>2a · TensorRT vs PyTorch 实测</h3>
+<div class="scroll"><table>
+<tr><th>YOLO 416×416 · Jetson Nano</th><th>只算推理</th><th>端到端(含前后处理)</th></tr>
+<tr><td>PyTorch</td><td class="num">1.07 FPS</td><td class="num">1.00 FPS</td></tr>
+<tr><td>TensorRT</td><td class="num">13.03 FPS</td><td class="num">7.45 FPS</td></tr>
+<tr><td>提升</td><td class="num"><mark>约 12 倍</mark></td><td class="num">约 7.4 倍</td></tr>
+</table></div>
+<p>端到端提升小,是因为前后处理还在 CPU 上,没跟着变快。这句话本身就是一个好观点:<b>模型加速后,瓶颈会转移到别处</b>。</p>
+<p>用 nvprof 看了三个指标:</p>
+<ul>
+<li><b>sm_efficiency</b>:GPU 的计算核心有多少时间在干活</li>
+<li><b>achieved_occupancy</b>:每个核心上同时排了多少活,排满了才能藏住等数据的时间</li>
+<li><b>dram_read_throughput</b>:每秒从显存读多少字节,看是不是卡在内存带宽上</li>
+</ul>
+<h3>2b · CUDA 推理的主机端</h3>
+<p>自己写了主机这一侧:分配显存、把数据搬进搬出、设置 block 和 grid 大小、处理数据类型;然后用课程给的 kernel 重建一个 CNN 的完整前向,输出和 PyTorch 对齐。</p>
+<h3>2c · CLIP 零样本分类</h3>
+<p>在 Nano 上接实时摄像头跑 CLIP。所有类别的文本特征<b>提前算一次存起来</b>,每帧只跑图像那一半,再算相似度。还分析出它比小 CNN 慢,优化方向是 FP16、TensorRT 和缓存文本特征。</p>
+<div class="say">
+<p><span class="k">Host side</span>In my edge deep-learning course, I implemented the host side of a CUDA inference path: GPU memory allocation, data movement, launch configuration and dtypes. Then I rebuilt a CNN's forward pass on top of the provided kernels and matched PyTorch's outputs.</p>
+<p><span class="k">Profiling</span>On a Jetson Nano, TensorRT ran YOLO inference about twelve times faster than PyTorch, 13 frames a second versus one. End to end it was only about 7x, because pre- and post-processing were still on the CPU. I used nvprof to look at SM efficiency, occupancy and DRAM read throughput.</p>
+<p><span class="k">CLIP</span>I also ran CLIP zero-shot classification live on the Nano, caching the text embeddings so each frame only runs the image encoder.</p>
+</div>
+<div class="red">kernel 是课程发的(文件顶上写着不用改)。只能说「写了主机端」「在现成 kernel 上重建前向」,绝对不说「手写 CUDA kernel」。</div>
+<div class="bridge">缓存文本特征和大模型的 KV 缓存是同一个思路:<b>算过的东西别重算,存起来下次直接读。</b></div>
+
+<!-- iQIYI -->
+<h2 id="iqiyi">3 · iQIYI:生产环境的 PyTorch 图像生成推理</h2>
+<p><b>一句话:</b>内容团队每天批量跑的图像生成管线,你把端到端延迟降了约 30%,修了 15 个以上的线上问题。</p>
+<div class="outline">
+<b>S</b> 内容团队用这条 PyTorch 管线批量出图,慢、还经常出故障<br>
+<b>A</b> 先分段计时(预处理 / 模型推理 / 后处理),找出慢在哪,再针对性优化<br>
+<b>R</b> 端到端延迟约 −30%;修了 15+ 个线上问题:显存溢出(OOM)、批处理队列卡住、风格不一致
+</div>
+<div class="say"><p>At iQIYI I worked on a PyTorch image-generation pipeline that content teams used for batch production. I profiled where the time went across preprocessing, inference and post-processing, cut end-to-end latency by about 30 percent, and fixed more than fifteen production issues, like GPU out-of-memory errors and stuck batch queues.</p></div>
+<div class="red">30% 具体每步省多少(混合精度、动态 batch 8–16、缓存)没有原始记录,对方追问细节时说「先分段测,再上混合精度和调整 batch」,不报每步的数字。</div>
+
+<!-- TaskMap -->
+<h2 id="taskmap">4 · TaskMap 论文(二作,审稿中):一个冻结模型服务很多任务</h2>
+<p><b>一句话:</b>每个任务的权重改动写成「同一套坐标轴上的一串系数」,任务之间能直接比较,没见过的任务也不容易翻车。</p>
+<div class="outline">
+<b>S</b> 一个冻结的大模型要服务很多任务;共享一个 LoRA 会互相干扰,每个任务一个 adapter 又谁也不共享<br>
+<b>T</b> 把每个任务的更新写成公共正交轴上的系数<br>
+<b>A</b> 你做消融和冷启动实验,骨干是冻结的 BF16 Qwen2.5-1.5B<br>
+<b>R</b> 起作用的是按块生成的系数,不是路由;20 个没见过的任务,最坏一个掉 7.9 分,共享 LoRA 掉 26.7。平均分 LoRA 更高,要如实说
+</div>
+<div class="say"><p>I'm second author on TaskMap, which is under review. It writes each task's weight update as coefficients on fixed, shared orthogonal axes, on a frozen BF16 Qwen2.5-1.5B. My part was the ablations and cold-start experiments. On 20 unseen tasks, shared LoRA had the higher average, but its worst task dropped 26.7 points versus 7.9 for TaskMap. So it's safer rather than stronger on average.</p></div>
+<h3>和推理、个人设备有关的两个追问</h3>
+<details><summary>推理时会变慢吗?</summary><p>实验里残差是用 Python hook 加上去的,没融合 kernel,所以不快。只服务一个任务时,可以把这个任务的更新提前合进权重,像合并 LoRA 一样,零额外开销;同时服务多个任务,就要把残差融进 FFN 的 kernel。这是你的想法,论文没做。</p></details>
+<details><summary>放在个人设备上意味着什么?</summary><p>Qwen2.5-1.5B 在 16 位约 3.1 GB,4 位约 0.8 GB。公共坐标轴可以从随机种子重新生成,每个任务只要存一小串数,所以给个人模型做很多小定制很省空间。这是你的看法。</p></details>
+<div class="red">只说「under review」,不说会议名。</div>
+
+<!-- TikTok -->
+<h2 id="tiktok">5 · TikTok:LLM 分析 agent(应用层)</h2>
+<p><b>一句话:</b>从 0 做了一个 LLM agent,把「导出 CSV → 找 AI 写分析 → 手动上传」变成一次对话;长任务从 15 分钟上限变成能跑 3 小时。</p>
+<p>这不是推理引擎,但有一个和推理很像的故事:<b>先量再改</b>。</p>
+<div class="outline">
+<b>现象</b> 一个 12.5 GB 的导出文件看起来「卡住了」,你先加了抽样<br>
+<b>第二天量了一下</b> 一次流式读完约 25 万行其实来得及;真正慢的是 agent 为了数行数反复从头读整个文件,而且是跨地区挂载的盘<br>
+<b>改法</b> 去掉多余的读取,把抽样也撤掉,报告保持精确<br>
+<b>结果</b> 1.6 GB 的文件一两分钟跑完
+</div>
+<div class="say"><p>A 12.5-gigabyte export once looked stuck, and I added sampling. The next day I measured: one streaming pass finished in time. The real cost was the agent re-reading the whole file just to count rows, over a cross-region mount. I removed the extra reads and the sampling. That habit, counting how many bytes actually move, is the same one I'd bring to inference work.</p></div>
+<div class="bridge">「数一下到底搬了多少字节」是你在 TikTok 学到的习惯,和本地跑大模型看内存带宽是同一种思路。</div>
+<div class="red">Firefly 平台不是你做的;你在公司的 agent 框架里新增了 firefly 这个域。别说「一周变当天」。</div>
+
+<!-- BOLT -->
+<h2 id="bolt">6 · BOLT 研究(本学期):代码在内存里怎么摆,决定快不快</h2>
+<p><b>一句话:</b>BOLT 把编译好的程序重新排布,让常用的代码挨在一起;你研究的是编译器升级后,旧的性能数据还能用多少。</p>
+<div class="outline">
+<b>问题</b> 用新的 profile 优化,程序快 1.30 倍;编译器升级后还用旧 profile,只剩约 30% 的收益<br>
+<b>数字</b> 新方法 Wax 能找回 92%,BOLT 自己的匹配 81%;编译器版本差越大掉越多,到 Clang 18 分别是 84% 和 70%<br>
+<b>你做的</b> 版本差距实验和归因:常用代码只有 4.5% 完全没变;约五分之一是内联变了,约三分之一是基本块结构变了,约三分之一是指令变了<br>
+<b>教训</b> 不固定测量条件,同一个 Wax 程序只测出 73%
+</div>
+<div class="say"><p>This semester I'm on a research project on LLVM BOLT, which reorders a compiled binary so hot code sits together. After a compiler upgrade, a stale profile keeps only about 30 percent of the speedup. A newer method, Wax, recovers 92 percent versus 81 for BOLT's own matching. I ran the version-gap experiments and the attribution. I also learned to control measurements: without a fixed setup, the same Wax binary measured only 73 percent.</p></div>
+<div class="bridge">推理引擎的速度也是「数据在内存里怎么摆」决定的;而且测性能一定要固定条件。</div>
+<div class="red">原始流水线是同组 Wenxuan 搭的。你做版本差距、归因脚本、Wax 误差分析。</div>
+
+<!-- OTA -->
+<h2 id="ota">7 · OTA 毕设(交大 × 联合汽车电子):只在他们说到固件时讲</h2>
+<p><b>一句话:</b>汽车在线升级时只发改动过的文件,你用 C 写了车端安装器,任何一步校验失败就整体回滚。</p>
+<div class="say"><p>My undergraduate capstone, with UAES, was an over-the-air update system for cars on Linux. We shipped only the files that changed. I wrote the in-vehicle installer in C: it reads a manifest, patches each file, restores permissions, checks MD5, and rolls everything back if any check fails, so a car is never left half-updated. Packages got over 60 percent smaller and updates over 70 percent faster.</p></div>
+<div class="red">五人组,你确认过的部分是车端安装器。别主动说 led。</div>
+
+<!-- Bridge -->
+<h2 id="llm">8 · 把这些接到「本地跑大模型」</h2>
+<p>你所有项目都在小模型上,Alpaca 要的是大模型。中间这座桥是:<b>单人用的时候,生成速度卡在内存,不卡在算力。</b></p>
+<div class="outline">
+每生成一个字,要把全部权重从内存读一遍<br>
+70B 模型 4 位 ≈ 35 GB → 800 GB/s 的机器,最多约 <mark>23 个字每秒</mark><br>
+普通台式机约 90 GB/s → 只有约 2.6 个字每秒<br>
+数据中心靠批处理:读一次权重服务几百个请求;个人设备只有你一个人
+</div>
+<div class="scroll"><table>
+<tr><th>办法</th><th>省了什么</th><th>代价</th><th>你哪段经历沾边</th></tr>
+<tr><td>量化 16→4 位</td><td>字节少约 3.6 倍,速度接近按比例变快</td><td>4 位以下质量更容易掉,要重新评测</td><td>RCRI 选 FP16;Walmart 评测研究</td></tr>
+<tr><td>KV 缓存</td><td>前文不用重算</td><td>聊得越长越占内存、越慢</td><td>CLIP 缓存文本特征</td></tr>
+<tr><td>投机解码</td><td>读一次权重出不止一个字</td><td>要多放一个小模型</td><td>无,能讲原理就行</td></tr>
+<tr><td>MoE</td><td>每个字只读一部分参数</td><td>全部专家都要放得下</td><td>无</td></tr>
+<tr><td>融合 kernel</td><td>少来回读写内存</td><td>工程量大</td><td>TensorRT 合并层;TaskMap 残差融合的想法</td></tr>
+</table></div>
+<h3>被问「你做过 LLM 推理吗」时这样答</h3>
+<div class="say">
+<p><span class="k">Honest</span>I haven't built an LLM inference engine myself. My hands-on inference work is TensorRT on Jetson: for RCRI, ONNX to a TensorRT FP16 engine on a 2-gigabyte Nano, 12 frames a second at 5 watts, and in my GPU course I measured TensorRT at about 12x over PyTorch and profiled it with nvprof.</p>
+<p><span class="k">Bridge</span>The first wall I hit on the Nano was memory, and that's the same wall for local LLMs at a much bigger scale. For one user, every token reads all the weights, so a 70B model at 4 bits is about 35 gigabytes per token, roughly 23 tokens a second at 800 gigabytes a second.</p>
+<p><span class="k">Eager</span>That's exactly why your focus on the inference engine and memory makes sense to me, and it's what I'd want to go deep on.</p>
+</div>
+
+<h2>9 · 通话前 1 分钟只看这个</h2>
+<ol>
+<li>RCRI:ONNX → TensorRT FP16,Nano 2 GB,检测 12 FPS · 83 ms · 0.7 GB · 5 W。双 sigmoid 的调试故事。</li>
+<li>E6792:TensorRT 比 PyTorch 快约 12 倍(端到端 7.4 倍,瓶颈转移到 CPU);nvprof 三个指标;kernel 不是你写的。</li>
+<li>iQIYI:PyTorch 批量推理 −30%,修 OOM 和卡队列。</li>
+<li>没做过 LLM 推理引擎 → 诚实说 → 接「内存是瓶颈」→ 35 GB、23 字每秒。</li>
+</ol>
+
+</main></body></html>

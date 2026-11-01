@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alpaca 技术面手册</title>
+<style>
+:root{--bg:#fbfaf7;--ink:#1d1f24;--muted:#5b6170;--accent:#0f6e6e;--card:#ffffff;--line:#e3e0d8;--zh:#7a4b12;--warn:#b03a2e;--hl:#fff3c4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#16181c;--ink:#e9e7e2;--muted:#a3a9b5;--accent:#5cc3c3;--card:#1f2228;--line:#30343c;--zh:#e0b277;--warn:#ff8a7a;--hl:#4a4020;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.65 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif;padding:20px 16px 80px}
+main{max-width:800px;margin:0 auto}
+h1{font-size:27px;margin:0 0 4px;text-wrap:balance}
+h2{font-size:22px;margin:38px 0 10px;color:var(--accent);border-bottom:2px solid var(--line);padding-bottom:4px}
+h3{font-size:19px;margin:24px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.en{font-size:18.5px;margin:0 0 3px}
+.zh{color:var(--zh);font-size:15px;margin:0 0 14px}
+.tag{display:inline-block;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 10px;margin:4px 0 6px}
+u{text-decoration:none;background:var(--hl);padding:0 2px;border-radius:3px}
+.outline{font-size:15.5px;color:var(--muted);border-left:3px solid var(--accent);padding-left:10px;margin:8px 0 14px}
+.what{font-size:15px;color:var(--muted);margin-top:4px}
+.warn{color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0}
+td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--card)}
+.tbl{overflow-x:auto}
+ul,ol{padding-left:22px;margin:6px 0}
+li{margin:4px 0}
+nav{font-size:15px;line-height:1.9}
+nav a{color:var(--accent);text-decoration:none;margin-right:10px;white-space:nowrap}
+.res{font-family:Menlo,Consolas,monospace;font-size:13.5px;white-space:pre-wrap;background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:10px}
+pre{background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:10px;font-size:13.5px;overflow-x:auto}
+.q{font-weight:600;margin-top:14px}
+
+#toc{position:fixed;top:0;left:0;bottom:0;width:250px;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 12px 40px;font-size:14px;line-height:1.5;box-sizing:border-box;z-index:10}
+#toc .t{font-weight:700;color:var(--accent);margin-bottom:8px;font-size:15px}
+#toc a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:5px}
+#toc a.h3{padding-left:20px;color:var(--muted);font-size:13px}
+#toc a:hover,#toc a.on{background:var(--hl)}
+#tocbtn{display:none;position:fixed;right:14px;bottom:18px;z-index:11;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:10px 16px;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+@media (min-width:1000px){body{padding-left:270px}}
+@media (max-width:999px){#toc{display:none;width:82%;box-shadow:2px 0 12px rgba(0,0,0,.25)}#toc.open{display:block}#tocbtn{display:block}}
+@media print{#toc,#tocbtn{display:none!important}body{padding-left:16px}}
+h2,h3{scroll-margin-top:12px}
+
+.en{font-size:18.5px}
+.fu{font-size:16px}
+code{font-family:Menlo,Consolas,monospace;font-size:.9em;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 3px}
+pre code{border:0;padding:0;background:none}
+.ok{color:var(--accent);font-size:14px}
+@media print{body{font-size:15px}.card,pre{break-inside:avoid}}
+</style>
+</head>
+<body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./">课件讲解</a><a href="manual.html">技术面手册</a><a href="manual.html#c3">8 道代码题</a><a href="projects.html">项目提纲</a><a href="intro.html">初聊手册</a><a href="../">返回 rv-7k3q</a></div><main>
+<h1>Alpaca Research 二面 · 技术面手册</h1>
+<div class="sub">11/2 周一 12:00–13:00 ET · 现场 · 17 Tudor St, Cambridge MA · 邀请上的面试官:matt@alpa.ca<br>你在招聘会选的是 Software 组(Firmware, Inference)。网上没有这家公司的任何面经,凡是标【预测】的都是我推的。</div>
+
+<div class="card">
+<p><b>这份和以前两份的关系</b></p>
+<ul>
+<li>公司背景、到岗时间三种说法、身份怎么答:在 <b>AlpacaResearch_初聊_教案.md</b>(第 1 章、3.5–3.7)。这里只放短版。</li>
+<li>每个项目的 STAR 和英文稿:在 <b>Alpaca_推理项目提纲_1023.html</b>。这里只放<u>技术追问树</u>,也就是被一层层问下去时怎么接。</li>
+<li>新内容:大模型本地推理的算账(第 2 章)、8 道代码题(第 3 章,全部在本机跑过)、底层基础(第 4 章)。</li>
+</ul>
+<p class="zh">标记:【预测】= 我推的;【已核】= 本机跑过或查过原始材料;🔴 = 别说错的红线。</p>
+</div>
+
+<h2 id="c0">第 0 章 · 一页速览</h2>
+
+<h3 id="s0-1">0.1 当天要做的事(按时间排)</h3>
+<div class="card">
+<ol>
+<li><b>出发前</b>:<span class="warn">NDA 必须提前签完。</span>对方说会用 DocuSign 发;10/31 前还没收到,就回信问一句。没签就进不了办公室。</li>
+<li><b>日期</b>:对方邮件里写过 Tuesday,但 11/2 是<u>周一</u>,日历邀请写的也是周一,你们最后确认的是 "Monday, November 2"。按周一去。</li>
+<li><b>地址</b>:17 Tudor St, Cambridge, MA。在 MIT 和 Central Square 附近。从纽约去要几个小时,建议前一晚到,或坐很早的车;具体车次和从车站过去的路线出发前用地图确认。</li>
+<li><b>提前 10 分钟到</b>:11:50 在门口。小公司可能没有前台,到了先发邮件或打电话,不要干等。</li>
+<li><b>带上</b>:证件、纸质简历 2 份(招聘会那份 MLE_3proj)、充满电的电脑和充电器、一支笔。代码可能在白板上写,也可能在你电脑上写。</li>
+</ol>
+</div>
+
+<h3 id="s0-2">0.2 这一轮可能考什么【预测】</h3>
+<p>比方:初聊是「看你这个人对不对」,二面是「看你能不能干活」。Software 组做固件和推理,所以最可能是三块:</p>
+<pre>
+ ┌──────────────┐   ┌──────────────────┐   ┌──────────────┐
+ │ 项目深挖      │   │ 写代码(白板/电脑)│   │ 推理/底层原理 │
+ │ RCRI, E6792   │ + │ 缓存、采样、量化  │ + │ 内存带宽、KV  │
+ │ 一层层问到底  │   │ 边写边说          │   │ 缓存、cache   │
+ └──────────────┘   └──────────────────┘   └──────────────┘
+</pre>
+<ul>
+<li>CEO 据第三方资料做过深度学习 CUDA kernel 优化,所以问题可能很底层。</li>
+<li>Matt 是谁查不到。开场时问一句他在哪个组,就知道往哪边偏。</li>
+<li>现场面常见:让你在白板上画系统、估算数字。所以第 2 章的几个数要能当场算出来。</li>
+</ul>
+
+<h3 id="s0-3">0.3 60 分钟大概怎么分【预测】</h3>
+<div class="tbl"><table>
+<tr><th>分钟</th><th>内容</th><th>你要做的</th></tr>
+<tr><td>0–5</td><td>寒暄、介绍</td><td>30 秒版自我介绍(见 5.1),问 Matt 做什么</td></tr>
+<tr><td>5–20</td><td>项目深挖</td><td>先讲 RCRI,再接 E6792。数字说准</td></tr>
+<tr><td>20–45</td><td>写代码 1–2 题</td><td>先复述题目、举例子,再写,写完自己跑一遍例子</td></tr>
+<tr><td>45–55</td><td>推理原理、底层</td><td>画图 + 算数,说清楚是上限还是实测</td></tr>
+<tr><td>55–60</td><td>你提问</td><td>第 5 章三个问题</td></tr>
+</table></div>
+
+<h3 id="s0-4">0.4 五个必须脱口而出的数</h3>
+<div class="card">
+<ol>
+<li>RCRI:Jetson Nano 2GB,TensorRT FP16,<u>检测阶段</u> 12 FPS、83 ms、0.7 GB、5 W。</li>
+<li>E6792:TensorRT 13.03 FPS vs PyTorch 1.07 FPS,约 12 倍;端到端 7.45 vs 1.00,约 7.4 倍。</li>
+<li>权重内存 = 参数数 × 位数 ÷ 8。70B 在 4 位约 35 GB。</li>
+<li>单人生成速度上限 ≈ 内存带宽 ÷ 每个字要读的字节数。35 GB、800 GB/s → 约 23 字/秒。</li>
+<li>KV 缓存每个 token = 2 × 层数 × KV 头数 × 每头维度 × 每个数的字节数。Llama-3.1-8B 是 128 KiB/token。</li>
+</ol>
+</div>
+
+<h2 id="c1">第 1 章 · 项目深挖:往「本地推理」上靠</h2>
+<p>比方:深挖像剥洋葱。第一层你讲故事,第二层他问「为什么这么选」,第三层问「底下到底发生了什么」。这一章只准备第二、三层。</p>
+
+<h3 id="s1-1">1.1 TensorRT 到底做了什么</h3>
+<div class="card">
+<p><b>比方</b>:PyTorch 像现场照着菜谱一步步做菜,每一步都去柜子里拿调料。TensorRT 像开餐前先把整套菜谱研究一遍:能一起做的步骤合并,挑这口锅最顺手的做法,调料提前备好。</p>
+<pre>
+PyTorch(逐层跑)            TensorRT(先编译成引擎)
+conv → 写显存               ┌────────────────────┐
+读显存 → bn → 写显存        │ conv+bn+relu 合成一个 │ 只读写一次显存
+读显存 → relu → 写显存      │ 每层挑最快的实现     │
+                           │ 权重转 FP16          │
+                           └────────────────────┘
+</pre>
+<p>做了四件事:</p>
+<ol>
+<li><b>层融合</b>:conv、bn、relu 合成一个 kernel,中间结果不写回显存。</li>
+<li><b>挑实现</b>:编译时在这块 GPU 上实测几种实现,选最快的(叫 tactic 选择)。</li>
+<li><b>降精度</b>:FP32 → FP16(或 INT8)。字节少一半,算得也快。</li>
+<li><b>提前分配内存</b>:中间张量的显存提前排好,能复用的复用。</li>
+</ol>
+<p><b>小算例</b>:一张 416×416×3 的图,FP32 是 416×416×3×4 = 2,076,672 字节,约 2.1 MB;FP16 减半,约 1.0 MB。每一层的中间结果都是这个量级,少写一次显存就省一次这么多的搬运。</p>
+<p class="warn">🔴 引擎绑死这块 GPU 型号和 TensorRT 版本,换设备要重新编译。被问「能不能拷到别的板子」要这么答。</p>
+</div>
+
+<h3 id="s1-2">1.2 Jetson Nano 上为什么是 FP16 不是 INT8</h3>
+<div class="card">
+<p><b>比方</b>:FP16 是把尺子的刻度从毫米改成半毫米精度够用的版本;INT8 是只留 255 个刻度,需要先量一批样本决定刻度怎么摆(校准)。</p>
+<pre>
+FP32  32 位  精度最高   Nano: 能跑
+FP16  16 位  一半字节   Nano: 硬件原生支持,速度约是 FP32 的 2 倍
+INT8   8 位  1/4 字节   Nano: Maxwell 架构没有 INT8 点积指令 → TensorRT 不给 INT8
+</pre>
+<ul>
+<li>Nano 的 GPU 是 Maxwell 架构(计算能力 5.3)。INT8 点积指令从 6.1 开始才有。所以在 Nano 上 FP16 就是最好的选择。</li>
+<li>换到 Orin 这一代就能用 INT8:要拿几百张代表性图片做校准,再对比精度。</li>
+<li>你的实测:FP16 和离线结果差 1 个点以内。</li>
+</ul>
+<p class="q">英文答(约 30 秒)</p>
+<p class="en">The Nano has a Maxwell GPU. It runs FP16 natively at about twice the FP32 rate, but it has no INT8 dot-product instructions, so TensorRT doesn't offer an INT8 path there. FP16 was the best precision available, and it stayed within about one point of our offline results. On an Orin-class board I would try INT8 with a calibration set of a few hundred representative images, and check accuracy per class before switching.</p>
+</div>
+
+<h3 id="s1-3">1.3 profiling 三个指标,怎么读</h3>
+<div class="card">
+<p><b>比方</b>:GPU 像一个有很多收银台的超市。</p>
+<div class="tbl"><table>
+<tr><th>指标</th><th>超市里的意思</th><th>低了说明什么</th></tr>
+<tr><td>sm_efficiency</td><td>收银台有多少时间开着在干活</td><td>活太少,或者在等 CPU 发活</td></tr>
+<tr><td>achieved_occupancy</td><td>每个收银台前排了几个人</td><td>排队的人少,等货(等内存)时没人可接</td></tr>
+<tr><td>dram_read_throughput</td><td>仓库每秒往外搬多少货</td><td>接近带宽上限 = 卡在内存;很低 = 卡在别处</td></tr>
+</table></div>
+<p><b>怎么判断卡在哪</b>:用「每搬 1 字节做几次运算」(算术强度)。</p>
+<pre>
+算术强度 = 运算次数 ÷ 搬运字节数
+低于 (峰值算力 ÷ 峰值带宽) → 卡内存(memory-bound)
+高于                        → 卡计算(compute-bound)
+</pre>
+<p><b>小算例</b>:假设一块 GPU 有效算力 100 TFLOPS、带宽 1 TB/s,分界线是 100 ÷ 1 = 100 次运算/字节。单人生成时大模型约 1 次/字节(2 次运算 ÷ 2 字节的 FP16 参数),远低于 100,所以卡内存。【已核】</p>
+<p class="warn">🔴 kernel 是课程给的(文件顶上写着不用改)。你写的是主机端:分配显存、拷数据、设 block/grid、处理 dtype,再用现成 kernel 搭出完整前向并和 PyTorch 对齐。不说「手写 CUDA kernel」。</p>
+</div>
+
+<h3 id="s1-4">1.4 追问树:RCRI 和 E6792</h3>
+<div class="card">
+<p class="q">Q1 端到端为什么只快 7.4 倍,不是 12 倍?</p>
+<p class="zh">模型那段变快了,前后处理还在 CPU 上没变,所以它成了新的瓶颈。</p>
+<p class="en">Only the model got faster. Pre and post processing stayed on the CPU, so they became the new bottleneck. That's Amdahl's law in practice.</p>
+<p class="what">算一下:端到端每帧 1/7.45 ≈ 134 ms,纯推理 1/13.03 ≈ 77 ms,剩下约 57 ms 是推理以外的部分。</p>
+
+<p class="q">Q2 那剩下的 57 ms 你怎么砍?</p>
+<p class="zh">① 预处理搬到 GPU(缩放、归一化);② 摄像头读帧和推理分两个线程流水起来;③ 后处理只对高分框做 NMS。</p>
+<p class="en">I'd move resize and normalize onto the GPU, overlap camera capture with inference in a separate thread, and run NMS only on boxes above the score threshold. Then I'd profile again, because the bottleneck moves every time.</p>
+<p class="warn">🔴 这些是「会怎么做」,RCRI 里预处理确实在 CPU 上用 NumPy,没流水化。说成计划,别说做过。</p>
+
+<p class="q">Q3 2 GB 内存是怎么分的?</p>
+<p class="zh">CPU 和 GPU 共用这 2 GB(统一内存)。只检测时峰值 0.7 GB,六类全流程 1.0 GB,剩下留给系统和摄像头。</p>
+<p class="en">The CPU and GPU share the same 2 gigabytes. Peak was 0.7 gigabytes for detection alone and 1.0 for the full pipeline, which left room for the OS and the camera. Same problem as a personal AI box: does the model fit next to everything else.</p>
+
+<p class="q">Q4 一个 1.5B 的语言模型能放进这块 Nano 吗?</p>
+<p class="zh">4 位约 1.54×10⁹ × 0.5 字节 ≈ 0.77 GB,放得下;但带宽只有 25.6 GB/s,每秒最多约 33 个字,实际更低。</p>
+<p class="en">At 4 bits it's about 0.77 gigabytes, so it fits. But the Nano only has about 25.6 gigabytes a second of bandwidth, so the ceiling is around 33 tokens a second, and real numbers would be lower.</p>
+<p class="what">25.6 ÷ 0.77 ≈ 33。【已核】</p>
+
+<p class="q">Q5 最难调的 bug?</p>
+<p class="zh">ONNX 后处理多做了一次 sigmoid,分数全挤在 0.5,每张图只出约 10 个岩点;去掉后 40 多个。</p>
+<p class="en">Our ONNX post-processing applied sigmoid twice, so every score sat near 0.5 and we only got about ten holds per image. After removing the extra sigmoid we got over forty. Now when numbers look oddly uniform, I check post-processing first.</p>
+
+<p class="q">Q6 怎么确认 FP16 没掉精度?</p>
+<p class="zh">同一批验证图,离线 PyTorch 和 Nano 上的 FP16 引擎各跑一遍,对比 mAP,差 1 个点以内。</p>
+<p class="en">Same validation images through the offline PyTorch model and the FP16 engine on the Nano, then compare mAP. It stayed within about one point.</p>
+<p class="warn">🔴 0.825 是 GCP 上训练后的验证分;0.77 是 Nano 上 FP16 引擎在 416×416 测的。两者差多少来自哪里没有拆开测,别编原因。</p>
+
+<p class="q">Q7 CUDA 主机端最容易错的地方?</p>
+<p class="zh">① grid 大小要向上取整,kernel 里还要判断下标越界;② dtype 对不上(float64 传进期待 float32 的 kernel);③ 拷回结果前要同步。</p>
+<p class="en">Three things. The grid size has to round up, so the kernel needs a bounds check. The dtype must match what the kernel expects, for example float32, not float64. And you have to synchronize before reading results back to the host.</p>
+<p class="what">算例:1000 个元素、每个 block 256 线程 → grid = ⌈1000/256⌉ = 4 个 block = 1024 个线程,多出的 24 个线程靠越界判断直接返回。【已核】</p>
+</div>
+
+<h3 id="s1-5">1.5 CLIP:缓存文本特征 = KV 缓存的思路</h3>
+<div class="card">
+<p><b>比方</b>:考试前把所有选项先背熟(文本特征),考试时只看题目(图像)再比对,不用每道题都重新读一遍选项。</p>
+<pre>
+启动时(一次):  "a photo of a cat" ─┐
+                 "a photo of a dog" ─┼─ 文本塔 → 归一化 → 存成矩阵 T (类别数 × 512)
+                 ...                 ┘
+每帧:           摄像头图像 → 图像塔 → 归一化 → 向量 v
+                 分数 = T · v  → 取最大的那个类
+</pre>
+<p><b>小算例</b>:假设 10 个类、特征 512 维。打分只是 10 次 512 维点积 = 5,120 次乘加,和跑一次图像塔比几乎是零。省下的是每帧 10 次文本塔前向。</p>
+<p class="q">英文答</p>
+<p class="en">On the Nano I ran CLIP zero-shot classification on a live camera. The class prompts never change, so I encoded them once at startup, normalized them, and kept them as a matrix. Each frame only runs the image encoder, then a dot product against that matrix. It's the same idea as a KV cache: never recompute something whose inputs haven't changed.</p>
+<p class="q">追问:它比小 CNN 慢,怎么办?</p>
+<p class="en">The image tower is the cost. I'd convert it to FP16 with TensorRT, keep the cached text matrix, and if latency still matters, distill to a smaller image encoder for the fixed class set.</p>
+<p class="warn">🔴 FP16/TensorRT 是你分析出的优化方向,课程里没做完。说「I identified」,不说「I shipped」。</p>
+</div>
+
+<h3 id="s1-6">1.6 iQIYI:生产推理延迟 -30%</h3>
+<div class="card">
+<p><b>比方</b>:先给流水线每一段计时,才知道该修哪一段。</p>
+<pre>
+请求 → [预处理] → [模型推理] → [后处理] → 结果
+         t1           t2           t3        先分段量,再针对最大的那段
+</pre>
+<p class="en">At iQIYI the content team ran a PyTorch image-generation pipeline in batches. I timed each stage separately, preprocessing, inference and post-processing, then optimized the biggest ones. End-to-end latency dropped about 30 percent, and I fixed more than fifteen production issues, like GPU out-of-memory errors and stuck batch queues.</p>
+<p class="q">追问:OOM 怎么修的?</p>
+<p class="en">First find which step peaks. Usually it's batch size times resolution. The fixes are capping the batch by memory instead of by count, freeing intermediate tensors early, and running in mixed precision.</p>
+<p class="warn">🔴 每一步省了多少没有原始记录。被追问细节就说方法,不报每步的数字。</p>
+</div>
+
+<h3 id="s1-7">1.7 被问「你写过 LLM 推理引擎吗」</h3>
+<div class="card">
+<div class="outline">提纲:① 诚实:没写过 / Honest: no ② 实际做过:TensorRT on Jetson / What I did ③ 桥:瓶颈同样是内存 / Same wall ④ 想学 / Eager</div>
+<p class="en">No, I haven't built an LLM inference engine myself. My hands-on inference work is TensorRT on Jetson: an FP16 engine on a 2-gigabyte Nano for RCRI, and in my GPU course I measured TensorRT at about twelve times faster than PyTorch and profiled it with nvprof. The first wall I hit on the Nano was memory, and that's the same wall for local LLMs at a bigger scale. For a single user, every token reads all the weights, so speed is roughly bandwidth divided by model size. That's the part of your stack I'd most want to go deep on.</p>
+</div>
+
+<h2 id="c2">第 2 章 · 大模型本地推理:从零算账</h2>
+<p>初聊教案 3.13–3.14 已经算过 70B 的大账。这一章换成更小、更贴近个人设备的 8B 模型,把每个公式都带一个能当场在白板上算的例子。所有数字都在本机用 Python 算过【已核】。设备带宽是厂商公开规格。</p>
+<p class="zh">单位约定:GB = 10⁹ 字节(和厂商标带宽一致);KiB/GiB = 1024 进制,只在 KV 缓存那里用,会标出来。</p>
+
+<h3 id="s2-1">2.1 权重要占多少内存</h3>
+<div class="card">
+<p><b>比方</b>:模型的每个参数是一个数字。存一个数字用几位,就像每本书用多厚的纸印。书的本数不变,纸越薄,书架占得越少。</p>
+<pre>
+权重字节 = 参数个数 × 每个参数的位数 ÷ 8
+
+            FP16(16位)  INT8(8位)  INT4(4位)
+  7B         14 GB        7 GB        3.5 GB
+  8B         16.1 GB      8.0 GB      4.0 GB     (Llama-3.1-8B 约 8.03B 参数)
+  70B        140 GB       70 GB       35 GB
+</pre>
+<p><b>小算例</b>:7B × 4 位 ÷ 8 = 7×10⁹ × 0.5 字节 = 3.5×10⁹ 字节 = 3.5 GB。</p>
+<p><b>真实文件会大一点</b>:4 位量化要给每一小块权重存一个缩放系数。llama.cpp 最简单的 Q4_0:每 32 个权重一块,块里 32 × 4 位 = 128 位,再加一个 16 位的缩放系数,一共 144 位 ÷ 32 = <u>每个权重 4.5 位</u>。所以 7B 的 Q4_0 约 7×10⁹ × 4.5 ÷ 8 ≈ 3.9 GB。【已核】</p>
+<p class="q">英文答</p>
+<p class="en">Weights take parameters times bits divided by eight. A 7B model is about 14 gigabytes at FP16, 7 at INT8 and 3.5 at INT4. Real 4-bit files are a bit bigger because each small block stores a scale. In llama.cpp's Q4_0, 32 weights share one 16-bit scale, so it's 4.5 bits per weight, about 3.9 gigabytes for 7B.</p>
+</div>
+
+<h3 id="s2-2">2.2 KV 缓存:公式和 8B 的算例</h3>
+<div class="card">
+<p><b>比方</b>:读长篇小说时,你在每一页边上记了要点(K 和 V)。读下一页时只看笔记,不用把前面全部重读。笔记越积越多,占的地方也越来越大。</p>
+<pre>
+每个 token 的 KV 字节 = 2(K 和 V) × 层数 × KV 头数 × 每头维度 × 每个数的字节
+
+Llama-3.1-8B:层数 32,注意力头 32,KV 头 8(GQA),每头维度 128,FP16 = 2 字节
+  = 2 × 32 × 8 × 128 × 2 = 131,072 字节 = 128 KiB / token
+  8K  上下文:128 KiB × 8192  = 1 GiB  (约 1.07 GB)
+  32K 上下文:128 KiB × 32768 = 4 GiB
+</pre>
+<p><b>GQA 省了多少</b>:如果 32 个头每个都有自己的 K、V(不分组),就是 512 KiB/token,8K 上下文要 4 GiB。GQA 让 4 个查询头共用一组 KV,KV 缩到 1/4。</p>
+<pre>
+不分组(MHA):  Q1 Q2 Q3 Q4 ...   每个 Q 配自己的 KV  → 32 份 KV
+分组(GQA):    Q1 Q2 Q3 Q4 │ Q5 Q6 Q7 Q8 │ ...
+                  共用 KV1    │   共用 KV2   │      → 8 份 KV
+</pre>
+<p><b>为什么重要</b>:8B 在 4 位权重只有 4 GB,8K 上下文的 KV 就有 1 GB,已经是权重的四分之一。上下文越长,KV 越像主角。</p>
+<p class="q">英文答(约 40 秒)</p>
+<p class="en">The KV cache stores the keys and values for every past token in every layer, so we don't recompute them. Per token it's two, for K and V, times layers, times KV heads, times head dimension, times bytes per value. For Llama 3.1 8B that's 2 times 32 times 8 times 128 times 2 bytes, which is 128 kibibytes per token, or about one gibibyte at 8K context. Without grouped-query attention it would be four times that. With 4-bit weights at only 4 gigabytes, the cache quickly becomes a big share of memory, which is why people quantize it or use sliding windows.</p>
+</div>
+
+<h3 id="s2-3">2.3 为什么生成卡在内存带宽</h3>
+<div class="card">
+<p><b>比方</b>:厨师(算力)切菜飞快,但每做一道菜都要从仓库把全部食材搬一遍。厨师再快,也只能等搬运工。</p>
+<pre>
+每生成 1 个 token:
+   内存 ──(读全部权重 + 全部 KV)──▶ 计算单元 ──▶ 1 个 token
+   每个参数:读 2 字节(FP16),只做 2 次运算(一次乘加)
+   → 每字节约 1 次运算,远低于硬件「吃饱」所需的几十到几百次
+
+上限:tokens/秒 ≈ 带宽 ÷ 每个 token 要读的字节
+</pre>
+<div class="tbl"><table>
+<tr><th>设备(带宽,厂商规格)</th><th>8B 4位 (4.0 GB)</th><th>8B FP16 (16.1 GB)</th><th>70B 4位 (35 GB)</th></tr>
+<tr><td>M4,120 GB/s</td><td>≤ 30</td><td>≤ 7.5</td><td>≤ 3.4(要内存够)</td></tr>
+<tr><td>M4 Pro,273 GB/s</td><td>≤ 68</td><td>≤ 17</td><td>≤ 7.8</td></tr>
+<tr><td>M4 Max,546 GB/s</td><td>≤ 136</td><td>≤ 34</td><td>≤ 15.6</td></tr>
+<tr><td>M2 Ultra,800 GB/s</td><td>≤ 199</td><td>≤ 50</td><td>≤ 22.9</td></tr>
+<tr><td>RTX 4090,1008 GB/s,24 GB</td><td>≤ 251</td><td>≤ 63</td><td>放不下</td></tr>
+</table></div>
+<p class="zh">单位:token/秒。这是上限,只算读权重。真实系统还有 KV 读取、计算、调度开销,会更低。</p>
+<p><b>把 KV 也算进去</b>:8B 4 位 + 8K 上下文,每个 token 要读 4.0 + 1.07 ≈ 5.1 GB。M4 Max:546 ÷ 5.1 ≈ 107 token/秒,比只算权重的 136 低了约两成。【已核】</p>
+<p><b>Apple 统一内存的意义</b>:CPU 和 GPU 用同一块内存,所以 128 GB 的 Mac 能放下 35 GB 的 70B 模型;而 4090 带宽更高,但显存只有 24 GB,放不下。<u>容量决定能不能跑,带宽决定跑多快。</u></p>
+<p class="q">英文答(约 45 秒)</p>
+<p class="en">For a single user, decoding is memory bound. Each new token has to read every weight once, and each weight only gets one multiply-add, so it's about one operation per byte. Hardware needs tens to hundreds of operations per byte to be compute bound. So the ceiling is roughly bandwidth divided by bytes read per token. An 8B model at 4 bits is about 4 gigabytes, so an M4 Max at 546 gigabytes a second tops out near 136 tokens a second, and closer to 107 once you add an 8K KV cache. A 4090 has more bandwidth but only 24 gigabytes, so a 70B model doesn't fit at all. Capacity decides whether it runs; bandwidth decides how fast.</p>
+</div>
+
+<h3 id="s2-4">2.4 prefill 和 decode</h3>
+<div class="card">
+<p><b>比方</b>:prefill 是一口气读完整个问题(一次读很多字,可以并行);decode 是一个字一个字地写回答(每写一个字都要从头翻一遍书)。</p>
+<pre>
+prefill:  [t1 t2 t3 ... t1000] 一起进 → 权重读 1 次,做 1000 份计算 → 卡计算
+decode:   t1001 → t1002 → t1003 ...  每个 token 读 1 次权重 → 卡带宽
+</pre>
+<p><b>小算例</b>:8B 模型每个 token 约 2 × 8×10⁹ = 16 GFLOP。1000 个 token 的提示词 ≈ 16 TFLOP。假设有效算力 100 TFLOPS,prefill 约 0.16 秒。【已核】这决定「第一个字多久出来」(TTFT);decode 决定「之后每秒几个字」。</p>
+<p class="en">Prefill processes the whole prompt in parallel, so the weights are read once for many tokens and it's compute bound. It sets time to first token. Decode generates one token at a time and rereads the weights each step, so it's bandwidth bound and sets tokens per second. You optimize them differently.</p>
+</div>
+
+<h3 id="s2-5">2.5 批处理(batching)</h3>
+<div class="card">
+<p><b>比方</b>:搬运工搬一次食材,够做 1 道菜还是 32 道菜,搬运成本一样。</p>
+<pre>
+batch=1:   读权重 4 GB → 出 1 个 token
+batch=32:  读权重 4 GB → 出 32 个 token(每人 1 个)  运算/字节 × 32
+</pre>
+<ul>
+<li>数据中心便宜,靠的就是批处理。个人设备只有你一个人,批不起来。</li>
+<li>但个人设备也能「自己跟自己批」:同时跑几个 agent、或者投机解码一次验证好几个 token。</li>
+<li><b>continuous batching</b>:谁的回答写完了就立刻让新请求补位,不用等整批结束。</li>
+</ul>
+<p class="en">Batching amortizes one read of the weights over many sequences, so arithmetic intensity grows with batch size. That's why datacenters are cheap per token. On a personal device there's usually one user, so you look for other ways to get more tokens per weight read, like running several agents at once or speculative decoding.</p>
+</div>
+
+<h3 id="s2-6">2.6 量化方法:GPTQ、AWQ、GGUF、MLX</h3>
+<div class="card">
+<p><b>比方</b>:都是把照片压成小文件,区别在「哪里可以糊、哪里必须清楚」怎么决定。</p>
+<div class="tbl"><table>
+<tr><th>方法</th><th>一句话</th><th>需要校准数据吗</th></tr>
+<tr><td>GPTQ</td><td>一列一列量化,每量完一列,把产生的误差补到还没量化的列上(用二阶信息估计怎么补)</td><td>要,一小批样本</td></tr>
+<tr><td>AWQ</td><td>看激活值,找出少数「重要通道」(激活大的),量化前先把它们放大,保护起来</td><td>要,一小批样本</td></tr>
+<tr><td>GGUF / llama.cpp</td><td>一种文件格式 + CPU/GPU 推理库。按块存缩放系数,有 Q4_0、Q4_K_M、Q8_0 等档位</td><td>基本不用(可选重要性矩阵)</td></tr>
+<tr><td>MLX</td><td>Apple 的数组框架,为统一内存设计;mlx-lm 用分组量化(每组共用一个缩放和偏移)</td><td>不用</td></tr>
+</table></div>
+<p><b>共同点</b>:都是<u>只量化权重</u>,计算时再还原成 FP16 去乘。因为生成卡带宽,少读字节就快,还原的那点计算不贵。</p>
+<p><b>分组为什么重要</b>(连到第 3 章第 4 题):一个缩放系数管的数越多,里面一个特别大的数就会让其他小数都被压成 0。分小组 = 每组各自有刻度。</p>
+<p class="q">英文答(约 45 秒)</p>
+<p class="en">They're all weight-only methods: store weights in 4 bits with per-group scales, and dequantize to FP16 inside the matmul. Since decode is bandwidth bound, fewer bytes means faster. GPTQ quantizes column by column and pushes each column's error onto the columns not yet quantized, using second-order information from a small calibration set. AWQ looks at activations, finds the few channels that matter most, and scales them up before quantizing so they keep precision. GGUF is llama.cpp's file format with block-wise quant types like Q4_K_M. MLX is Apple's framework built around unified memory, with group-wise quantization in mlx-lm. Whatever the method, I'd re-check quality on a task-specific test set, not just perplexity.</p>
+</div>
+
+<h3 id="s2-7">2.7 投机解码(speculative decoding)</h3>
+<div class="card">
+<p><b>比方</b>:实习生(小模型)先快速写 4 个字的草稿,老板(大模型)一眼看完 4 个字,对的保留,第一个错的地方改掉。老板「看 4 个字」和「写 1 个字」花的时间差不多,因为都要读一遍全部权重。</p>
+<pre>
+草稿模型:   d1 d2 d3 d4          (很便宜)
+大模型一次:  验证 d1..d4 ✓ ✓ ✗    → 接受 d1 d2,第 3 个用大模型自己的
+             这一次读权重,产出 3 个 token,而不是 1 个
+</pre>
+<p><b>小算例</b>:每个草稿 token 被接受的概率 α,一次草稿 k 个。每读一次大模型权重,平均产出 (1 − α^(k+1)) ÷ (1 − α) 个 token。</p>
+<ul>
+<li>α = 0.8,k = 4:(1 − 0.8⁵) ÷ 0.2 = (1 − 0.32768) ÷ 0.2 ≈ <u>3.36 个</u>【已核】</li>
+<li>α = 0.6,k = 4:≈ 2.31 个【已核】</li>
+</ul>
+<p>代价:要多放一个小模型(多占内存)、草稿本身也要时间;α 低的话反而变慢。输出分布和只用大模型<u>完全一样</u>(拒绝采样保证的)。</p>
+<p class="en">A small draft model proposes a few tokens, and the big model verifies all of them in one forward pass. Verifying four tokens costs about the same as generating one, because both are dominated by reading the weights. With an 80 percent acceptance rate and four draft tokens, you get about 3.4 tokens per big-model pass. The output distribution is exactly the big model's. The costs are extra memory for the draft model, and if acceptance is low it can be slower.</p>
+</div>
+
+<h3 id="s2-8">2.8 PagedAttention / vLLM</h3>
+<div class="card">
+<p><b>比方</b>:旧做法是给每位客人预留一整排座位(按最长可能的回答预留 KV 空间);分页是像餐厅按需加桌,一桌 16 人,坐满再开一桌。</p>
+<pre>
+预先整块分配:  [■■■□□□□□□□□□□□□□□□]  只用了 300,预留 4096 → 约 93% 浪费
+分页(每页 16 token):
+   页表: 请求A → [页7][页2][页9]...   物理页不需要连续
+   最后一页最多空 15 个位置
+</pre>
+<p><b>小算例</b>:1000 个 token,需要 ⌈1000/16⌉ = 63 页,只浪费 63×16 − 1000 = 8 个位置。对比整块预留 4096 只用 300:(4096 − 300) ÷ 4096 ≈ 93% 浪费。【已核】</p>
+<ul>
+<li>好处:同样内存能放更多并发请求;相同前缀(比如同一个系统提示词)的页可以共享。</li>
+<li>vLLM = PagedAttention + continuous batching,是服务端推理的常用框架。</li>
+<li>个人设备上:并发少,但「多个 agent 共用一个长系统提示词」时,前缀共享同样有用。</li>
+</ul>
+<p class="en">PagedAttention stores the KV cache in fixed-size blocks, like 16 tokens each, with a block table per sequence, the same way an OS maps virtual pages to physical frames. You don't reserve the maximum length up front, so waste is at most one partial block, and sequences with the same prefix can share blocks. vLLM combines that with continuous batching. I've used vLLM, but I haven't modified its internals.</p>
+<p class="warn">🔴 你会用 vLLM,没有项目案例,也没改过源码。别说做过。</p>
+</div>
+
+<h3 id="s2-9">2.9 设备上的约束:热、电、统一内存</h3>
+<div class="card">
+<ul>
+<li><b>热</b>:手机、笔记本前几十秒全速,之后发热降频。所以测速要测<u>持续</u>的,不是前 10 秒。</li>
+<li><b>电</b>:看「每个 token 花多少焦耳」。假设生成时整机多耗 40 W、速度 20 token/秒 → 40 ÷ 20 = 2 焦/token。少读字节(量化)同时省时间和省电,因为搬数据本身很费电。</li>
+<li><b>统一内存</b>:模型、KV、操作系统、其他 App 抢同一块内存。像 RCRI 在 2 GB 的 Nano 上要给系统留余量一样。</li>
+<li><b>你的连接点</b>:RCRI 报的就是 12 FPS + 5 W + 0.7 GB,三个数一起报,正是设备上的思路。</li>
+</ul>
+<p class="en">On device, three things change. Sustained performance matters more than burst, because chips throttle when they get hot. Energy per token matters, and moving bytes is a big part of it, so quantization saves both time and power. And memory is shared with the OS and every other app. On RCRI I reported frames per second together with watts and memory for exactly that reason.</p>
+</div>
+
+<h3 id="s2-10">2.10 白板综合题:「设计一台能跑 70B 的个人设备,要什么?」【预测】</h3>
+<div class="card">
+<div class="outline">提纲:① 先定目标 / Set a target: 比如 20 token/秒 ② 装得下 / Capacity: 35 GB + KV + 系统 ③ 速度 / Bandwidth: 20 × 35 = 700 GB/s 起 ④ 降字节 / Cut bytes: 量化、MoE、投机解码 ⑤ 测 / Measure: 持续速度、每 token 焦耳、质量</div>
+<p class="en">I'd start from a target, say 20 tokens a second on a 70B model. At 4 bits the weights are 35 gigabytes, plus a KV cache of about 10 gigabytes at 32K context, plus the OS, so I'd want 64 gigabytes or more. For speed, 20 tokens times 35 gigabytes is 700 gigabytes a second of bandwidth just for weights, before the KV cache. If that's too expensive, I'd cut bytes per token: lower-bit quantization with a quality check, a mixture-of-experts model that reads only active experts, or speculative decoding to get more tokens per read. Then I'd measure sustained speed, joules per token, and task quality, not just peak numbers.</p>
+<p class="what">70B 的 KV:320 KiB/token × 32K ≈ 10.7 GB(初聊教案已核)。20 × 35 = 700。</p>
+</div>
+
+<h2 id="c3">第 3 章 · 代码题(8 道,全部本机跑过)</h2>
+<p>都是【预测】。下面每段代码都在本机用 Python 3 跑过,「输出」那一栏是真实运行结果。</p>
+<div class="card">
+<p><b>现场写代码的固定套路</b>(每题都这么走):</p>
+<ol>
+<li>复述题目 + 问清边界。<span class="en">"Let me restate it to make sure I've got it..."</span></li>
+<li>举一个小例子手算。<span class="en">"Let me try a tiny example first."</span></li>
+<li>说思路和复杂度,再动手。<span class="en">"My plan is ... which is O(n) time and O(k) space."</span></li>
+<li>边写边说。<span class="en">"Here I'm handling the case where the buffer is full."</span></li>
+<li>写完用例子走一遍,再说还能怎么改。<span class="en">"Let me trace it with the example... In C++ I'd preallocate this."</span></li>
+</ol>
+</div>
+
+<h3 id="s3-1">3.1 KV 缓存的环形缓冲区(滑动窗口)</h3>
+<div class="card">
+<p><b>题目</b>:实现一个容量固定的缓存,不断追加 (k, v),满了就覆盖最旧的,能按从旧到新的顺序读出。</p>
+<p><b>比方</b>:旋转寿司的圆形传送带,只有 3 个位置,新的一盘放上去就把最老那盘挤掉。指针转圈走,不用整体挪盘子。</p>
+<pre>
+容量 3,依次放 k0..k4:
+ [k0 .  . ] start=0 size=1
+ [k0 k1 k2] start=0 size=3   满了
+ [k3 k1 k2] start=1          k3 覆盖 k0,最旧的变成 k1
+ [k3 k4 k2] start=2          读出顺序:k2 k3 k4
+</pre>
+<pre><code>class KVRing:
+    &quot;&quot;&quot;Fixed-capacity ring buffer for a sliding-window KV cache (one layer).&quot;&quot;&quot;
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.k = [None] * capacity
+        self.v = [None] * capacity
+        self.start = 0      # index of the oldest entry
+        self.size = 0
+
+    def append(self, k, v):
+        end = (self.start + self.size) % self.cap
+        self.k[end], self.v[end] = k, v
+        if self.size &lt; self.cap:
+            self.size += 1
+        else:                      # full: overwrite oldest, move start forward
+            self.start = (self.start + 1) % self.cap
+
+    def items(self):               # oldest -&gt; newest
+        for i in range(self.size):
+            j = (self.start + i) % self.cap
+            yield self.k[j], self.v[j]
+
+c = KVRing(3)
+for t in range(5):
+    c.append(f&quot;k{t}&quot;, f&quot;v{t}&quot;)
+print([k for k, _ in c.items()])</code></pre>
+<div class="res">输出:
+[&#x27;k2&#x27;, &#x27;k3&#x27;, &#x27;k4&#x27;]</div>
+<p><b>复杂度</b>:append O(1),读出 O(n);空间 O(容量)。</p>
+<p class="en">I keep a fixed array, a start index for the oldest entry, and a size. Append writes at start plus size, modulo capacity. When it's full, I overwrite the oldest slot and move start forward by one. Everything is O(1) per append, and no memory is allocated after construction, which matters on a device.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>C++ 怎么写?</b>预先分配一整块连续数组 <code>layers × capacity × kv_heads × head_dim</code>,下标取模。<span class="en">One contiguous preallocated buffer, index with modulo; no allocation in the hot loop.</span></li>
+<li><b>滑动窗口会丢信息吗?</b>会,最早的 token 被忘掉。有做法会永久保留最开头几个 token(attention sink)。<span class="en">Yes, the oldest tokens are dropped; some systems keep the first few tokens permanently as attention sinks.</span></li>
+<li><b>容量为什么常取 2 的幂?</b>取模可以变成位与 <code>i &amp; (cap-1)</code>,更快。<span class="en">Then modulo becomes a bitwise AND.</span></li>
+</ul>
+</div>
+
+<h3 id="s3-2">3.2 带温度的 top-k 采样</h3>
+<div class="card">
+<p><b>题目</b>:给一组 logits,先留分数最高的 k 个,按温度缩放后 softmax,再按概率随机抽一个。温度 0 = 直接取最大。</p>
+<p><b>比方</b>:抽奖前先只留前 k 名(top-k);温度像「把名次差距拉大还是抹平」:温度低,第一名几乎必中;温度高,大家机会更平均。</p>
+<p><b>小算例</b>:logits = [2.0, 1.0, 0.5, −1.0, 3.0],k = 2 → 留下 id 4(3.0)和 id 0(2.0)。温度 1:P(id 4) = e³ ÷ (e³ + e²) = 1 ÷ (1 + e⁻¹) ≈ 0.731。抽 10000 次,id 4 应该约 7300 次。</p>
+<pre><code>import math, random
+
+def sample_top_k(logits, k, temperature=1.0, rng=random):
+    if temperature &lt;= 0:                       # greedy
+        return max(range(len(logits)), key=lambda i: logits[i])
+    top = sorted(range(len(logits)), key=lambda i: logits[i], reverse=True)[:k]
+    scaled = [logits[i] / temperature for i in top]
+    m = max(scaled)                            # subtract max for stability
+    exps = [math.exp(s - m) for s in scaled]
+    total = sum(exps)
+    probs = [e / total for e in exps]
+    r = rng.random()
+    acc = 0.0
+    for idx, p in zip(top, probs):
+        acc += p
+        if r &lt; acc:
+            return idx
+    return top[-1]                             # float rounding guard
+
+logits = [2.0, 1.0, 0.5, -1.0, 3.0]
+rng = random.Random(0)
+counts = [0] * 5
+for _ in range(10000):
+    counts[sample_top_k(logits, k=2, temperature=1.0, rng=rng)] += 1
+print(counts)                                  # only ids 4 and 0
+print(round(1 / (1 + math.exp(-1)), 3))        # P(id 4) should be ~0.731
+print(sample_top_k(logits, k=3, temperature=0))</code></pre>
+<div class="res">输出:
+[2703, 0, 0, 0, 7297]
+0.731
+4</div>
+<p class="zh">第一行:只有 id 0 和 id 4 被抽到,id 4 抽中 7297 次 ≈ 0.73,和手算一致。第三行:温度 0 返回最大的 id 4。</p>
+<p><b>复杂度</b>:排序 O(V log V);可以用堆做到 O(V log k),或 numpy 的 argpartition 做到 O(V)。</p>
+<p class="en">I pick the top k indices, divide their logits by the temperature, and subtract the max before exponentiating so nothing overflows. Then I normalize and walk the cumulative sum with one uniform random number. Temperature zero is just argmax. With a vocabulary of over a hundred thousand, I'd use a partial selection instead of a full sort.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>为什么减最大值?</b>e 的大数次方会溢出;减掉同一个数,softmax 结果不变。<span class="en">Prevents overflow, and softmax is unchanged by a constant shift.</span></li>
+<li><b>top-p 呢?</b>按概率从大到小累加,加到 ≥ p 就停,只在这些里抽。<span class="en">Sort by probability, keep the smallest prefix whose sum reaches p, renormalize, sample.</span></li>
+<li><b>怎么测?</b>固定随机种子,抽很多次看频率接近理论值;温度 0 结果确定。<span class="en">Seed the RNG, check frequencies against the analytic probabilities.</span></li>
+</ul>
+</div>
+
+<h3 id="s3-3">3.3 分块(tiling)矩阵乘</h3>
+<div class="card">
+<p><b>题目</b>:写 C = A × B,用分块让数据留在缓存里。</p>
+<p><b>比方</b>:搬砖时一次从仓库拿一小摞放在手边用完,而不是每块砖都跑一趟仓库。手边 = 缓存,仓库 = 内存。</p>
+<pre>
+ A (n×m)         B (m×p)          C (n×p)
+ ┌──┬──┐        ┌──┬──┬──┐       ┌──┬──┬──┐
+ │A₀₀│A₀₁│   ×   │B₀₀│B₀₁│..│  →   │C₀₀│  │  │   C₀₀ = A₀₀·B₀₀ + A₀₁·B₁₀
+ ├──┼──┤        ├──┼──┼──┤       ├──┼──┼──┤   每一小块都放得进缓存
+ │  │  │        │B₁₀│  │  │       │  │  │  │
+ └──┴──┘        └──┴──┴──┘       └──┴──┴──┘
+</pre>
+<pre><code>def matmul_tiled(A, B, T=2):
+    n, m, p = len(A), len(B), len(B[0])
+    C = [[0.0] * p for _ in range(n)]
+    for i0 in range(0, n, T):
+        for k0 in range(0, m, T):
+            for j0 in range(0, p, T):
+                for i in range(i0, min(i0 + T, n)):
+                    for k in range(k0, min(k0 + T, m)):
+                        a = A[i][k]
+                        for j in range(j0, min(j0 + T, p)):
+                            C[i][j] += a * B[k][j]
+    return C
+
+import numpy as np
+A = np.arange(12, dtype=float).reshape(3, 4)
+B = np.arange(20, dtype=float).reshape(4, 5)
+C = matmul_tiled(A.tolist(), B.tolist(), T=2)
+print(np.allclose(C, A @ B), C[0])</code></pre>
+<div class="res">输出:
+True [70.0, 76.0, 82.0, 88.0, 94.0]</div>
+<p class="zh">和 numpy 的 A @ B 一致。手算第一行第一个:A 第 0 行 [0,1,2,3] 点乘 B 第 0 列 [0,5,10,15] = 0+5+20+45 = 70 ✓。</p>
+<p><b>循环顺序 i-k-j</b>:最内层沿 B 和 C 的一行连续走,对缓存友好。<b>复杂度</b>仍是 O(n·m·p),分块不改运算量,只改<u>搬运量</u>。</p>
+<p><b>C++ 版思路</b>(本机编译运行过,输出第一行 70 76 82 88 94,和 Python 一致):</p>
+<pre><code>void matmul_tiled(const float* A, const float* B, float* C,
+                  int n, int m, int p, int T) {
+  for (int i0 = 0; i0 &lt; n; i0 += T)
+    for (int k0 = 0; k0 &lt; m; k0 += T)
+      for (int j0 = 0; j0 &lt; p; j0 += T)
+        for (int i = i0; i &lt; std::min(i0 + T, n); ++i)
+          for (int k = k0; k &lt; std::min(k0 + T, m); ++k) {
+            float a = A[i * m + k];                    // 行优先下标
+            for (int j = j0; j &lt; std::min(j0 + T, p); ++j)
+              C[i * p + j] += a * B[k * p + j];        // 连续访问,能向量化
+          }
+}</code></pre>
+<p class="en">Tiling doesn't change the number of multiply-adds; it changes how many bytes come from main memory. I pick a tile size so three tiles fit in cache, use i-k-j order so the inner loop walks contiguous memory, and in C++ the inner loop can be vectorized. On a GPU it's the same idea one level up: load tiles into shared memory, then reuse them.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>块多大?</b>让 A、B、C 三块都放进 L1 或 L2:T×T×4 字节×3 ≤ 缓存。比如 32 KB 的 L1,T=32 时 3×32×32×4 = 12 KB,放得下。<span class="en">Three T-by-T float tiles must fit; T equals 32 is 12 kilobytes.</span></li>
+<li><b>GPU 上呢?</b>每个 block 把 A、B 的一块读进 shared memory,线程同步后复用。<span class="en">Tiles go into shared memory, then each thread reuses them.</span></li>
+<li><b>生成时(batch=1)这招有用吗?</b>那是矩阵×向量,每个权重只用一次,复用不了,所以卡带宽,办法是少读字节(量化)。<span class="en">At batch one it's a matrix-vector product with no reuse, so quantization helps more than tiling.</span></li>
+</ul>
+</div>
+
+<h3 id="s3-4">3.4 int8 量化和反量化</h3>
+<div class="card">
+<p><b>题目</b>:把一个 float 张量对称量化成 int8,再还原;分析误差。</p>
+<p><b>比方</b>:把一根尺子的最大刻度定成数据里绝对值最大的那个数,然后均匀切成 127 格。每个数四舍五入到最近的格子上。</p>
+<pre>
+scale = max|x| ÷ 127        q = round(x ÷ scale),截到 [-127, 127]        x' = q × scale
+x = [0.1, -0.5, 1.27, -2.54, 0]
+max|x| = 2.54 → scale = 0.02
+q = [5, -25, 63.5→64, -127, 0]      误差最多 scale/2 = 0.01
+</pre>
+<pre><code>import numpy as np
+
+def quantize_int8(x):
+    &quot;&quot;&quot;Symmetric per-tensor int8: q = round(x / scale), scale = max|x| / 127.&quot;&quot;&quot;
+    amax = float(np.max(np.abs(x)))
+    scale = amax / 127 if amax &gt; 0 else 1.0
+    q = np.clip(np.round(x / scale), -127, 127).astype(np.int8)
+    return q, scale
+
+def dequantize_int8(q, scale):
+    return q.astype(np.float32) * scale
+
+x = np.array([0.1, -0.5, 1.27, -2.54, 0.0], dtype=np.float32)
+q, s = quantize_int8(x)
+print(q, round(s, 4))
+err = np.abs(dequantize_int8(q, s) - x).max()
+print(round(float(err), 6), err &lt;= s / 2 + 1e-7)
+
+def quantize_per_row(W):
+    amax = np.abs(W).max(axis=1, keepdims=True)
+    scale = np.where(amax &gt; 0, amax / 127, 1.0)
+    return np.clip(np.round(W / scale), -127, 127).astype(np.int8), scale
+
+W = np.array([[0.01, -0.02, 0.03], [10.0, -5.0, 2.5]], dtype=np.float32)
+qt, st = quantize_int8(W)
+qr, sr = quantize_per_row(W)
+print(qt[0], qr[0])     # per-tensor crushes the small row to zeros</code></pre>
+<div class="res">输出:
+[   5  -25   64 -127    0] 0.02
+0.01 True
+[0 0 0] [ 42 -85 127]</div>
+<p class="zh">第二行:最大误差 0.01 = scale ÷ 2,符合预期。第三行:同一个矩阵,整体共用一个 scale 时,数值很小的第一行全变成 0;每行各自一个 scale 就保住了。这就是 GGUF、MLX 要「分组」的原因。</p>
+<p class="zh">注:63.5 变 64 是因为 numpy 的 round 是「四舍六入五成双」。</p>
+<p><b>复杂度</b>:O(n) 时间;存储从 4 字节/数降到 1 字节/数,外加每组一个 scale。</p>
+<p class="en">Symmetric int8 uses one scale, the max absolute value over 127. Quantize is round of x over scale, clipped to plus or minus 127; dequantize is q times scale. The error is at most half a scale step. The catch is outliers: one large value makes the step huge and small values collapse to zero, which you can see in the per-tensor result. That's why real schemes use per-channel or per-group scales.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>为什么用 127 不用 128?</b>对称:正负两边一样多,0 精确表示。<span class="en">Keeps the range symmetric and zero exact.</span></li>
+<li><b>非对称量化?</b>加一个零点 zero_point,适合全是正数的激活(比如 ReLU 后)。<span class="en">Add a zero point; good for all-positive activations.</span></li>
+<li><b>int4 怎么存?</b>两个 4 位数塞进一个字节:<code>byte = (hi &lt;&lt; 4) | (lo &amp; 0xF)</code>。<span class="en">Pack two nibbles per byte.</span></li>
+</ul>
+</div>
+
+<h3 id="s3-5">3.5 LRU 缓存</h3>
+<div class="card">
+<p><b>题目</b>:get 和 put 都要 O(1),满了就扔掉最久没用的。</p>
+<p><b>比方</b>:书桌上一摞书,刚看的放最上面;桌子放不下时,扔掉最底下那本。字典负责「一眼找到书在哪」,双向链表负责「快速挪到最上面」。</p>
+<pre>
+head ⇄ [最近用] ⇄ ... ⇄ [最久没用] ⇄ tail
+ map: key → 链表节点
+容量 2:put 1, put 2, get 1(1 移到最前), put 3 → 挤掉 2
+</pre>
+<pre><code>class Node:
+    __slots__ = (&quot;key&quot;, &quot;val&quot;, &quot;prev&quot;, &quot;next&quot;)
+    def __init__(self, key=None, val=None):
+        self.key, self.val, self.prev, self.next = key, val, None, None
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.map = {}
+        self.head, self.tail = Node(), Node()      # sentinels
+        self.head.next, self.tail.prev = self.tail, self.head
+
+    def _remove(self, n):
+        n.prev.next, n.next.prev = n.next, n.prev
+
+    def _push_front(self, n):
+        n.prev, n.next = self.head, self.head.next
+        self.head.next.prev = n
+        self.head.next = n
+
+    def get(self, key):
+        n = self.map.get(key)
+        if n is None:
+            return -1
+        self._remove(n); self._push_front(n)
+        return n.val
+
+    def put(self, key, val):
+        if key in self.map:
+            n = self.map[key]; n.val = val
+            self._remove(n); self._push_front(n)
+            return
+        if len(self.map) == self.cap:
+            lru = self.tail.prev
+            self._remove(lru); del self.map[lru.key]
+        n = Node(key, val); self.map[key] = n; self._push_front(n)
+
+c = LRUCache(2)
+c.put(1, &quot;a&quot;); c.put(2, &quot;b&quot;); c.get(1); c.put(3, &quot;c&quot;)
+print(c.get(2), c.get(1), c.get(3))</code></pre>
+<div class="res">输出:
+-1 a c</div>
+<p class="zh">2 被挤掉返回 -1;1 和 3 都在。</p>
+<p class="en">A hash map gives O(1) lookup from key to node, and a doubly linked list keeps recency order with O(1) moves. Sentinel head and tail nodes remove the empty-list edge cases. On get I move the node to the front; on put, if full, I evict the node before the tail. In Python I could use OrderedDict, but I wrote it out to show the structure.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>和推理有什么关系?</b>前缀缓存(prefix cache):常用的系统提示词的 KV 留着,内存不够时按 LRU 淘汰。<span class="en">Prefix caching: keep KV blocks for common prompts and evict least recently used.</span></li>
+<li><b>多线程?</b>整体加一把锁最简单;读多写少可以分片,每片一把锁。<span class="en">One lock, or shard the cache with a lock per shard.</span></li>
+</ul>
+</div>
+
+<h3 id="s3-6">3.6 流式 UTF-8 解码(模型一边吐字一边显示)</h3>
+<div class="card">
+<p><b>题目</b>:模型一块一块地输出字节,一个汉字是 3 个字节,可能被切在两块中间。只输出完整的字符,不完整的留到下一块。</p>
+<p><b>比方</b>:收快递拼家具,零件分几箱到。一件家具的零件没到齐就先别装,放一边等下一箱。</p>
+<pre>
+"羊" = E7 BE 8A(3 字节)   UTF-8 首字节告诉你这个字一共几字节:
+  0xxxxxxx → 1   110xxxxx → 2   1110xxxx → 3   11110xxx → 4   10xxxxxx = 后续字节
+每块 2 字节:  [48 69] [20 E7] [BE 8A] [E9 A9] [BC 21]
+               "Hi"    " " 留E7 "羊"   全留    "驼!"
+</pre>
+<pre><code>class StreamDecoder:
+    &quot;&quot;&quot;Feed byte chunks; emit only complete UTF-8 characters.&quot;&quot;&quot;
+    def __init__(self):
+        self.buf = b&quot;&quot;
+
+    def feed(self, chunk: bytes) -&gt; str:
+        self.buf += chunk
+        cut = len(self.buf)
+        # look back at most 3 bytes for an unfinished multi-byte character
+        for back in range(1, min(4, len(self.buf)) + 1):
+            b = self.buf[-back]
+            if b &amp; 0b1100_0000 == 0b1000_0000:     # continuation byte 10xxxxxx
+                continue
+            need = 1 if b &lt; 0x80 else 2 if b &gt;&gt; 5 == 0b110 else 3 if b &gt;&gt; 4 == 0b1110 else 4
+            if need &gt; back:                        # lead byte whose char is incomplete
+                cut = len(self.buf) - back
+            break
+        out, self.buf = self.buf[:cut], self.buf[cut:]
+        return out.decode(&quot;utf-8&quot;)
+
+data = &quot;Hi 羊驼!&quot;.encode(&quot;utf-8&quot;)       # 羊 and 驼 are 3 bytes each
+d = StreamDecoder()
+pieces = [d.feed(data[i:i+2]) for i in range(0, len(data), 2)]
+print(pieces, &quot;&quot;.join(pieces) == &quot;Hi 羊驼!&quot;)</code></pre>
+<div class="res">输出:
+[&#x27;Hi&#x27;, &#x27; &#x27;, &#x27;羊&#x27;, &#x27;&#x27;, &#x27;驼!&#x27;] True</div>
+<p class="zh">第 4 块只有「驼」的前两个字节,所以输出空字符串,等下一块到了再一起输出。拼起来和原文完全一致。</p>
+<p><b>复杂度</b>:每块 O(块长),往回看最多 4 个字节。</p>
+<p class="en">I buffer bytes and only decode up to the last complete character. UTF-8 makes that easy: the lead byte says how many bytes the character has, and continuation bytes start with one-zero. So I look back at most four bytes, find the last lead byte, and if its character isn't complete I hold those bytes for the next chunk. Tokenizers hit exactly this, because one token can be half of a Chinese character.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>Python 有现成的吗?</b>有,<code>codecs.getincrementaldecoder("utf-8")()</code>。现场先说出来,再按要求手写。<span class="en">Yes, the incremental decoder in codecs; I'd mention it, then write it by hand if asked.</span></li>
+<li><b>非法字节?</b>用替换字符 U+FFFD 或报错,看产品要求。<span class="en">Replace with U+FFFD or raise, depending on the product.</span></li>
+</ul>
+</div>
+
+<h3 id="s3-7">3.7 流式输出里的停止词</h3>
+<div class="card">
+<p><b>题目</b>:文本一块块到来,遇到停止串(比如 &lt;/s&gt;)就停,而且停止串的任何部分都不能显示给用户。难点:停止串可能被切成两块。</p>
+<p><b>比方</b>:念稿子时看到「完」字之前不能把半个字念出来。看到一个可能是开头的符号,先憋住,确认不是再念。</p>
+<pre>
+块: "Hello <"   "/s"   "> extra"     停止串 "&lt;/s&gt;"
+   输出 "Hello "  留 "<"   留 "&lt;/s"   发现完整停止串 → 结束
+</pre>
+<pre><code>def stream_with_stop(chunks, stop):
+    &quot;&quot;&quot;Yield text as it arrives, but never emit any part of the stop string.&quot;&quot;&quot;
+    held = &quot;&quot;
+    for ch in chunks:
+        held += ch
+        idx = held.find(stop)
+        if idx != -1:
+            if held[:idx]:
+                yield held[:idx]
+            return
+        # keep the longest suffix that could still be the start of `stop`
+        keep = 0
+        for n in range(min(len(stop) - 1, len(held)), 0, -1):
+            if stop.startswith(held[-n:]):
+                keep = n
+                break
+        safe = held[:len(held) - keep]
+        if safe:
+            yield safe
+        held = held[len(held) - keep:]
+    if held:
+        yield held
+
+print(list(stream_with_stop([&quot;Hello &lt;&quot;, &quot;/s&quot;, &quot;&gt; extra&quot;], &quot;&lt;/s&gt;&quot;)))
+print(list(stream_with_stop([&quot;a&lt;b&quot;, &quot;c&quot;], &quot;&lt;/s&gt;&quot;)))</code></pre>
+<div class="res">输出:
+[&#x27;Hello &#x27;]
+[&#x27;a&lt;b&#x27;, &#x27;c&#x27;]</div>
+<p class="zh">第二个例子:"a&lt;b" 里的 "&lt;" 后面是 b,不可能是停止串开头,所以直接输出。</p>
+<p class="en">I hold back only the longest suffix that could still be the start of the stop string, and emit everything before it. When the full stop string appears, I emit the text before it and stop. That way the user never sees half of a stop marker, and latency only grows by a few characters.</p>
+<p class="q">追问:复杂度?</p>
+<p class="en">Each chunk costs about the chunk length times the stop length. For many stop strings, I'd use a trie or Aho-Corasick.</p>
+</div>
+
+<h3 id="s3-8">3.8 固件味:解析带校验的二进制头</h3>
+<div class="card">
+<p><b>题目</b>:设备收到一个更新包:前 16 字节是头(魔数、版本、标志、长度、CRC32),后面是数据。解析并校验,出错要说清是哪种错。</p>
+<p><b>比方</b>:收快递先看面单(头):寄件人对不对(魔数)、写的重量和实际一样不一样(长度)、封条有没有被拆过(CRC)。</p>
+<pre>
+偏移: 0     4    6    8          12         16
+     ┌─────┬────┬────┬──────────┬──────────┬─────────
+     │magic│ver │flag│ len (4B) │ crc (4B) │ payload ...
+     └─────┴────┴────┴──────────┴──────────┴─────────
+  "<" = 小端、不补齐;4+2+2+4+4 = 16 字节
+</pre>
+<pre><code>import struct, zlib
+
+HDR = struct.Struct(&quot;&lt;4sHHII&quot;)   # magic, version, flags, payload_len, crc32  (little-endian, no padding)
+
+def pack(payload: bytes, version=1, flags=0):
+    return HDR.pack(b&quot;ALPC&quot;, version, flags, len(payload), zlib.crc32(payload)) + payload
+
+def parse(blob: bytes):
+    if len(blob) &lt; HDR.size:
+        raise ValueError(&quot;short header&quot;)
+    magic, ver, flags, n, crc = HDR.unpack_from(blob, 0)
+    if magic != b&quot;ALPC&quot;:
+        raise ValueError(&quot;bad magic&quot;)
+    payload = blob[HDR.size:HDR.size + n]
+    if len(payload) != n:
+        raise ValueError(&quot;truncated payload&quot;)
+    if zlib.crc32(payload) != crc:
+        raise ValueError(&quot;crc mismatch&quot;)
+    return ver, flags, payload
+
+blob = pack(b&quot;weights-v2&quot;)
+print(HDR.size, parse(blob))
+bad = blob[:-1] + b&quot;X&quot;
+try:
+    parse(bad)
+except ValueError as e:
+    print(&quot;error:&quot;, e)</code></pre>
+<div class="res">输出:
+16 (1, 0, b&#x27;weights-v2&#x27;)
+error: crc mismatch</div>
+<p class="zh">最后一个字节被改掉,CRC 对不上,被拒绝。这和你 OTA 毕设里「MD5 校验失败就整体回滚」是同一个习惯。</p>
+<p class="en">I unpack a fixed little-endian header with no padding, then validate in order: enough bytes for the header, the magic number, the payload length, then the CRC over the payload. Each failure gets its own error, because on a device you need to know whether it was a truncated download or corruption. In my capstone OTA installer we checked MD5 for every file and rolled back the whole update if any check failed, so the car was never left half updated.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>为什么写明小端?</b>不同芯片字节序可能不同;协议里要定死。<span class="en">Byte order must be fixed by the protocol, not by the CPU.</span></li>
+<li><b>C 里用 struct 直接读会怎样?</b>编译器可能插填充字节、还可能有对齐问题;要用 packed 或者逐字节拼。<span class="en">Padding and alignment; use a packed struct or assemble bytes explicitly.</span></li>
+<li><b>升级中途断电?</b>A/B 两个分区:新版本写到备用区,校验通过才切换启动标志,失败就从旧区启动。<span class="en">A/B partitions: write to the inactive slot, verify, then flip the boot flag atomically.</span></li>
+</ul>
+<p class="warn">🔴 OTA 是五人组,你确认的是车端安装器这部分。A/B 分区是通用做法,不是说你做过。</p>
+</div>
+
+<h2 id="c4">第 4 章 · 底层基础:固件和系统常被问的</h2>
+
+<h3 id="s4-1">4.1 内存层级和缓存行</h3>
+<div class="card">
+<p><b>比方</b>:手上(寄存器)、桌上(L1)、抽屉(L2)、书柜(L3)、隔壁仓库(内存)、城外仓库(SSD)。越远越大,也越慢。</p>
+<pre>
+            大概多快(数量级)    大概多大
+寄存器       < 1 ns              几百字节
+L1 缓存      ~1 ns               几十 KB
+L2 缓存      几 ns               几 MB
+L3 缓存      十几 ns             几十 MB(有的芯片没有)
+内存 DRAM    ~100 ns             几十 GB
+SSD          几十 µs             TB
+</pre>
+<p class="zh">这些是常见量级,不是某颗芯片的精确值。</p>
+<p><b>缓存行</b>:CPU 从内存拿数据,一次拿一整行,不是一个字节。x86 常见 64 字节;Apple M 系列是 128 字节(本机 M4 Max 用 <code>sysctl hw.cachelinesize</code> 查到 128)【已核】。</p>
+<p><b>小算例</b>:64 字节一行 = 16 个 float。按行读一个矩阵,拿一次缓存行能用 16 个数;按列读,每次只用 1 个,剩下 15 个白拿。</p>
+<p><b>本机实测</b>【已核】:4096×4096 的 float 矩阵求和,按行 0.011 秒,按列 0.052 秒,<u>按列慢约 4.7 倍</u>。同样的运算量,只是访问顺序不同。(数字随机器变,倍数是重点。)</p>
+<pre>
+按行:  [a0 a1 a2 ... a15] [a16 ...]   一行缓存全用上
+按列:  [a0 ............ ] 只用 a0,下一个在 4096 个数之后,又一行
+</pre>
+<p class="q">英文答</p>
+<p class="en">Memory is a hierarchy: registers, L1, L2, sometimes L3, then DRAM, each level bigger and slower. Data moves in cache lines, 64 bytes on most x86 chips and 128 on Apple silicon, so access patterns matter as much as operation counts. On my laptop, summing a 4096 by 4096 float matrix column by column was about 4.7 times slower than row by row. My BOLT research is the same idea for code: a stale profile kept only about 30 percent of the speedup, and the newer method, Wax, recovered 92 percent versus 81 for BOLT's own matching.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>false sharing?</b>两个线程改同一缓存行里的不同变量,缓存行来回抢。解决:各自对齐到不同的缓存行。<span class="en">Two threads write different variables on the same line, so the line ping-pongs; pad them apart.</span></li>
+<li><b>TLB?</b>虚拟地址到物理地址的翻译缓存。用大页能减少 TLB 未命中,大模型权重常用。<span class="en">It caches address translations; huge pages reduce misses for big weight buffers.</span></li>
+</ul>
+</div>
+
+<h3 id="s4-2">4.2 DMA</h3>
+<div class="card">
+<p><b>比方</b>:老板(CPU)不自己搬箱子,叫搬家公司(DMA 控制器)搬,搬完打电话(中断)通知。老板这段时间可以干别的。</p>
+<pre>
+CPU:  设置 DMA(源地址、目的地址、长度) → 去干别的 ──────────▶ 收到中断,处理数据
+DMA:              ────── 自己把数据从设备搬到内存 ──────▶ 发中断
+</pre>
+<ul>
+<li>常见用法:摄像头、网卡、存储把数据直接写进内存;GPU 和主机之间拷数据(你在 E6792 写的主机端拷贝就是这一类)。</li>
+<li><b>两个坑</b>:① 缓存一致性:DMA 写了内存,CPU 缓存里可能还是旧的,要刷新或失效缓存;② 搬运期间这块内存不能被换出或挪走(要锁页 / pinned memory)。</li>
+<li><b>双缓冲</b>:DMA 往 A 写的同时,CPU 处理 B,然后交换。和推理里「读下一帧的同时算这一帧」是同一个思路。</li>
+</ul>
+<p class="en">DMA lets a device move data to or from memory without the CPU copying each byte. The CPU programs source, destination and length, does other work, and gets an interrupt when it's done. The two classic issues are cache coherence, since the CPU may hold stale cached data, and making sure the buffer is pinned so it can't be moved. Double buffering overlaps transfer and compute: DMA fills one buffer while the CPU processes the other. In CUDA, pinned host memory is what makes async copies possible.</p>
+</div>
+
+<h3 id="s4-3">4.3 中断、volatile、内存映射 I/O</h3>
+<div class="card">
+<ul>
+<li><b>中断</b>:硬件「拍肩膀」,CPU 暂停手头的事去执行处理函数。处理函数要短:记下事件、清标志,重活交给主循环。<span class="en">Keep interrupt handlers short: record, clear, defer the heavy work.</span></li>
+<li><b>内存映射 I/O</b>:设备寄存器被映射到某个地址,读写这个地址就是读写硬件。<span class="en">Device registers appear at fixed addresses.</span></li>
+<li><b>volatile</b>:告诉编译器「这个值可能被外面改」,每次都真的去读,不要优化掉。用于硬件寄存器、中断里改的标志。<u>它不保证线程安全</u>,多线程要用原子操作或锁。<span class="en">volatile stops the compiler from caching a value; it does not make code thread safe.</span></li>
+</ul>
+</div>
+
+<h3 id="s4-4">4.4 并发基础</h3>
+<div class="card">
+<p><b>比方</b>:两个人同时改一张共享表格的同一格,后保存的会覆盖前面的(竞态)。锁就是「一次只许一个人拿笔」。</p>
+<div class="tbl"><table>
+<tr><th>概念</th><th>一句话</th></tr>
+<tr><td>竞态 race</td><td>结果取决于谁先谁后。<code>x += 1</code> 其实是读、加、写三步,中间能被打断</td></tr>
+<tr><td>互斥锁 mutex</td><td>同一时间只有一个线程进临界区</td></tr>
+<tr><td>条件变量</td><td>没活就睡,有活被叫醒;醒来要用 while 重新检查条件</td></tr>
+<tr><td>原子操作</td><td>不可打断的单步,比如原子加一;适合计数器、标志</td></tr>
+<tr><td>死锁</td><td>A 拿着锁 1 等锁 2,B 拿着锁 2 等锁 1。办法:所有人按同一顺序拿锁</td></tr>
+</table></div>
+<p><b>生产者-消费者</b>(模型生成 token,界面显示 token)。本机跑过【已核】:</p>
+<pre><code>import threading
+
+class BoundedQueue:
+    def __init__(self, cap):
+        self.cap, self.items = cap, []
+        self.lock = threading.Lock()
+        self.not_full = threading.Condition(self.lock)
+        self.not_empty = threading.Condition(self.lock)
+
+    def put(self, x):
+        with self.not_full:
+            while len(self.items) == self.cap:   # while, not if: spurious wakeups
+                self.not_full.wait()
+            self.items.append(x)
+            self.not_empty.notify()
+
+    def get(self):
+        with self.not_empty:
+            while not self.items:
+                self.not_empty.wait()
+            x = self.items.pop(0)
+            self.not_full.notify()
+            return x</code></pre>
+<div class="res">生产者放入 "The", " llama", " runs", " locally", None(结束标记),容量 2
+输出:The llama runs locally</div>
+<p class="en">A bounded queue with one lock and two condition variables: producers wait while it's full, consumers wait while it's empty, and each side wakes the other. I check the condition in a while loop because wakeups can be spurious. With exactly one producer and one consumer, like a decoder thread feeding a UI thread, you can go lock-free with a ring buffer and two atomic indices, since each index has a single writer.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>Python 有 GIL,多线程还有用吗?</b>等 I/O 或者在 C 扩展里(numpy、推理库)释放 GIL 时有用;纯 Python 计算要用多进程。<span class="en">Useful for I/O and for C extensions that release the GIL; CPU-bound pure Python needs processes.</span></li>
+<li><b>pop(0) 是 O(n)</b>:真写要用 <code>collections.deque</code> 或环形缓冲区(3.1 那个)。<span class="en">I'd use a deque or the ring buffer in production.</span></li>
+</ul>
+</div>
+
+<h3 id="s4-5">4.5 C/C++:指针和引用、栈和堆</h3>
+<div class="card">
+<p><b>比方</b>:指针是写着门牌号的纸条,可以改写成别的门牌,也可以是空白(nullptr);引用是这栋房子的另一个名字,一出生就绑定,不能换,也不能为空。</p>
+<pre><code>void by_ptr(int* p) { if (p) *p += 1; }   // 可能为空,要先检查
+void by_ref(int& r) { r += 1; }            // 一定指向一个对象
+
+int x = 1;
+by_ptr(&amp;x);       // x = 2
+by_ref(x);        // x = 3
+by_ptr(nullptr);  // 什么都不做</code></pre>
+<div class="res">本机编译运行:x=3</div>
+<div class="tbl"><table>
+<tr><th></th><th>指针</th><th>引用</th></tr>
+<tr><td>能为空</td><td>能(nullptr)</td><td>不能</td></tr>
+<tr><td>能改指向</td><td>能</td><td>不能</td></tr>
+<tr><td>能做算术</td><td>能(p+1 跳一个元素)</td><td>不能</td></tr>
+<tr><td>什么时候用</td><td>可选参数、数组、和 C 接口、硬件地址</td><td>函数参数「一定有」的对象,常配 const</td></tr>
+</table></div>
+<p><b>栈和堆</b>:栈像便利贴,函数结束自动扔,快但小;堆像仓库,手动申请、手动还,大但慢。现代 C++ 用 <code>std::unique_ptr</code> / <code>std::vector</code>,离开作用域自动释放(RAII),避免忘记 free。</p>
+<p><b>结构体填充</b>【已核,本机编译】:</p>
+<pre><code>struct A { char a; int b; char c; };  // sizeof = 12
+struct B { int b; char a; char c; };  // sizeof = 8</code></pre>
+<p class="zh">int 要 4 字节对齐,A 在 char 后面插了 3 个空字节,末尾再补 3 个。把大的成员放前面就省了 4 字节。固件里内存紧,这种细节会被问。</p>
+<p class="en">A pointer is a value holding an address: it can be null, reassigned, and used for arithmetic. A reference is an alias bound once to an existing object, never null. I use const references for inputs that must exist, and pointers for optional things, arrays and hardware addresses. For memory, I prefer RAII types like unique_ptr and vector, so cleanup happens when the scope ends. Struct layout matters too: a char, an int and a char take 12 bytes because of alignment padding, but 8 if you put the int first.</p>
+<p class="q">追问</p>
+<ul class="fu">
+<li><b>悬空指针?</b>指向已经释放的内存。比如返回局部变量的地址。<span class="en">Pointing at freed memory, like returning the address of a local.</span></li>
+<li><b>unique_ptr 和 shared_ptr?</b>前者独占、零开销;后者引用计数、有原子操作开销。<span class="en">unique_ptr is sole ownership with no overhead; shared_ptr reference counts atomically.</span></li>
+<li><b>你的 C/C++ 经验?</b>见 5.4。</li>
+</ul>
+</div>
+
+<h2 id="c5">第 5 章 · 行为题、动机和反问</h2>
+
+<h3 id="s5-1">5.1 30 秒开场</h3>
+<div class="card">
+<div class="outline">提纲:① 哥大计算机工程硕士,12 月毕业 / Columbia M.S., December ② 推理:Jetson 上 TensorRT / Edge inference ③ 应用:TikTok agent / Shipped an LLM agent ④ 为什么来 / Why here</div>
+<p class="en">I'm Christina, finishing my Master's in Computer Engineering at Columbia in December. The work I enjoy most is making models run well on real hardware: I deployed a TensorRT FP16 detector on a 2-gigabyte Jetson Nano at 12 frames a second and 5 watts, and in my GPU course I measured TensorRT at about twelve times faster than PyTorch. This summer at TikTok I designed and shipped an LLM analysis agent end to end. I picked the software team at the fair because running frontier models on hardware people own is the problem I want to work on.</p>
+</div>
+
+<h3 id="s5-2">5.2 Why Alpaca(约 50 秒)</h3>
+<div class="card">
+<div class="outline">提纲:① 相信本地 / Belief: models on hardware you own ② 他们攻的是真瓶颈:内存 / Real bottleneck ③ 我在小尺度上撞过同一面墙 / Same wall, small scale ④ 早期,能碰整条栈 / Whole stack</div>
+<p class="en">Three reasons. First, I think people should be able to own the models they rely on, for privacy and for cost, and you're one of the few teams treating that as a hardware and software problem together. Second, you're attacking the real bottleneck. For one user, speed is bandwidth divided by bytes per token, so the inference engine and the memory architecture are where the wins are. Third, I've hit that wall at small scale: on a 2-gigabyte Jetson, memory was the first constraint, before compute. At an early team I'd get to work across firmware, the engine and the models, and that's the kind of range I want right now.</p>
+</div>
+
+<h3 id="s5-3">5.3 Why in person / 4 周内到岗</h3>
+<div class="card">
+<p class="warn">🔴 和初聊时说的保持一致。事实:硕士 12/15 结束(以 I-20 为准);F-1 毕业前不能校外全职;OPT 工卡到手才能上班。三种说法见初聊教案 3.5,由你选。下面是「说法 A」的短版。</p>
+<p class="q">In person</p>
+<p class="en">I'd rather be in person, especially at an early team. Hardware and inference work moves fastest when you can walk over and look at the same board or profiler trace. I'm planning to move to the Boston area right after I graduate.</p>
+<p class="q">Start date</p>
+<p class="en">My degree ends on December 15th, and I can start full time, in person, right after that. The only dependency is my OPT work card, so realistically the second half of December or the first week of January. If your process wraps up in late November, that fits your four weeks.</p>
+<p class="zh">工卡什么时候到:按你 I-765 的真实情况说,不要猜日期。不要当场答应毕业前远程兼职。</p>
+</div>
+
+<h3 id="s5-4">5.4 「你的 C/C++ 有多深?」【预测,固件组很可能问】</h3>
+<div class="card">
+<div class="outline">提纲:① OTA 车端安装器,C,嵌入式 Linux / Capstone installer ② CUDA 主机端 / Host side ③ BOLT 研究在 C++ 二进制层面 / BOLT ④ 诚实:没写过裸机固件,上手快 / Honest gap</div>
+<p class="en">My most hands-on C is my undergraduate capstone with UAES: the in-vehicle installer for over-the-air updates on Linux. It read a manifest, patched each file, restored permissions, checked MD5, and rolled everything back if any check failed. In my GPU course I wrote the host side of a CUDA inference path, memory allocation, transfers, launch configuration and dtypes, on top of provided kernels. And my BOLT research works with C++ binaries at the code-layout level. I haven't written bare-metal firmware for a microcontroller, but I'm comfortable reading datasheets and I ramp up quickly.</p>
+<p class="warn">🔴 不说「手写 CUDA kernel」;OTA 是五人组,别说 led;BOLT 原始流水线是 Wenxuan 搭的,你做版本差距和归因。</p>
+</div>
+
+<h3 id="s5-5">5.5 讲一次性能调试(约 50 秒)</h3>
+<div class="card">
+<div class="outline">提纲:① 现象:12.5 GB 导出像卡住 / Looked stuck ② 先错:加了抽样 / First fix was wrong ③ 第二天量 / Measured ④ 真因:反复从头读 + 跨地区挂载 / Real cause ⑤ 结果:1.6 GB 一两分钟 / Result ⑥ 教训:数字节 / Count bytes</div>
+<p class="en">At TikTok, a 12.5-gigabyte export of about 250,000 rows looked stuck in my agent, so I added sampling. The next day I actually measured, and one streaming pass finished in time. The real cost was the agent re-reading the whole file just to count rows, over a cross-region mount. I removed the extra reads, took the sampling back out so reports stayed exact, and a 1.6-gigabyte file ran in one to two minutes. The lesson I keep is to count how many bytes actually move before optimizing, which is the same habit you need for inference.</p>
+</div>
+
+<h3 id="s5-6">5.6 学新东西很快的例子(约 35 秒)</h3>
+<div class="card">
+<p class="en">At TikTok I had to add a new domain to an agent framework I'd never seen. I found a working example, got it running end to end, then changed one thing at a time and made the design calls myself. The first version took about twenty commits over three days. I'd approach your inference engine the same way: get a model running, profile it, then go deep where the time goes.</p>
+</div>
+
+<h3 id="s5-7">5.7 反问 Matt 的三个问题</h3>
+<div class="card">
+<ol>
+<li><span class="en">What does the software team's work look like this month: is it more bring-up and firmware on new hardware, or optimizing the inference engine on models that already run?</span><br><span class="zh">这个月软件组主要在做什么:新硬件的 bring-up 和固件,还是在已经能跑的模型上优化推理引擎?</span></li>
+<li><span class="en">How do you measure progress on the engine: tokens per second, joules per token, time to first token, or quality after quantization? Which one is hardest right now?</span><br><span class="zh">你们用什么指标衡量推理引擎:每秒 token、每 token 焦耳、首字延迟,还是量化后的质量?现在最难的是哪个?</span></li>
+<li><span class="en">What would a new engineer own in the first 90 days, and what would make you say it went really well?</span><br><span class="zh">新人前 90 天会负责什么?做到什么程度你会觉得很好?</span></li>
+</ol>
+<p class="zh">开场如果 Matt 已经讲了其中一个,就换成:<span class="en">"What surprised you most about running large models on your own hardware?"</span>(你们自己跑下来,最意外的是什么?)</p>
+</div>
+
+<h3 id="s5-8">5.8 出门前 1 分钟只看这个</h3>
+<div class="card">
+<ul>
+<li>NDA 签了吗?地址 17 Tudor St,11:50 到。周一。</li>
+<li>RCRI:FP16(Nano 没 INT8),检测阶段 12 FPS · 83 ms · 0.7 GB · 5 W;双 sigmoid。</li>
+<li>E6792:13.03 vs 1.07 ≈ 12 倍;端到端 7.4 倍,瓶颈转到 CPU;kernel 不是你写的。</li>
+<li>权重 = 参数 × 位 ÷ 8;KV = 2 × 层 × KV头 × 维度 × 字节,8B = 128 KiB/token。</li>
+<li>速度上限 = 带宽 ÷ 每 token 字节;M4 Max 跑 8B 4 位 ≤ 136。</li>
+<li>写代码:复述 → 例子 → 复杂度 → 边写边说 → 走一遍例子。</li>
+</ul>
+</div>
+
+<h3>附 · 数字出处</h3>
+<div class="card">
+<ul class="fu">
+<li>RCRI、E6792、CLIP、iQIYI、OTA、BOLT 的数字:Alpaca_推理项目提纲_1023.html 和记忆库里的项目事实记录。</li>
+<li>Llama-3.1-8B 结构(32 层、32 头、8 个 KV 头、维度 4096 → 每头 128):Meta 公开的模型配置;70B 结构见初聊教案 3.14。</li>
+<li>带宽:Apple(M4 120、M4 Pro 273、M4 Max 546、M2 Ultra 800 GB/s)、NVIDIA(RTX 4090 1008 GB/s;Jetson Nano 25.6 GB/s)公开规格。</li>
+<li>所有算术、代码输出、结构体大小、按行/按列测速:2026-10-29 在本机(M4 Max)上跑出。</li>
+<li>Q4_0 每块 32 个权重 + 1 个 FP16 缩放:llama.cpp 公开格式。</li>
+</ul>
+</div>
+
+</main>
+<aside id="toc"><div class="t">目录</div></aside>
+<button id="tocbtn" onclick="document.getElementById('toc').classList.toggle('open')">目录</button>
+<script>
+(function(){var toc=document.getElementById('toc');var n=0;
+document.querySelectorAll('main h2, main h3').forEach(function(h){if(!h.id){h.id='s'+(++n);}var a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent;if(h.tagName==='H3')a.className='h3';a.onclick=function(){if(window.innerWidth<1000)toc.classList.remove('open');};toc.appendChild(a);});
+var links=[].slice.call(toc.querySelectorAll('a'));
+window.addEventListener('scroll',function(){var cur=null;document.querySelectorAll('main h2, main h3').forEach(function(h){if(h.getBoundingClientRect().top<120)cur=h.id;});links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+cur);});},{passive:true});
+})();
+</script>
+</body></html>

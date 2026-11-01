@@ -1,0 +1,2013 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Alpaca Research 初聊</title>
+<style>.hljs{color:var(--fg)}.hljs-keyword,.hljs-literal,.hljs-selector-tag{color:#a626a4}.hljs-string,.hljs-attr,.hljs-addition{color:#50a14f}.hljs-number,.hljs-symbol{color:#986801}.hljs-comment,.hljs-quote{color:#8a8a8a;font-style:italic}.hljs-title,.hljs-section{color:#4078f2}.hljs-built_in,.hljs-type{color:#c18401}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hljs-keyword,:root:not([data-theme="light"]) .hljs-literal{color:#c678dd}:root:not([data-theme="light"]) .hljs-string,:root:not([data-theme="light"]) .hljs-attr{color:#98c379}:root:not([data-theme="light"]) .hljs-number{color:#d19a66}:root:not([data-theme="light"]) .hljs-title{color:#61afef}:root:not([data-theme="light"]) .hljs-built_in{color:#e5c07b}}</style>
+<style>
+:root{--bg:#fbfaf8;--fg:#1b1a18;--mut:#6b6862;--line:#e3e0da;--acc:#b4503a;--acc2:#2f6f8f;--ok:#4e8a4a;--card:#fff;--code:#f4f2ee;--note:#fff8e6;--noteline:#e9d9a8;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16151a;--fg:#e9e7e2;--mut:#9a958c;--line:#2e2c33;--acc:#e08a70;--acc2:#7fb3d0;--ok:#8cc084;--card:#1e1d23;--code:#23222a;--note:#2a2618;--noteline:#5a4e2a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16151a;--fg:#e9e7e2;--mut:#9a958c;--line:#2e2c33;--acc:#e08a70;--acc2:#7fb3d0;--ok:#8cc084;--card:#1e1d23;--code:#23222a;--note:#2a2618;--noteline:#5a4e2a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif}
+#rp{position:fixed;top:0;left:0;height:3px;background:var(--acc);width:0;z-index:9}
+#wrap{display:flex;min-height:100%}
+#toc{width:300px;flex:0 0 300px;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto;height:100vh;position:sticky;top:0;background:var(--card)}
+#toc h2,#qa h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 10px 6px}
+#q{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font-size:14px;margin-bottom:10px}
+#allprog{font-size:12px;color:var(--mut);margin:0 6px 10px}
+.bar{height:5px;background:var(--code);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--ok);width:0}
+#toc details{margin:6px 0}
+#toc summary{cursor:pointer;font-weight:700;color:var(--acc);padding:5px 8px;border-radius:6px;list-style:none;font-size:14px}
+#toc summary::-webkit-details-marker{display:none}
+#toc summary .pp{float:right;font-weight:400;font-size:12px;color:var(--mut)}
+#toc a{display:block;padding:3px 8px;border-radius:6px;text-decoration:none;color:var(--fg);font-size:13.5px}
+#toc a:hover{background:var(--code)}
+#toc a.l1{font-weight:600;margin-top:6px;padding-left:12px}
+#toc a.l2{padding-left:26px;color:var(--mut);font-size:13px}
+#toc a.l3{padding-left:40px;color:var(--mut);font-size:12px;display:none}
+#toc a.l2.open ~ a.l3.of-{display:block}
+#toc a.done::before{content:"✓ ";color:var(--ok)}
+#toc a.cur{background:var(--code)}
+#main{flex:1;min-width:0;padding:22px 36px 120px;max-width:940px}
+#quick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+#quick a{font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--fg);background:var(--card)}
+#quick a:hover{border-color:var(--acc)}
+.part{margin:3.2em 0 1.2em;padding:18px 22px;border-radius:14px;background:linear-gradient(135deg,var(--card),var(--code));border:1px solid var(--line)}
+.part .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.part h1{border:none;margin:2px 0 4px;padding:0;font-size:1.9rem}
+.part p{margin:0;color:var(--mut)}
+#qa{width:330px;flex:0 0 330px;border-left:1px solid var(--line);padding:16px 14px;overflow-y:auto;height:100vh;position:sticky;top:0;background:var(--note)}
+#qa textarea{width:100%;min-height:110px;padding:10px;border:1px solid var(--noteline);border-radius:8px;background:var(--card);color:var(--fg);font:14px/1.6 inherit;resize:vertical}
+#qa .sec{font-size:12px;color:var(--mut);margin:6px 0 4px;min-height:1.2em}
+#qa .btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
+#qa button{border:1px solid var(--noteline);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+#qa button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.note{background:var(--card);border:1px solid var(--noteline);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:13.5px}
+.note .t{color:var(--mut);font-size:12px;display:flex;justify-content:space-between;gap:8px}
+.note .t a{color:var(--acc);text-decoration:none;cursor:pointer}
+.note .b{white-space:pre-wrap;margin-top:4px}
+.note.answered{border-color:#8cb37a}
+.ask{font-size:12px;color:var(--acc);margin-left:8px;cursor:pointer;opacity:.55;text-decoration:none}
+.ask:hover{opacity:1}
+.chk{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.chk.on{opacity:1;color:var(--ok);border-color:var(--ok)}
+.fav{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.fav.on{opacity:1;color:#c99400;border-color:#c99400}
+#favs{background:var(--card);border:1px solid #e6c55a;border-left:5px solid #c99400;border-radius:12px;padding:12px 16px;margin:0 0 14px}
+#favs h2{font-size:1.05rem;margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#favs .fbtn{font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:2px 8px;cursor:pointer}
+#favs .fi{border-top:1px dashed var(--line);padding:6px 0}
+#favs .fi .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#favs .fi a.t{color:var(--acc2);text-decoration:none;font-weight:600;flex:1;min-width:0}
+#favs .fi .body{margin:6px 0 4px 10px;padding-left:10px;border-left:2px solid #e6c55a}
+#favs .hint,#later .hint{color:var(--mut);font-size:13px;margin:0}
+.lat{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.lat.on{opacity:1;color:#2f6f8f;border-color:#2f6f8f}
+#later{background:var(--card);border:1px solid #9cc3d6;border-left:5px solid #2f6f8f;border-radius:12px;padding:12px 16px;margin:0 0 14px}
+#later h2{font-size:1.05rem;margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#later .fbtn{font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:2px 8px;cursor:pointer}
+#later .fi{border-top:1px dashed var(--line);padding:6px 0}
+#later .fi .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#later .fi a.t{color:var(--acc2);text-decoration:none;font-weight:600;flex:1;min-width:0}
+#later .fi .body{margin:6px 0 4px 10px;padding-left:10px;border-left:2px solid #9cc3d6}
+#toc a.lat-on::after{content:" 🔖"}
+#qacol{float:right;border:1px solid var(--noteline);background:var(--card);color:var(--fg);border-radius:6px;padding:1px 8px;font-size:12px;cursor:pointer;letter-spacing:0;text-transform:none;font-weight:400}
+#qaopen{display:none;position:fixed;right:0;top:38%;z-index:30;writing-mode:vertical-rl;background:var(--note);color:var(--fg);border:1px solid var(--noteline);border-right:none;border-radius:8px 0 0 8px;padding:12px 6px;font-size:13px;cursor:pointer;box-shadow:-2px 2px 8px rgba(0,0,0,.08)}
+body.qa-hide #qa{display:none}
+body.qa-hide #qaopen{display:block}
+body.qa-hide #main{max-width:1000px;margin:0 auto}
+@media(max-width:900px){#qacol,#qaopen{display:none!important}}
+@media(max-width:1100px){#qa{width:280px;flex-basis:280px}}
+#tocbtn,#qabtn{display:none}
+@media(max-width:900px){#wrap{flex-direction:column}#main{padding:16px 16px 90px;min-width:0}#main pre,#main table{max-width:100%;overflow-x:auto;display:block}
+#toc{display:none;position:fixed;inset:0 0 0 0;width:auto;height:100%;max-height:none;z-index:50;border:none;padding:calc(14px + env(safe-area-inset-top,0px)) 14px 90px}
+body.toc-open #toc{display:block}body.toc-open{overflow:hidden}
+#qa{display:none;width:auto;flex:none;height:auto;position:static;border:none;border-top:1px solid var(--line)}
+body.qa-open #qa{display:block}
+#tocbtn,#qabtn{display:block;position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:60;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#tocbtn{right:16px;background:var(--acc);color:#fff}
+#qabtn{right:110px;background:var(--card);color:var(--fg);border:1px solid var(--line)}
+#top{left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px))}}
+h1{font-size:1.7rem;border-bottom:2px solid var(--acc);padding-bottom:8px;margin-top:2.4em;text-wrap:balance}
+h2{font-size:1.3rem;margin-top:2em;text-wrap:balance}
+h3{font-size:1.1rem;margin-top:1.6em}
+table{border-collapse:collapse;width:100%;display:block;overflow-x:auto;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--code)}
+blockquote{border-left:3px solid var(--acc);margin:1em 0;padding:.2em 1em;background:var(--card);color:var(--mut)}
+code{background:var(--code);padding:2px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:14px;border-radius:10px;overflow-x:auto}
+pre code{background:none;padding:0}
+hr{border:none;border-top:1px solid var(--line);margin:2.4em 0}
+img{max-width:100%}
+.gl{border-bottom:1px dotted var(--acc2);cursor:help}
+.en{display:block;color:var(--acc2);font-size:.96em;line-height:1.6;margin:3px 0 2px}
+td .en{font-size:.92em}
+blockquote .en{color:var(--acc2)}
+.zh{color:var(--acc2);font-size:.95em}
+.ans{background:var(--card);border:1px dashed var(--noteline);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:13px;white-space:pre-wrap;line-height:1.6}
+.ans.think{color:var(--mut);font-style:italic}
+#qa .btns2{display:flex;gap:6px;margin-top:6px}
+#tip{position:fixed;z-index:20;max-width:360px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;pointer-events:none}
+#tip b{color:var(--acc2)}
+
+/* ---- 生动化:标注块 ---- */
+blockquote.co{border-left-width:4px;border-radius:10px;padding:12px 16px;position:relative}
+blockquote.co::before{content:attr(data-l);display:inline-block;font-size:11px;letter-spacing:.08em;font-weight:700;border-radius:999px;padding:1px 9px;margin-bottom:6px;color:#fff}
+blockquote.co-basic{background:#eef7ee;border-color:#4e8a4a;color:var(--fg)}blockquote.co-basic::before{background:#4e8a4a}
+blockquote.co-warn{background:#fff6e5;border-color:#d08a1a;color:var(--fg)}blockquote.co-warn::before{background:#d08a1a}
+blockquote.co-ok{background:#eef6f9;border-color:#2f6f8f;color:var(--fg)}blockquote.co-ok::before{background:#2f6f8f}
+blockquote.co-hot{background:#fdeeee;border-color:#c0392b;color:var(--fg)}blockquote.co-hot::before{background:#c0392b}
+blockquote.co-tip{background:#f3eefc;border-color:#7b52c1;color:var(--fg)}blockquote.co-tip::before{background:#7b52c1}
+blockquote.co-say{background:var(--card);border-color:var(--acc);color:var(--fg)}blockquote.co-say::before{background:var(--acc)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) blockquote.co-basic{background:#17261a}:root:not([data-theme="light"]) blockquote.co-warn{background:#2b2214}:root:not([data-theme="light"]) blockquote.co-ok{background:#152128}:root:not([data-theme="light"]) blockquote.co-hot{background:#2c1816}:root:not([data-theme="light"]) blockquote.co-tip{background:#221a2e}}
+:root[data-theme="dark"] blockquote.co-basic{background:#17261a}:root[data-theme="dark"] blockquote.co-warn{background:#2b2214}:root[data-theme="dark"] blockquote.co-ok{background:#152128}:root[data-theme="dark"] blockquote.co-hot{background:#2c1816}:root[data-theme="dark"] blockquote.co-tip{background:#221a2e}
+h1.ch{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--acc);border-bottom:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-top:3em}
+h1.ch small{display:block;font-size:12.5px;color:var(--mut);font-weight:400;margin-top:4px}
+h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h2 .num{font-size:12px;color:var(--acc);background:var(--code);border:1px solid var(--line);border-radius:6px;padding:0 7px;font-weight:600;letter-spacing:.04em}
+h3{color:var(--acc2)}
+#chbar{position:sticky;top:0;z-index:8;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin:0 0 14px;font-size:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+#chbar b{color:var(--acc)}
+#chbar .left{color:var(--mut)}
+#chbar .bar{flex:1;min-width:120px;height:6px;margin:0}
+#chbar .bar i{background:var(--acc)}
+.chnav{display:flex;justify-content:space-between;gap:10px;margin:2.2em 0 0;padding-top:14px;border-top:1px dashed var(--line)}
+.chnav a{font-size:13px;text-decoration:none;color:var(--acc2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--card)}
+.chnav a:hover{border-color:var(--acc2)}
+#toc a .rt{float:right;font-size:11px;color:var(--mut);font-weight:400}
+
+/* ---- calm reading mode (10-06): fewer colors, quieter widgets ---- */
+blockquote.co{background:transparent!important;border-left:3px solid var(--line)!important;border-radius:0!important;padding:4px 14px!important;color:var(--fg)!important}
+blockquote.co::before{display:none!important}
+blockquote.co-hot{border-left-color:var(--acc)!important}
+blockquote.co-say{border-left-color:var(--acc2)!important}
+blockquote{color:var(--fg)}
+.en{color:var(--mut)!important;font-size:.93em!important}
+td .en{font-size:.9em!important}
+.zh{color:var(--mut)!important}
+.chk,.ask,.fav,.lat{opacity:.0!important;transition:opacity .15s}
+h1:hover .chk,h1:hover .ask,h1:hover .fav,h1:hover .lat,h2:hover .chk,h2:hover .ask,h2:hover .fav,h2:hover .lat,h3:hover .chk,h3:hover .ask,h3:hover .fav,h3:hover .lat{opacity:.75!important}
+.chk.on,.fav.on,.lat.on{opacity:.8!important}
+@media(hover:none){.chk,.ask,.fav,.lat{opacity:.35!important;font-size:11px!important}}
+p.legend{color:var(--mut);font-size:.88em;margin:.3em 0}
+h3{color:var(--fg)!important}
+h1.ch{border-left-width:3px!important;background:transparent!important}
+#top{position:fixed;left:18px;bottom:18px;background:var(--acc);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer}
+</style></head><body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./">课件讲解</a><a href="manual.html">技术面手册</a><a href="manual.html#c3">8 道代码题</a><a href="projects.html">项目提纲</a><a href="intro.html">初聊手册</a><a href="../">返回 rv-7k3q</a></div>
+<div id="rp"></div>
+<div id="wrap">
+<nav id="toc"><h2>目录</h2><input id="q" placeholder="搜章节 / 题目…"><div id="allprog"></div><div id="tl"></div></nav>
+<main id="main"><div id="later"></div><div id="favs"></div><div id="quick"></div><div id="chbar"><span class="left">本章</span><b id="chname">—</b><span class="left" id="chleft">≈ — 分钟</span><div class="bar"><i id="chprog"></i></div><span class="left" id="chpct">0%</span></div><div id="body"></div></main>
+<aside id="qa">
+  <h2>📝 我的 Q&A <button id="qacol" title="收起右栏">收起 ›</button></h2>
+  <div class="sec" id="cursec">当前章节:—</div>
+  <textarea id="qtext" placeholder="看到不懂的,直接写在这里。会自动记上你当前在看的章节。"></textarea>
+  <div class="btns">
+    <button class="primary" id="save">记下来</button>
+    <button id="copy">复制全部为 Markdown</button>
+    <button id="clear">清空全部</button>
+  </div>
+  <div id="notes"></div>
+  <p style="font-size:12px;color:var(--mut)">记下的问题存在浏览器里。每条问题下有「生成解答」:在 claude.ai 上打开的版本会用 Claude 结合你正在看的章节直接写出解答(第一次会弹一次授权);本地文件版没有这个能力,点「复制全部为 Markdown」发给我。标题右边的 ☐ 是"这节我掌握了",勾了目录里会算进度。</p>
+</aside>
+</div>
+<button id="top">↑ 顶部</button>
+<button id="qaopen" title="展开我的 Q&A">‹ 📝 Q&A</button><script>(function(){var b=document.body,K='manual-qa-hide';function set(h){b.classList.toggle('qa-hide',h);try{localStorage.setItem(K,h?'1':'0')}catch(e){}}var v=null;try{v=localStorage.getItem(K)}catch(e){}set(v!=='0');document.getElementById('qacol').addEventListener('click',function(){set(true)});document.getElementById('qaopen').addEventListener('click',function(){set(false)});})();</script><button id="tocbtn">☰ 目录</button><button id="qabtn">笔记</button>
+<script>(function(){var b=document.body,tb=document.getElementById('tocbtn'),qb=document.getElementById('qabtn'),toc=document.getElementById('toc');
+function narrow(){return window.matchMedia('(max-width:900px)').matches}
+tb.addEventListener('click',function(){b.classList.toggle('toc-open');tb.textContent=b.classList.contains('toc-open')?'✕ 关闭':'☰ 目录'});
+qb.addEventListener('click',function(){b.classList.toggle('qa-open');if(b.classList.contains('qa-open')){document.getElementById('qa').scrollIntoView({behavior:'smooth'})}});
+toc.addEventListener('click',function(e){if(narrow()&&e.target.closest('a')){setTimeout(function(){b.classList.remove('toc-open');tb.textContent='☰ 目录'},50)}});})();</script>
+<script type="text/markdown" id="src"># Alpaca Research 初聊教案 · 10/23 周五 11:30 ET · 30 分钟 Google Meet · Alpaca Research Intro Call
+
+给 Christina(贾宜静)。这是 10/23 周五和 Alpaca Research 第一次通话的准备材料。
+<span class="en">For Christina: prep for your first call with Alpaca Research on Friday, October 23.</span>
+
+先说最重要的一件事:Alpaca Research **不是量化公司**。它在波士顿和剑桥(麻省)做「个人 AI」:自己设计硬件、推理引擎、模型和应用,让最强的大模型跑在你自己拥有的机器上。
+<span class="en">The most important point: Alpaca Research is not a trading firm. It builds personal AI in Boston and Cambridge, Massachusetts: hardware, an inference engine, models and apps, so frontier models run on hardware you own.</span>
+
+所以这份材料不准备概率题和脑筋急转弯,换成「在个人设备上跑大模型」的几道估算题(第 3 章 B 部分)。
+<span class="en">So there are no probability puzzles here. Instead, Part B of Chapter 3 covers back-of-envelope questions on running large models locally.</span>
+
+| 标记 <span class="en">Marker</span> | 意思 <span class="en">Meaning</span> |
+|---|---|
+| 【原邮件】 <span class="en">From their email</span> | 招聘邮件或日历邀请里写的。<span class="en">From their email or calendar invite.</span> |
+| 【官方】 <span class="en">Official posting</span> | 他们自己发的岗位描述。<span class="en">From their own job postings.</span> |
+| 【预测】 <span class="en">Prediction</span> | 我根据公司和岗位推的。网上找不到这家公司的面经。<span class="en">My prediction. No interview reports exist online for this company.</span> |
+| <u>下划线</u> <span class="en">Underline</span> | 口述时要说清楚的重点短语。<span class="en">A key phrase to say clearly.</span> |
+
+目录:第 0 章 一页速览 · 第 1 章 公司和岗位 · 第 2 章 开场与项目深挖 · 第 3 章 题库(A 动机和安排 / B 本地跑大模型 / C 押题区)· 第 4 章 反问 · 附录 A 故事对照表 · 附录 B 数字出处 · 附录 D 请你确认 · 附录 C 来源和名词表。
+<span class="en">Contents: overview, the company, opening and projects, question bank, your questions, then appendices.</span>
+
+附录 C 放在最后,是因为网页版的名词悬停只认最后一个一级标题。
+<span class="en">Appendix C comes last because the web version's glossary hover reads only the last top-level heading.</span>
+
+---
+
+# 第 0 章 · 一页速览 · One-Page Overview
+
+## 0.1 时间、形式、链接 · Time, format, links
+
+| 项目 <span class="en">Item</span> | 内容 <span class="en">Details</span> |
+|---|---|
+| 时间 <span class="en">Time</span> | 10/23 周五 11:30–12:00,纽约时间(ET)。对方也在美东,没有时差。<span class="en">Friday Oct 23, 11:30 am to noon Eastern. They are on Eastern time too.</span> |
+| 形式 <span class="en">Format</span> | Google Meet 视频。【原邮件】<span class="en">Google Meet video call.</span> |
+| 链接 <span class="en">Link</span> | https://meet.google.com/hjc-tmvm-chp <span class="en">Meet link from the calendar invite.</span> |
+| 备用电话 <span class="en">Dial-in backup</span> | (US) +1 470-655-0532,PIN 386790528 <span class="en">US dial-in with PIN, from the invite.</span> |
+| 邀请标题 <span class="en">Invite title</span> | "Interview with Christina Jia" <span class="en">Same as the calendar title.</span> |
+| 组织者 <span class="en">Organizer</span> | Alpaca Hiring(hiring@alpa.ca)。邀请里没写面试官的名字。<span class="en">Alpaca Hiring; no interviewer named.</span> |
+| 对方说的时长 <span class="en">Stated length</span> | 15 到 30 分钟的 introductory call。【原邮件】<span class="en">A 15 to 30 minute introductory call.</span> |
+| 对方说要聊什么 <span class="en">Stated agenda</span> | 了解你和你的经历;介绍岗位和团队。【原邮件】<span class="en">Learn about you and your experience; tell you about the role and team.</span> |
+| 前提条件 <span class="en">Condition</span> | 拿到 offer 后 4 周内全职、到办公室上班。你 10/18 回信确认过。【原邮件】<span class="en">Able to start full-time, in person, within 4 weeks of an offer. You confirmed this on Oct 18.</span> |
+| 岗位 <span class="en">Role</span> | 邮件没说是哪个岗位。<span class="en">The email didn't name a role.</span> |
+
+到今天为止发生了什么:
+<span class="en">How you got here:</span>
+
+1. 9/28 你在 Handshake 投了 Application Engineer(波士顿,$160–180K + 股权)。
+   <span class="en">Sept 28: you applied on Handshake for Application Engineer.</span>
+2. 10/1 Columbia 工程研究生招聘会(Lerner Hall)。你扫了摊位的二维码,填了 "Become an Alpaca!" 表:团队选 Software(Firmware, Inference),「能否立刻全职」选 Yes,简历传的是 `careerfair_1001/Yijing Jia_Resume_MLE_3proj.pdf`。
+   <span class="en">Oct 1, Columbia career fair: you filled their "Become an Alpaca!" form, picked the Software team (firmware and inference), said yes to an immediate full-time start, and uploaded your MLE resume with three projects.</span>
+3. 10/3 你在 Handshake 又投了 ML Research Scientist。
+   <span class="en">Oct 3: you also applied on Handshake for ML Research Scientist.</span>
+4. 10/14 对方来信:在招聘会拿到你的简历,约 15–30 分钟初聊;前提是 offer 后 4 周内全职坐班。
+   <span class="en">Oct 14: they emailed, citing the career fair, with the four-week condition.</span>
+5. 10/18 你回信:确认 4 周内可以全职坐班,给了 10/20 和 10/23 的时间。
+   <span class="en">Oct 18: you confirmed the four weeks and offered times.</span>
+6. 10/19 对方定在 10/23 11:30,发了日历邀请。
+   <span class="en">Oct 19: they booked Friday at 11:30.</span>
+
+## 0.2 先纠正两个容易混的 · Two mix-ups to avoid
+
+1. 它不是量化公司。名字里的 Research 指的是 AI 研究,他们的目标之一是做美国领先的开放前沿模型实验室。【官方】
+   <span class="en">It is not a trading firm. The "Research" is AI research; they aim to be a leading open frontier lab in America.</span>
+2. 它不是 Alpaca Markets(alpaca.markets,做股票交易 API 的金融科技公司)。你 10/3 在 Wellfound 投的 "Core Trading" 岗是那一家;你的 StockBEE 项目用的行情接口也是那一家。两家没有关系。
+   <span class="en">It is not Alpaca Markets, the brokerage-API company. The Core Trading role you applied to on Oct 3 was there, and StockBEE used its market-data API. The two companies are unrelated.</span>
+
+## 0.3 面试官可能是谁 · Who you might meet
+
+邀请只写了 Alpaca Hiring。根据能查到的线索,有三种可能:
+<span class="en">The invite only says Alpaca Hiring. Three possibilities:</span>
+
+| 可能 <span class="en">Who</span> | 线索 <span class="en">Evidence</span> | 这意味着什么 <span class="en">What it means</span> |
+|---|---|---|
+| A. Kevin Chen | 你 10/1 的记录写他在 Alpaca 摊位,背景记的是 Amazon TPM;Behance 上 Alpaca 的设计岗把他列为招聘联系人。你那天还为他准备了 RCRI 的资料和演示视频(`careerfair_1001/RCRI_for_Kevin/`),后来没发。<span class="en">Your fair notes put him at the Alpaca booth, with an Amazon TPM background; a Behance posting lists him as the hiring contact. You prepared RCRI materials for him that day but never sent them.</span> | 多半聊背景、动机、到岗时间;RCRI 可能被点名。<span class="en">Expect background, motivation, start date, and maybe RCRI.</span> |
+| B. Anthony Donegan | 第三方资料写他是 CEO;MIT 实验室页面写他是大二学生,对芯片、体系结构、编译器、操作系统、嵌入式感兴趣,在实验室做过深度学习 CUDA kernel 优化,下一站是创办 alpa.ca。招聘会上的二维码,你的记录写的是 Anthony 的。<span class="en">Third-party data lists him as CEO. His MIT lab page says he works across the hardware stack and optimized deep-learning CUDA kernels, and that he founded alpa.ca. Your notes say the booth QR code was his.</span> | 技术味更重:推理速度、内存、CUDA、你做过的边缘部署。<span class="en">More technical: inference speed, memory, CUDA, your edge deployment.</span> |
+| C. 其他工程师 <span class="en">Another engineer</span> | 没有线索。<span class="en">No evidence either way.</span> | 按 A 准备,技术题看第 3 章 B。<span class="en">Prepare as for A, with Chapter 3B as backup.</span> |
+
+开场对方报名字时,就知道是哪一种。
+<span class="en">You'll know which one when they introduce themselves.</span>
+
+## 0.4 对方手上的简历 · The resume they have
+
+邮件说「在招聘会拿到你的简历」,所以最可能是你 10/1 晚上传到 "Become an Alpaca!" 表里的那份:`1216/careerfair_1001/Yijing Jia_Resume_MLE_3proj.pdf`。面试时开着它。
+<span class="en">They said they got your resume at the career fair, so it is most likely the MLE resume with three projects that you uploaded to their form on Oct 1. Keep it open.</span>
+
+另外两种可能:你在摊位当面递的纸质版(那天打印的是 MLE / SDE / Quant 三版,哪一版不确定);或者 Handshake 上两次投递用的简历(见 2.12)。
+<span class="en">Other possibilities: a paper copy handed at the booth, or the two Handshake resumes covered in 2.12.</span>
+
+MLE_3proj 上写了什么:
+<span class="en">What the MLE_3proj resume says:</span>
+
+| 段落 <span class="en">Section</span> | 内容 <span class="en">Content</span> |
+|---|---|
+| 教育 <span class="en">Education</span> | Columbia 计算机工程硕士,GPA 4.0,Dec 2026;课程写了 DL for Robotic Manipulation、High-Performance ML Systems(本学期在上)、Deep Learning on the Edge、Software Engineering(本学期在上)。交大密院 ECE 本科;NYU 交换。<span class="en">Columbia M.S. Computer Engineering, Dec 2026; edge DL and HPML courses; UM-SJTU ECE; NYU exchange.</span> |
+| TikTok(2 条)<span class="en">TikTok, two bullets</span> | ① Firefly 模型评测平台上的 Smart Analysis Agent(LangGraph + MCP);② 超时调参的 agent skills(7 天加权 P99)。<span class="en">The analysis agent on Firefly, and agent skills for timeout tuning.</span> |
+| DiyoWater(2 条)<span class="en">DiyoWater, two bullets</span> | ① DuckDB ETL,11,000+ 场馆,五个市场,95%+ 精度;② 推荐系统,FAISS 双塔召回 +15%。日期写着 "Aug 2026 - Present"。<span class="en">ETL for 11,000+ venues; a recommendation system. Dates say "Present".</span> |
+| J&J(1 条)<span class="en">J&J, one bullet</span> | 20+ 家智能手术公司的数据管线,人工评估工作量 -60%。<span class="en">Pipeline over 20+ smart-surgery companies, about 60% less manual evaluation.</span> |
+| iQIYI(2 条)<span class="en">iQIYI, two bullets</span> | 图像生成管线延迟 -30%、解决 15+ 线上问题;视频修复和字幕翻译评测。<span class="en">Image-generation pipeline about 30% faster; video and subtitle evaluation.</span> |
+| 项目(3 个) <span class="en">Projects</span> | Walmart 出资的 agent 评测研究;TaskMap 论文(二作,审稿中);RCRI(GCP 训练,Jetson Nano 上 TensorRT FP16 部署)。<span class="en">Walmart-sponsored agent evaluation, the TaskMap paper, and RCRI.</span> |
+
+简历上有四处和事实不完全一致,被问到时按右边说(细节在 2.8 和 2.4):
+<span class="en">Four lines don't fully match the facts. If asked, use the right column.</span>
+
+| 简历写的 <span class="en">Resume says</span> | 真实情况 <span class="en">What's true</span> | 被问时 <span class="en">If asked</span> |
+|---|---|---|
+| DiyoWater "Aug 2026 - Present" | 9 月已经结束,你现在没有在职。<span class="en">It ended in September.</span> | *It wrapped up in September.* |
+| DiyoWater "95%+ precision" | 资料里的规则:每批人工抽 50 条,错超过 3 条就先修管线;Bloomberg 小抄写的是「目标 95%+」。所以 95% 是目标线,不是统计出来的总精度。<span class="en">The rule was to hand-check 50 rows per batch and fix the pipeline if more than 3 were wrong; 95% was the target, not a measured overall precision.</span> | *Every batch was hand-checked against a 95% precision target before it went into the app.* |
+| DiyoWater "Athena" "shipping ... two-tower ... recall@100 by 15%" | 行为数据是用 boto3 直接读 S3 上的 Parquet;双塔模型做了设计和「数据量够了才训练上线」的门槛,没有上线;15% 在已读资料里找不到。<span class="en">Behavior data was read from S3 Parquet with boto3; the two-tower model was designed and gated on data volume, not launched; no source found for 15%.</span> | *I designed the two-tower retriever and gated it on data volume, since interaction data was still small.* |
+| TikTok "from a week to same day" | 文档里没有这句的出处。能讲的是两个真实服务:广告定向服务里一个调用的超时从 100 ms 收到 10 ms,另一个收到 60 ms;reranker 服务一共调了 8 个接口的超时。<span class="en">No source for "a week to same day". The real changes: on an ad-targeting service one timeout went from 100 ms to 10 ms and another to 60 ms, and on a reranker service 8 interface timeouts were tuned.</span> | 讲这两个服务,不报「一周到当天」。<span class="en">Talk about the two services.</span> |
+
+## 0.5 这一轮大概问什么 · What this round will likely cover
+
+网上没有 Alpaca Research 的任何面经。下面是根据邮件原话、岗位描述和公司阶段推的。
+<span class="en">There are no interview reports for this company. This is inferred from their email, postings and stage.</span>
+
+1. 你是谁、做过什么(自我介绍,1 到 2 个项目)。【原邮件:learn more about you and your experience】
+   <span class="en">Who you are and what you've built.</span>
+2. 他们介绍公司、岗位和团队。【原邮件:tell you more about the role and our team】
+   <span class="en">They describe the company, role and team.</span>
+3. 你为什么对 Alpaca 和「个人 AI」感兴趣,想进哪个团队。【预测】
+   <span class="en">Why Alpaca, why personal AI, which team.</span>
+4. 能不能 4 周内到岗、能不能在波士顿/剑桥坐班、工作身份。【原邮件 + 官方】
+   <span class="en">Start date within four weeks, in person in the Boston area, work authorization.</span>
+5. 可能有一两道技术追问:RCRI 怎么在 Jetson 上跑起来、本地跑大模型卡在哪。【预测:CEO 做 CUDA kernel,公司核心是推理引擎和内存】
+   <span class="en">Maybe one or two technical follow-ups on edge inference and local LLMs.</span>
+6. 最后几分钟你提问。【预测】
+   <span class="en">Your questions at the end.</span>
+
+30 分钟大概怎么分【预测】:
+<span class="en">A likely split of the 30 minutes:</span>
+
+| 时间 <span class="en">Minutes</span> | 内容 <span class="en">Topic</span> |
+|---|---|
+| 0–3 | 寒暄,问招聘会。<span class="en">Hello, the career fair.</span> |
+| 3–10 | 他们讲公司和岗位;你听清是哪个团队。<span class="en">They pitch the company; note which team.</span> |
+| 10–20 | 你的自我介绍 + 一两个项目深挖。<span class="en">Your intro plus one or two projects.</span> |
+| 20–25 | 到岗时间、地点、身份。<span class="en">Start date, location, status.</span> |
+| 25–30 | 你提问,问下一步。<span class="en">Your questions and next steps.</span> |
+
+## 0.6 三组必背数字 · Three sets of numbers
+
+1. RCRI(Jetson Nano 2GB 实测):只检测岩点时 12 FPS(每帧 83 ms)、mAP50 0.77、内存峰值 0.7 GB、5 W;六类全流程 5 FPS(200 ms)、mAP50 0.71、1.0 GB。在 GCP 上训练的岩点检测器 mAP50 0.825。
+   <span class="en">RCRI on a Jetson Nano: hold detection at 12 FPS, 83 ms a frame, mAP50 0.77, 0.7 GB peak memory, 5 watts; the full six-class pipeline at 5 FPS. The detector trained on GCP scores 0.825.</span>
+2. TikTok:同步服务 15 分钟上限 → 后台异步会话最多 3 小时;12.5 GB、约 25 万行的导出文件;1.6 GB 的文件 1 到 2 分钟跑完;三天 20 个提交做出第一版。
+   <span class="en">TikTok: a 15-minute synchronous cap became 3-hour background runs; a 12.5 GB export of about 250,000 rows; 1.6 GB in one to two minutes; the first version in 20 commits over three days.</span>
+3. 研究:TaskMap 冻结的 BF16 Qwen2.5-1.5B,20 个没见过的任务上最坏一次掉 7.9 分,共享 LoRA 掉 26.7 分;Walmart 研究里 Q-function 的三项(代表性、行为、失败覆盖)都要到 0.9。
+   <span class="en">Research: TaskMap on a frozen BF16 Qwen2.5-1.5B, worst-case drop of 7.9 points on 20 unseen tasks versus 26.7 for shared LoRA; the Walmart work requires all three Q-function parts to reach 0.9.</span>
+
+如果聊到技术,再加一组(第 3 章 B 有推导):70B 模型 4-bit 约 35 GB;单人生成每个字都要把权重读一遍,所以速度上限 ≈ 内存带宽 ÷ 35 GB,800 GB/s 的机器约 23 个字每秒。
+<span class="en">If it gets technical: a 70B model at 4 bits is about 35 GB, and single-user decoding reads all weights per token, so 800 GB/s caps you near 23 tokens a second.</span>
+
+## 0.7 三个必须说对的事实 · Three facts to get right
+
+1. 毕业和到岗:硕士 12 月中结束(你的记录是 12/15,请对一下 I-20)。最早在毕业后、拿到 OPT 工卡后到岗,大约 12 月下半月或 1 月第一周。和「offer 后 4 周内」怎么对上,见 3.5 的 A/B/C,由你选。
+   <span class="en">Your degree ends mid-December. The earliest start is right after graduation, once your OPT card arrives, so the second half of December or the first week of January. See 3.5 for how to square that with the four weeks.</span>
+2. 地点:他们全员坐班,在波士顿/剑桥,不在纽约。要不要搬过去,见 3.6,由你定。
+   <span class="en">Location: fully in person in Boston or Cambridge, not New York. Whether you'll move is your call (3.6).</span>
+3. 身份:F-1。毕业后用 OPT 工作(12 个月,STEM 学位可以再延 24 个月);长期需要 H-1B 担保。被问到就如实说。
+   <span class="en">Status: F-1. After graduation you work on OPT, 12 months plus a 24-month STEM extension; long term you'd need H-1B sponsorship.</span>
+
+另外两件小事:DiyoWater 已经在 9 月结束;别把这家和 Alpaca Markets 搞混。
+<span class="en">Two small ones: DiyoWater ended in September, and this is not Alpaca Markets.</span>
+
+---
+
+# 第 1 章 · 公司和岗位 · The Company and the Role
+
+## 1.1 五句话讲清 Alpaca · Alpaca in five sentences
+
+1. 它做「个人 AI」的整套东西:硬件、软件、模型、应用一起设计。【官方】
+   <span class="en">They build personal AI as a full stack: hardware, software, models and apps, designed together.</span>
+   - 生活比方:今天用大模型像用电,电厂(数据中心)发电,你按度付费。Alpaca 想让每个人家里有一台「发电机」。
+     <span class="en">Today using a large model is like buying electricity from a power plant, the datacenter; Alpaca wants everyone to own a generator.</span>
+   - 他们的说法是让「自己拥有前沿模型」成为默认选项。
+     <span class="en">In their words, owning a frontier model yourself should be the default.</span>
+2. 核心技术是推理引擎和内存架构。【官方 + Crunchbase】
+   <span class="en">The core technology is an inference engine and a memory architecture.</span>
+   - 推理引擎(inference engine)= 让训练好的模型真正跑起来、算出回答的那层软件。
+     <span class="en">An inference engine is the software layer that actually runs a trained model and produces answers.</span>
+   - Crunchbase 写的是:定制的内存芯片 + 高速推理引擎 + 软件 + 本地应用。
+     <span class="en">Crunchbase lists custom memory chips, a high-speed inference engine, software and local apps.</span>
+   - 他们认为把前沿模型困在数据中心的是成本结构,所以从这两样下手。
+     <span class="en">They see cost as what keeps frontier models in datacenters, so they attack it there.</span>
+3. 模型和应用是用来带动硬件的。【官方】
+   <span class="en">Models and apps are there to drive demand for the hardware.</span>
+   - 岗位描述写:模型和应用会给他们的硬件和软件创造需求;目标是做美国领先的开放前沿模型实验室。
+     <span class="en">Their posting says models and apps create demand for their hardware and software, and they aim to be a leading open frontier lab in America.</span>
+   - 怎么赚钱网上没写。合理推断是卖硬件加软件。【预测】
+     <span class="en">How they make money isn't public; hardware plus software is my guess.</span>
+4. 很早期,全员坐班。
+   <span class="en">Very early stage, fully in person.</span>
+   - 第三方资料写 2026 年成立;Crunchbase 写 11 到 50 人,总部麻省剑桥;列了一笔 grant(资助),资助方写的是 MIT。没查到融资新闻。
+     <span class="en">Third-party data says founded in 2026, 11 to 50 people, based in Cambridge, with one grant listed from MIT; no funding news found.</span>
+   - 岗位帖写团队是「一小群爱玩的 MIT 辍学生和应届生」;所有岗位都写在波士顿或剑桥,全职坐班,不能远程。
+     <span class="en">Postings describe a small, playful team of MIT dropouts and recent grads, all in person in Boston or Cambridge, no remote.</span>
+   - CEO 据第三方资料是 Anthony Donegan:MIT 学生,在实验室做过深度学习 CUDA kernel 优化。
+     <span class="en">Per third-party data, the CEO is Anthony Donegan, an MIT student who optimized deep-learning CUDA kernels in a lab.</span>
+5. 现在在招谁。
+   <span class="en">Who they're hiring.</span>
+   - 工程:Application Engineer(波士顿,$160–180K + 股权);ML Research Scientist(Handshake 上,你投过,JD 没存下来)。
+     <span class="en">Engineering: application engineers at $160K to $180K plus equity, and an ML research scientist role you applied to.</span>
+   - 设计:Founding Industrial Designer、Founding UI/UX Designer(都是 $150–175K + 股权)。
+     <span class="en">Design: founding industrial and UI/UX designers at $150K to $175K plus equity.</span>
+   - 运营:HR Coordinator(剑桥,$80–90K)。连 HR 都在招,我的推断是公司在快速扩人。
+     <span class="en">Operations: an HR coordinator in Cambridge; hiring HR suggests, in my reading, that they're growing fast.</span>
+   - 招聘会的表上有四个团队:Hardware / Software(Firmware, Inference)/ Model / Product。你选的是 Software。
+     <span class="en">The fair form listed four teams, hardware, software for firmware and inference, model and product, and you picked software.</span>
+
+来源和原文摘要见附录 C。官网 alpa.ca 只有一张羊驼图片和一句玩笑,没有信息。
+<span class="en">Sources are in Appendix C. Their website has almost nothing on it.</span>
+
+## 1.2 这对你意味着什么 · What this means for you
+
+- 这不是「做一个 App」的公司。它的难点在最底下:一台个人设备的内存放不放得下大模型,读得够不够快(第 3 章 B 从零讲)。
+  <span class="en">The hard part is at the bottom of the stack: whether a personal device's memory can hold a large model and feed it fast enough.</span>
+- 四个团队里,你的经历每一层都碰过一点,这正是你的卖点:
+  <span class="en">You have touched every layer a little, and that's your pitch:</span>
+
+| 团队 <span class="en">Team</span> | 他们大概在做什么【预测】 <span class="en">Likely work</span> | 你能拿出来的 <span class="en">Your evidence</span> |
+|---|---|---|
+| Software:Inference <span class="en">Software, inference</span> | 让模型在自家硬件上跑得快、放得下。<span class="en">Make models fast and small enough for their hardware.</span> | RCRI:ONNX → TensorRT FP16,Jetson Nano 上 12 FPS、5 W;E6792:写过 CUDA 推理的主机端,测过 TensorRT 比 PyTorch 快约 12 倍;iQIYI:推理管线延迟 -30%;BOLT:编译器层面的性能研究。<span class="en">RCRI on the Jetson, the CUDA host-side work and the 12x TensorRT measurement, iQIYI latency work, BOLT research.</span> |
+| Software:Firmware <span class="en">Software, firmware</span> | 设备上的底层软件。<span class="en">Low-level device software.</span> | 本科毕设:汽车 OTA 差分升级,车端安装器用 C 写,带校验和回滚;NYU 的 AIoT 和软硬件协同设计课;Verilog。<span class="en">Your capstone OTA installer in C with checks and rollback; AIoT and hardware-software co-design courses.</span> |
+| Model <span class="en">Model</span> | 训练和适配开放模型,评估本地模型够不够好。<span class="en">Train and adapt open models; judge whether local models are good enough.</span> | TaskMap(LLM 适配,二作);Walmart 研究(怎么用最小的测试集评估 agent)。<span class="en">TaskMap, and the Walmart evaluation research.</span> |
+| Product / Application <span class="en">Product, applications</span> | 第一批消费级应用(桌面/网页)。<span class="en">The first consumer apps, desktop and web.</span> | TikTok:你从 0 设计并上线的 LLM agent,前端 React + TypeScript,后端异步。<span class="en">The TikTok agent you designed end to end, React and TypeScript plus an async backend.</span> |
+
+## 1.3 被问 "What do you know about us?"(约 35 秒)【预测】
+
+> 提纲:整套个人 AI(硬件 + 推理引擎 + 模型 + 应用)→ 他们认为卡住前沿模型的是成本,大头在内存 → 所以做推理引擎和内存架构 → 早期团队、波士顿坐班、四个团队都在招
+
+要点 <span class="en">Key points</span>
+- 先说他们做什么,用他们自己的说法:个人 AI、整套一起做、自己拥有前沿模型。
+  <span class="en">Start with what they do, in their own framing.</span>
+- 再说你理解的「为什么难」:一个人用的时候,速度和能放多大的模型都由内存决定。
+  <span class="en">Then show you understand why it's hard: for one user, memory decides speed and model size.</span>
+- 最后一句说团队情况,显示你看过他们的岗位。
+  <span class="en">Close with the team, which shows you read their postings.</span>
+
+口述版 <span class="en">Script</span>
+
+> [What] From what I've read, you're building personal AI as a full stack: the hardware, an inference engine, the models and the applications, designed together. The goal is that <u>owning and running a frontier model yourself</u> becomes normal.
+>
+> [Why it's hard] The thing that keeps frontier models in datacenters is cost, and for a single user a lot of that is memory: how big a model the machine can hold, and how fast it can read the weights. So it makes sense that your core is <u>an inference engine and a memory architecture</u>.
+>
+> [Team] You're an early team, in person in the Boston area, and from the fair I know you're hiring across hardware, software, models and product.
+
+这段在说什么:第一段复述他们的使命,用的是他们岗位帖里的意思;第二段是你自己的理解,而且是对的(第 3 章 B 有数字);第三段说明你查过他们在招什么。
+<span class="en">Their mission in their terms, then your own correct reading of why it's hard, then proof you looked at their hiring.</span>
+
+如果对方追问「你从哪看到的」:
+<span class="en">If they ask where you read this:</span>
+
+> Mostly your job postings, the application engineer and designer roles, plus what I heard at your booth at the Columbia fair.
+
+- 中文:岗位帖和招聘会。不提 Crunchbase、RocketReach 这类第三方数据库,没必要。
+  <span class="en">Postings and the fair; no need to mention third-party databases.</span>
+
+## 1.4 别和这两个 Alpaca 搞混 · Two other Alpacas
+
+| 名字 <span class="en">Name</span> | 是什么 <span class="en">What it is</span> | 和你的关系 <span class="en">Your link</span> |
+|---|---|---|
+| Alpaca Markets(alpaca.markets) | 股票和加密货币交易 API 的金融科技公司。Glassdoor 上叫 "Alpaca" 的面经页多半是这一家或别的同名公司,不是这家。<span class="en">A brokerage-API fintech. The Glassdoor "Alpaca" interview pages are most likely this company or another namesake, not Alpaca Research.</span> | 你 10/3 投了它的 Core Trading 岗;StockBEE 用了它的行情接口。<span class="en">You applied to its Core Trading role; StockBEE used its market-data API.</span> |
+| Stanford Alpaca | 2023 年斯坦福用 LLaMA 7B 微调出的一个指令模型。<span class="en">A 2023 Stanford instruction-tuned LLaMA 7B model.</span> | 没有关系,只是同名。<span class="en">None; same name only.</span> |
+
+---
+
+# 第 2 章 · 开场与项目深挖 · Opening and Project Deep Dives
+
+## 2.1 1 分钟自我介绍(约 150 词)· One-minute intro
+
+> 提纲:哥大计算机工程硕士 12 月毕业,做模型和系统的交界 → RCRI:整套跑在 Jetson 上,12 FPS、5 W、不上云 → TikTok:从 0 设计并上线 LLM agent,15 分钟变 3 小时,走后还在用 → 论文二作 + Walmart 出资的 agent 评测研究 → 想做「强模型跑在自己的硬件上」,所以是 Alpaca
+
+要点 <span class="en">Key points</span>
+- 先给身份和方向:模型和系统的交界。
+  <span class="en">Identity first: where models meet systems.</span>
+- 第一个例子用 RCRI,因为它就是「模型跑在自己的设备上」。
+  <span class="en">Lead with RCRI because it is literally a model running on your own device.</span>
+- 第二个例子用 TikTok,证明你能从 0 设计并上线一个完整系统。
+  <span class="en">Then TikTok, to show you can design and ship a whole system.</span>
+- 研究一句带过,最后一句接到 Alpaca。
+  <span class="en">One line of research, then tie it to Alpaca.</span>
+
+口述版 <span class="en">Script</span>
+
+> [Who] Hi, I'm Christina. I'm finishing my Master's in Computer Engineering at Columbia this December, and my undergrad was in electrical and computer engineering. I work where models meet systems.
+>
+> [Edge] This spring I led RCRI, a climbing-route recognizer that runs <u>entirely on a Jetson Nano</u>. We trained YOLOv8 on GCP, then built a TensorRT FP16 engine for the Nano. Hold detection runs at <u>12 frames a second on 5 watts</u>, with no cloud upload.
+>
+> [TikTok] This summer at TikTok, I <u>designed and shipped an LLM agent end to end</u>, from the React panel to an async backend, so long analyses run for up to three hours instead of dying at fifteen minutes. The team kept it in production after I left.
+>
+> [Research] I'm also second author on an LLM adaptation paper under review, and I do Walmart-sponsored research on evaluating AI agents.
+>
+> [Close] Strong models running on hardware people own is exactly what I want to work on, so I was really glad to find Alpaca at the fair.
+
+这段在说什么:身份 → 一个「本地跑模型」的证据 → 一个「完整系统」的证据 → 研究 → 为什么是他们。每个数字都在简历或你的项目资料里。
+<span class="en">Identity, proof you can run models on-device, proof you can ship a system, research, then why them. Every number is on your resume or in your project files.</span>
+
+## 2.2 2 分钟自我介绍(约 300 词)· Two-minute intro
+
+> 提纲:身份 → TikTok 按 STAR(S PM 的手工流程 / T 自动化,我从 0 设计 / A 面板 + agent + 后台会话 + MongoDB / R 一次对话,走后还在用)→ 边缘:E6792 的 CUDA 主机端 + TensorRT 约 12 倍,RCRI 在 Nano 上 12 FPS、5 W → 研究两句 → 应用、模型、评测、设备四层都碰过,Alpaca 是把四层一起做的地方
+
+要点 <span class="en">Key points</span>
+- TikTok 按 STAR 讲:S 是 PM 头疼的手工流程,不是技术问题。
+  <span class="en">TikTok as STAR, starting from the PM's manual process.</span>
+- 边缘部署那段说清哪些是你写的:CUDA 的主机端是你写的,kernel 是课程给的。
+  <span class="en">Be precise: you wrote the CUDA host side; the kernels came with the course.</span>
+- 收尾用「四层」:应用、模型、评测、设备。正好对上 Alpaca 的整套做法。
+  <span class="en">Close on the four layers, which mirrors Alpaca's full-stack approach.</span>
+
+口述版 <span class="en">Script</span>
+
+> [Who] Hi, I'm Christina. I'm finishing my Master's in Computer Engineering at Columbia this December. My undergrad was electrical and computer engineering, and most of my work sits where models meet systems.
+>
+> [S] This summer I interned at TikTok, on Trust and Safety algorithm infrastructure. After every model evaluation, someone exported a CSV, had an AI tool write the analysis, and uploaded the report by hand.
+>
+> [T] My product manager wanted that automated, and I <u>designed the system end to end</u>.
+>
+> [A] I built a React and TypeScript panel in the platform and an agent behind it. It confirms the columns with the user, runs the full analysis in a sandbox, and uploads only the report the user approves. The synchronous service was capped at fifteen minutes, so I moved the analysis to <u>a background sandbox session that can run for three hours</u>, with its state in MongoDB so the page can always recover.
+>
+> [R] The manual loop became one conversation, and the team <u>kept it in production after I left</u>.
+>
+> [Edge] I also care a lot about running models under tight budgets. In my edge AI course I wrote the host side of a CUDA inference path, and measured TensorRT at about twelve times PyTorch's speed on a Jetson Nano. Then I led RCRI, a climbing-route recognizer that runs entirely on the Nano: <u>hold detection at twelve frames a second, on five watts, with no cloud</u>.
+>
+> [Research] I'm second author on TaskMap, an LLM adaptation paper under review, and I do Walmart-sponsored research on evaluating AI agents with the smallest test set that still represents real usage.
+>
+> [Close] So I've worked on the app, the model, the evaluation and the device, separately. Alpaca is building <u>all four together</u>, and that's why I'm excited about this conversation.
+
+这段在说什么:TikTok 证明你能独立设计并交付;边缘那段证明你懂「在有限内存和功耗里跑模型」;研究证明你懂模型和评测;最后一句把四层接到 Alpaca 的整套做法。
+<span class="en">TikTok shows design and delivery; the edge work shows you can run models within memory and power limits; the research covers models and evaluation; the close ties all four layers to Alpaca.</span>
+
+## 2.3 他们说完岗位后,你先讲哪个项目 · Which project to lead with
+
+他们会先介绍岗位。听清是哪个团队,再按下表决定先讲哪个故事。
+<span class="en">They'll describe the role first. Pick your lead story from this table.</span>
+
+| 他们说的岗位 <span class="en">Role they describe</span> | 先讲 <span class="en">Lead with</span> | 再补 <span class="en">Then add</span> |
+|---|---|---|
+| 推理 / 系统软件 <span class="en">Inference, systems software</span> | RCRI(2.5)+ E6792(2.10) <span class="en">RCRI and the CUDA course work</span> | BOLT(2.10)、iQIYI 延迟(2.9) <span class="en">BOLT, iQIYI latency</span> |
+| 固件 <span class="en">Firmware</span> | OTA 车端安装器(2.10) <span class="en">The OTA installer</span> | RCRI 的设备端部署 <span class="en">RCRI on-device work</span> |
+| 应用 / 产品 <span class="en">Applications, product</span> | TikTok(2.4) <span class="en">TikTok</span> | RCRI 的网页界面和路线编辑器 <span class="en">The RCRI web UI and route editor</span> |
+| 模型 / 研究 <span class="en">Model, research</span> | TaskMap(2.7) <span class="en">TaskMap</span> | Walmart 评测(2.6) <span class="en">Walmart evaluation</span> |
+| 没说清 <span class="en">Unclear</span> | 直接问:*Which team do you have in mind for me?* <span class="en">Just ask which team.</span> | 按 3.3 说你的偏好 <span class="en">Then state your preference (3.3).</span> |
+
+## 2.4 TikTok:从 0 设计并上线的分析 agent · TikTok analysis agent
+
+简历上对应 TikTok 第 1 条。
+<span class="en">This is TikTok bullet 1 on the resume.</span>
+
+> 提纲:S 每次评测完人工导出 CSV、找 AI 写分析、手动回传 → T PM 要自动化,前后端我设计 → A 只读表头和几行样例,用户确认口径,沙箱跑全量,批准后才上传 → 15 分钟上限改成后台异步会话 3 小时 + MongoDB 存状态 → 先量再改:12.5 GB 文件「卡住」,真因是反复数行 → R 一次对话、1.6 GB 一两分钟、走后还在生产
+
+要点 <span class="en">Key points</span>
+- 先讲用户的痛点,不先讲技术。
+  <span class="en">Start with the users' pain, not the tech.</span>
+- 正确性:先确认列和阈值;只上传用户批准的那一份。
+  <span class="en">Correctness: confirm columns first; upload only the approved report.</span>
+- 长任务:15 分钟同步上限 → 后台会话 3 小时;状态放 MongoDB,页面随时能恢复。
+  <span class="en">Long runs: from a 15-minute cap to 3-hour background sessions, with state in MongoDB.</span>
+- 「数一下搬了多少字节」的习惯:12.5 GB 的文件被反复从头读,才是慢的原因。这和本地推理「看内存带宽」是同一种思路。
+  <span class="en">The habit of counting bytes moved: re-reading a 12.5 GB file was the real slowdown. Same instinct as watching memory bandwidth in local inference.</span>
+
+口述版(约 90 秒) <span class="en">Script, about 90 seconds</span>
+
+> [S] At TikTok, the model platform is where content-safety models get evaluated before launch. After each evaluation, someone exported a CSV, figured out which columns were the score and the ground truth, had an AI tool write the analysis, and uploaded the report by hand.
+>
+> [T] My product manager wanted that automated, and I designed and shipped it, frontend and backend, as a new domain in the company's agent framework.
+>
+> [A · Flow] The agent reads only the header and a few sample rows, asks the user to confirm the score column, the label column and the threshold, then runs the full analysis in a sandbox. <u>Nothing is uploaded until the user approves that exact report.</u>
+>
+> [A · Long runs] The synchronous service was capped at fifteen minutes, so I moved the full analysis to an asynchronous sandbox session that can run for three hours, with task state in MongoDB keyed by thread ID. The page can always recover a run, and cancel actually kills the process.
+>
+> [A · Measure first] Once, a 12.5-gigabyte export looked stuck, and I added sampling for huge files. The next day I measured: a single streaming pass over about 250,000 rows finished in time. The real problem was <u>the agent re-reading the whole file just to count rows</u>, over a cross-region mount. I removed the extra reads and the sampling, so every report stays exact.
+>
+> [R] The manual loop became one conversation, a 1.6-gigabyte export finishes in one to two minutes, and the team kept it in production after I left.
+
+这段在说什么:痛点 → 你负责什么 → 怎么保证结果对 → 最难的长任务 → 一个先量再改的决定 → 结果。撤回抽样是真实提交记录(7/9 加、7/10 撤)。对 Alpaca 来说,「先确认、再执行、批准才外传」正是个人 AI 碰用户数据时该有的样子。
+<span class="en">Pain, your role, correctness, the long-run problem, a measured reversal, results. The sampling reversal is in your commit history. For Alpaca, confirm, run, and share only on approval is how a personal AI should treat user data.</span>
+
+追问表
+<span class="en">Follow-ups</span>
+
+| 追问 <span class="en">Follow-up</span> | 回答 <span class="en">Answer</span> |
+|---|---|
+| 哪些是你做的,哪些是平台?<span class="en">What was yours vs. the platform?</span> | Firefly 是 TikTok 的模型平台,不是你做的。你在公司的 agent 框架(agent_harness,基于 LangGraph 和 MCP)里新增了 firefly 域:提示分支、工具(定位导出文件、预览、提交报告)、沙箱会话、前端面板。7/8 到 7/10 三天 20 个提交做出第一版。<span class="en">Firefly is the platform. I added a new domain to the company's agent framework: the prompt branch, tools to locate, preview and submit, sandbox sessions and the panel. The first version took twenty commits over three days.</span> |
+| LangGraph 和 MCP 是什么?<span class="en">What are LangGraph and MCP?</span> | LangGraph 把 agent 写成一张图:节点是一步,边决定下一步去哪,每个对话线程的状态会存下来。MCP(Model Context Protocol)是把工具交给模型的标准接口,模型按统一格式调用工具。<span class="en">LangGraph models an agent as a graph of steps with saved per-thread state. MCP is a standard interface for exposing tools to a model.</span> |
+| 为什么不直接流式返回?<span class="en">Why not just stream the result?</span> | 同步请求最长 900 秒(15 分钟);几小时没数据的流会被网关掐断。所以请求先回一个短 ACK,活在后台会话里跑,页面去 MongoDB 里查状态。定位、预览、读回报告走同步;全量分析走异步。<span class="en">Synchronous requests capped at 900 seconds, and the gateway cuts a stream that's silent for hours. So the request returns a short acknowledgement, the work runs in a background session, and the page polls state in MongoDB. Locating, preview and read-back stay synchronous; the full analysis is async.</span> |
+| 安全上怎么做?<span class="en">How did you keep it safe?</span> | agent 用用户自己的短期登录凭证调工具,没有自己的高权限;输入文件只读挂载,只能写输出目录和 /tmp;出网走白名单;凭证不进日志;只提交用户批准的那份报告。<span class="en">It acts as the user with short-lived credentials, inputs are read-only, writes go only to the output folder and /tmp, network access is allow-listed, credentials never hit logs, and only the approved report is submitted.</span> |
+| 重做会改什么?<span class="en">What would you change?</span> | 扩大用户前,先做 1、5、10、20 个并发用户的阶梯压测。平台大约只有 20 个沙箱会话,交接文档里写明不能承诺 20 个人同时用一定没问题。<span class="en">Before widening access, step load tests at 1, 5, 10 and 20 users. The platform had about twenty sandbox sessions, and my handover says we can't promise twenty simultaneous users will be fine.</span> |
+| 超时调参那条怎么做的?<span class="en">How did the timeout skills work?</span> | 脚本和 agent 并行:脚本拉下游每个接口近 7 天成功请求的加权 P99,参考延迟取「每天最大加权 P99」里最高的两天;agent 把下游分成计算类和存储类,配不同的安全系数,并在代码里找到现有超时配置;偏离大就自动开合并请求,附上决策报告。真实落地:一个广告定向服务的两个调用超时从 100 ms 收到 10 ms 和 60 ms;另一个 reranker 服务一共调了 8 个接口的超时。<span class="en">A script pulls 7-day weighted P99 per downstream call and takes the top two daily maxima; the agent classifies calls as compute or storage for different safety factors and finds the current config; big gaps become a merge request with a decision report. Real results: two timeouts on an ad-targeting service went from 100 ms to 10 ms and 60 ms, and 8 interface timeouts were tuned on a reranker service.</span> |
+| 为什么看 P99 不看平均?<span class="en">Why P99, not the mean?</span> | 平均值会把少数慢请求藏起来。例子:99 个请求各 5 ms、1 个 500 ms,平均约 10 ms,看起来很正常,可那个 500 ms 的用户已经超时了。超时阈值要盖住几乎所有正常请求,所以看 P99 再乘安全系数。<span class="en">The mean hides the slow tail: 99 requests at 5 ms and one at 500 ms average about 10 ms. A timeout has to cover nearly all normal requests, so use P99 plus a safety factor.</span> |
+
+## 2.5 RCRI:跑在 Jetson Nano 上的攀岩路线识别 · RCRI on the Jetson Nano
+
+简历项目第 3 个。你 10/1 在摊位上很可能和 Kevin 聊过它(你那天专门给他准备了资料和演示视频,在 `careerfair_1001/RCRI_for_Kevin/`,一直没发)。
+<span class="en">Project 3 on the resume, and probably what you discussed at the booth.</span>
+
+> 提纲:S 路线只靠岩点颜色区分,新手和色弱的人分不清 → T 我带一个同学做:摄像头实时识别路线、估难度,跑在小设备上、不上云 → A 模块化管线;GCP 训练,检测器 mAP50 0.825;ONNX → TensorRT FP16(Nano 没有 INT8)→ 难度特征改成无量纲比例 → R Nano 上 12 FPS、83 ms、0.7 GB、5 W;六类 5 FPS;和攀岩馆聊过落地
+
+要点 <span class="en">Key points</span>
+- 先讲用户问题,再讲技术。
+  <span class="en">User problem first.</span>
+- 设备那段要有一个「为什么」:Nano 的 GPU 没有 INT8,所以 FP16 是对的选择。
+  <span class="en">Give one reason on the device side: no INT8 on the Nano's GPU, so FP16.</span>
+- 一个工程判断:难度特征原来随拍摄距离变,改成无量纲比例。
+  <span class="en">One judgment call: the difficulty features became scale-free ratios.</span>
+- 结果数字全部来自你们期末幻灯片的 Jetson 实测表。
+  <span class="en">All result numbers come from your final slides' Jetson table.</span>
+
+口述版(约 80 秒) <span class="en">Script, about 80 seconds</span>
+
+> [S] Climbing routes are marked only by hold color, and beginners, or anyone with weak color vision, often can't tell which holds belong to their route.
+>
+> [T] With one classmate, I led RCRI: recognize the routes and estimate difficulty from a camera, in real time, on a small device, <u>with no cloud upload</u>.
+>
+> [A · Pipeline] We kept it modular so each stage can be debugged on its own. YOLOv8 finds the holds, a second model labels the hold types, color grouping builds the routes, and a scoring step estimates difficulty. We trained on GCP, and the hold detector reached mAP50 0.825.
+>
+> [A · Device] Then we exported to ONNX and built a TensorRT FP16 engine on a 2-gigabyte Jetson Nano. Its Maxwell GPU has fast FP16 but no INT8 path, so FP16 was the right precision.
+>
+> [A · Judgment] We also fixed the difficulty features. Raw pixel sizes and distances changed with how far the camera was, so we switched to <u>scale-free ratios</u>, like the gap between holds divided by the average hold size.
+>
+> [R] On the Nano, hold detection runs at <u>12 frames a second, 83 milliseconds a frame, in 0.7 gigabytes and 5 watts</u>. The full six-class pipeline runs at 5 frames a second. We also talked with a climbing gym about using it.
+
+这段在说什么:用户问题 → 你带队 → 管线为什么拆成几段 → 设备上为什么选 FP16 → 一个让结果更稳的判断 → 实测结果和落地尝试。对 Alpaca,这就是「模型跑在你自己的设备上,不上云」的小号版本。
+<span class="en">The problem, your lead role, the pipeline, the FP16 choice, a robustness fix, measured results and a real-world pitch. For Alpaca it's a small version of a model running on your own device with no cloud.</span>
+
+追问表
+<span class="en">Follow-ups</span>
+
+| 追问 <span class="en">Follow-up</span> | 回答 <span class="en">Answer</span> |
+|---|---|
+| 为什么六类全流程只有 5 FPS?<span class="en">Why is the six-class pipeline at 5 FPS?</span> | 每帧要跑两次模型:主检测器找岩点和大块(volume),第二个模型给岩点分五类,再按重叠度(IoU ≥ 0.3)把标签对上,对不上的标 Unknown。每帧从 83 ms 变成 200 ms。可以改的:两个模型共用一个主干、只对新出现的岩点跑分类,或者隔几帧跑一次分类。代价是标签更新慢一点。<span class="en">Two models per frame: the main detector, then a five-class model whose labels are matched by overlap, IoU 0.3, with unmatched holds marked Unknown. That takes a frame from 83 to 200 ms. Fixes: share a backbone, classify only new holds, or classify every few frames, at the cost of slower label updates.</span> |
+| 为什么 mAP 训练时 0.825,板子上 0.77?<span class="en">Why 0.825 in training but 0.77 on the board?</span> | 这是两次不同的测量:0.825 是 GCP 上训练后的验证分数;0.77 是部署后的 FP16 引擎在 Nano 上、416×416 输入时测的。具体每个因素各占多少,我们没有拆开测。<span class="en">Two different measurements: 0.825 is the validation score after training; 0.77 is the deployed FP16 engine on the Nano at 416 by 416. We didn't isolate each factor.</span> |
+| 内存怎么够?<span class="en">How did memory fit?</span> | Nano 只有 2 GB,CPU 和 GPU 共用。实测峰值:只检测 0.7 GB,六类 1.0 GB,给系统和摄像头留了余量。<span class="en">The Nano has 2 GB shared by CPU and GPU. Peaks were 0.7 GB and 1.0 GB, leaving room for the OS and camera.</span> |
+| TensorRT 做了什么?<span class="en">What does TensorRT do?</span> | 把 ONNX 计算图针对这块 GPU 编译成引擎:合并层、为每层挑最快的实现、用 FP16。编出来的引擎绑定这块 GPU 和这个 TensorRT 版本,换设备要重编。我们的脚本里专门写了别跨设备拷贝。<span class="en">It compiles the ONNX graph for that specific GPU: fusing layers, picking the fastest kernel per layer, using FP16. The engine is tied to that GPU and TensorRT version, so you rebuild per device; our script warns about exactly that.</span> |
+| 难度怎么算?<span class="en">How is difficulty scored?</span> | 六个无量纲特征。比如岩点大小用框面积的变异系数(标准差 ÷ 平均);间距用「距离 ÷ 平均岩点对角线」,小于 3 算近、3–6 够得着、6–10 远、大于 10 要跳;岩点个数分档:12 个以上简单,2 个极难。<span class="en">Six scale-free features, such as the coefficient of variation of hold sizes, distance over average hold diagonal, and bucketed hold counts.</span> |
+| 还做了什么?<span class="en">Anything else?</span> | 一个原型:用 YOLOv8n-pose 追踪攀爬者骨架,在岩点图上用 A* 推荐动作顺序。<span class="en">A prototype that tracks the climber's pose and uses A* over the hold graph to suggest moves.</span> |
+| 换成更好的硬件会怎么做?<span class="en">On better hardware?</span> | Orin 这一代支持 INT8,可以量化到 8 位再提速;把两个模型合成一个引擎;按每帧耗电来评估,不只看帧率。<span class="en">On Orin-class hardware, INT8; merge the two models into one engine; measure energy per frame, not just frame rate.</span> |
+| 攀岩馆那边?<span class="en">The gym?</span> | 对方关心的是路线多久换一次、新手留不留得住,不是模型。谈到哪一步请你确认(附录 D)。<span class="en">They cared about how often routes change and beginner retention, not the model.</span> |
+| 分工?<span class="en">Who did what?</span> | 两个人,你是负责人,同学 Haohui 做技术支持(项目任务分配文档这么写)。<span class="en">Two people; I was the lead, per our task plan.</span> |
+
+## 2.6 Walmart 出资的 agent 评测研究 · Walmart-sponsored agent evaluation
+
+简历项目第 1 个。讲最新的进展(10 月的 τ²-bench 和失败标注),不要讲 6、7 月的老口径。
+<span class="en">Project 1 on the resume. Use the October work, not the summer version.</span>
+
+> 提纲:S Walmart 出资、和 agent 评测创业公司 Arklex 合作:用 LLM 评几千条真实对话又慢又贵 → T 找「最小、但表现和全集一样」的测试集 → A Q-function 三项(代表性 / 工具使用行为 / 失败覆盖)都到 0.9;我负责指标、基线、误差分析;10 月搬到 τ²-bench,做了 LLM 判官标失败原因 → R 20 条失败对话 → 69 个错误 → 50 种;其中 4 条是基准本身的问题 → 每周和 Walmart 对齐
+
+要点 <span class="en">Key points</span>
+- Walmart 放在第一句,这是最值钱的信号。
+  <span class="en">Walmart in the first sentence.</span>
+- 讲清楚问题:评测要便宜,又不能失真。
+  <span class="en">The problem: cheap evaluation that doesn't lie.</span>
+- 三项指标说名字:representativeness、behavior、failure。
+  <span class="en">Name all three parts.</span>
+- 结果用这周的失败标注数字,并点出「基准自己也会错」。
+  <span class="en">Use this week's failure-labeling numbers and the point that the benchmark itself can be wrong.</span>
+
+口述版(约 80 秒) <span class="en">Script, about 80 seconds</span>
+
+> [S] I do research sponsored by Walmart, with Arklex, an agent-evaluation startup, on how to evaluate conversational AI agents. Judging thousands of real conversations with an LLM is slow and expensive.
+>
+> [T] So the question is: what is <u>the smallest test set that still behaves like the full set</u>?
+>
+> [A · Score] We score a candidate subset with a Q-function that has three parts. Representativeness: every real conversation should have a close neighbor in the subset. Behavior: the subset's tool-use patterns should match the full set, using metrics from VISTA, a Columbia user-simulation paper. And failure coverage: the subset should still contain the kinds of failures we've seen. <u>All three must reach 0.9.</u>
+>
+> [A · My part] I own the metrics, the baselines, like HDBSCAN clustering, LLM clustering and an agentic baseline, and the error analysis. This month I moved the pipeline onto τ²-bench, a public agent benchmark, and built an LLM judge that labels why each failed conversation failed.
+>
+> [R] In a first test on 20 failed conversations, the judge found 69 errors, which grouped into 50 distinct ones. And in 4 of the 20, the fault was in <u>the benchmark's gold answer or its simulated user, not the agent</u>. So failure labels need a human check before we trust them.
+>
+> [Stakeholder] I meet Walmart's team every week, so the metrics come from what they'd actually act on.
+
+这段在说什么:为什么要做(评测贵)→ 要什么(最小但不失真)→ 怎么打分(三项各 0.9)→ 你做了哪块 → 这周的新发现。对 Alpaca 有用:每次量化模型或改推理引擎,都需要一个便宜、但代表真实使用的回归测试集。
+<span class="en">Why, what, how it's scored, your part, and this week's finding. It matters to Alpaca: every time you quantize a model or change the engine, you need a cheap regression set that still reflects real use.</span>
+
+追问表
+<span class="en">Follow-ups</span>
+
+| 追问 <span class="en">Follow-up</span> | 回答 <span class="en">Answer</span> |
+|---|---|
+| Q-function 具体怎么算?<span class="en">How is Q computed?</span> | 代表性 = 1 − 全集每条对话到子集里最近一条的平均距离(文本向量距离);行为 = 子集和全集在三个工具指标上差多少(差越小越接近 1);失败覆盖 = 子集覆盖了全集失败类型的比例。Q = 三项平均,三项都 ≥ 0.9 才算合格。<span class="en">Representativeness is one minus the average distance from each conversation to its nearest pick; behavior compares three tool metrics between subset and full set; failure is the share of failure types covered. Q is the average, and all three must be at least 0.9.</span> |
+| 三个工具指标是什么?<span class="en">Which tool metrics?</span> | 来自 VISTA(哥大的用户模拟论文):转移熵,看「调完 A 之后常接什么」够不够多样;分布熵,看工具用得均不均匀;轨迹距离,看工具调用序列两两之间的编辑距离。<span class="en">From VISTA: transition entropy, distribution entropy, and trajectory distance, the normalized edit distance between tool sequences.</span> |
+| 怎么选子集?<span class="en">How do you select?</span> | 贪心:先加「让代表性和失败覆盖涨得最多」的对话,直到这两项到 0.9;再补行为;然后能删就删(删了仍合格);最后做 5 轮交换,能让 Q 变高就换。<span class="en">Greedy adds until representativeness and failure reach 0.9, then behavior; then remove members while staying feasible; then five swap rounds if Q improves.</span> |
+| 子集最后多大?<span class="en">How small did it get?</span> | τ²-bench 零售域 456 条对话(o4-mini 当 agent):10/16 那次用 Nomic 文本向量,每个失败过的任务算一种失败,选出 207 条,三项都过 0.9,Q 0.962。更早一次是仓库里的示例配置,数据是 GPT-4.1 当 agent 的那份,用的是简单的哈希向量,选出 94 条,Q 0.931,失败覆盖 0.907。数据、向量、失败定义都不一样,两个数不能直接比。用哪个请你确认(附录 D)。<span class="en">On 456 retail conversations with o4-mini as the agent, the Oct 16 run picked 207 with all three above 0.9. An earlier example run on GPT-4.1 conversations with simpler embeddings picked 94. Different data, embeddings and failure definitions, so the two aren't directly comparable.</span> |
+| 为什么拿 HDBSCAN 当基线?<span class="en">Why HDBSCAN?</span> | 它按密度聚类,不用预先定簇数,每簇挑代表。7 月在 50 个场景上比过:按六个聚类质量指标排名,HDBSCAN 平均第 1.43,LLM 分批聚类 1.57;但按 Q 打分,LLM 分批聚类 0.852 高于 HDBSCAN 0.811。<span class="en">Density-based, no preset number of clusters. In July, HDBSCAN ranked best on clustering metrics, but LLM batch clustering scored higher on Q, 0.852 versus 0.811.</span> |
+| 失败标注怎么做的?<span class="en">How does failure labeling work?</span> | 两步:LLM 判官读一条失败对话,加上领域规则、任务说明和没通过的检查项,输出错误列表(12 种类别,带轮次);再把所有错误分批(每批 8 个)归并成「唯一错误」。第一版没给领域规则时,判官把一次合规的拒绝误判成幻觉,加了规则才对。<span class="en">An LLM judge reads each failed conversation with the policy, task and failed checks, and lists errors in twelve categories; then errors are merged in batches of eight into unique errors. Without the policy, the judge once mislabeled a compliant refusal as a hallucination.</span> |
+| 和 Alpaca 有什么关系?<span class="en">Why does this matter here?</span> | 本地模型每次量化、换引擎,都要回答「它还够好吗」。一个小而有代表性的测试集,能便宜地回答这个问题。<span class="en">Each time you quantize or change the engine, you need to know it's still good enough; a small, representative test set answers that cheaply.</span> |
+
+## 2.7 TaskMap 论文(二作,审稿中)· The TaskMap paper
+
+简历项目第 2 个。数字以 `~/Downloads/paper_1831.pdf` 为准;会议名不说。
+<span class="en">Project 2. Numbers follow the latest manuscript; don't name the venue.</span>
+
+> 提纲:S 一个冻结的大模型服务很多任务,共享一个 LoRA 会互相干扰 → T 每个任务的权重更新写成「公共正交坐标轴上的一串系数」,可以直接比较 → A 我是二作,做消融和冷启动实验,骨干是冻结的 BF16 Qwen2.5-1.5B → R 起作用的是按块生成的系数,不是路由;没见过的任务上最坏 −7.9 vs LoRA −26.7,但平均分 LoRA 更高,如实说
+
+要点 <span class="en">Key points</span>
+- 生活比方:每个任务给一张「坐标」,大家用同一套坐标轴,所以能比谁和谁像。
+  <span class="en">Analogy: every task gets coordinates on the same axes, so tasks can be compared.</span>
+- 你的部分说清楚:消融和冷启动。
+  <span class="en">Your part: ablations and cold start.</span>
+- 弱点主动说:平均分不是最高,直接逐任务优化在已知任务上更强。
+  <span class="en">Say the weaknesses yourself.</span>
+
+口述版(约 60 秒) <span class="en">Script, about 60 seconds</span>
+
+> [S] When one frozen LLM serves many tasks, a single shared LoRA lets the tasks interfere, and separate adapters share nothing.
+>
+> [T] TaskMap writes each task's weight update as <u>coefficients on fixed, shared orthogonal axes</u>, so updates for different tasks live in one coordinate system and can be compared directly.
+>
+> [A] I'm second author. My part was the ablations and the cold-start experiments, on a frozen BF16 Qwen2.5-1.5B.
+>
+> [R] The ablations showed the gains come from <u>block-specific coefficients, not learned routing or sparsity</u>; random routing did just as well. On 20 tasks the model had never seen, shared LoRA had the higher average, but its worst task dropped 26.7 points, versus 7.9 for TaskMap. So TaskMap is safer rather than stronger on average, and direct per-task optimization still beats it on known tasks. The paper says so openly.
+
+这段在说什么:问题 → 想法 → 你的部分 → 结论和局限。主动说局限,会让人更信你前面说的结论。
+<span class="en">Problem, idea, your part, findings and limits. Stating the limits makes the findings more credible.</span>
+
+追问表
+<span class="en">Follow-ups</span>
+
+| 追问 <span class="en">Follow-up</span> | 回答 <span class="en">Answer</span> |
+|---|---|
+| 为什么要正交基?<span class="en">Why orthogonal bases?</span> | 正交时,两个更新之间的距离正好等于两组系数之间的距离,所以系数就是唯一的「坐标」。小例子:两条轴,任务甲 (1, 0)、乙 (0.8, 0.2)、丙 (0, 1);甲乙距离 0.28,很像;甲丙 1.41,完全不同。LoRA 做不到,因为很多组 B·A 能得到同一个更新。<span class="en">With orthonormal bases, the distance between updates equals the distance between coefficient vectors, so coefficients are unique coordinates. LoRA factors aren't unique.</span> |
+| 为什么只改 FFN?<span class="en">Why only the FFN?</span> | FFN 占约三分之二参数,以往研究发现它的激活最能看出是什么任务。Qwen2.5-1.5B 的 FFN 中间维度 8960,切成 70 块,每块 128。<span class="en">FFNs hold about two thirds of the parameters and best predict task identity; the 8,960-wide layer is cut into 70 blocks of 128.</span> |
+| 已知任务上的分数?<span class="en">Known-task scores?</span> | 9 个任务的平均:TaskMap 46.3 ± 2.2,共享 LoRA 40.3,VeRA 42.5,超网络 47.7,逐任务直接优化 49.3。参数量对齐的 LoRA r=40 只有 37.0,说明提升不是靠参数多。<span class="en">TaskMap 46.3, shared LoRA 40.3, VeRA 42.5, hypernetwork 47.7, direct optimization 49.3; a parameter-matched LoRA scored 37.0.</span> |
+| 任务描述重要吗?<span class="en">Do descriptions matter?</span> | 已知任务上不重要:打乱描述 48.9,还更高,是每个任务的残差码在起作用。冷启动时才靠描述,而且对措辞很敏感:同义改写后掉到 35.5 ± 7.6。<span class="en">Not for known tasks; the residual codes carry it. At cold start they matter and are sensitive to wording.</span> |
+| 推理时会更慢吗?<span class="en">Is inference slower?</span> | 实验里残差是用 Python hook 加上去的,没有融合 kernel,所以不快。只服务一个任务时,可以把这个任务的更新预先算好合进权重,像合并 LoRA 一样;要同时服务多个任务,就要把残差融进 FFN 的 kernel。这是我的想法,论文没做。<span class="en">We added residuals through Python hooks, no fused kernels. For one task you could merge the update into the weights, like merging a LoRA; for many tasks you'd fuse it into the FFN kernel. That's my idea, not in the paper.</span> |
+| 和个人 AI 有关吗?<span class="en">Relevance to personal AI?</span> | 公共坐标轴能从随机种子重新生成,每个任务只是一小串数。给个人模型做很多小的定制,这种又小又可比较的表示挺有意思。这是我的看法。<span class="en">The shared axes regenerate from a seed and each task is a small set of numbers, which is interesting for many small personalizations. My view, not a claim.</span> |
+| 发表了吗?<span class="en">Published?</span> | 在审稿中,匿名投稿,不说会议名。<span class="en">Under review, anonymized.</span> |
+
+## 2.8 DiyoWater(9 月已结束)· DiyoWater, ended in September
+
+简历上两条,日期写着 Present。**它 9 月已经结束**。两条里有三处要按事实说(见 0.4 的表)。
+<span class="en">Two bullets; the dates say Present, but it ended in September. Three details need the factual version.</span>
+
+> 提纲:S 小创业公司的饮品探索 App,场馆地图要覆盖每个上线城市,规则是不收全国连锁 → T 场馆数据管线我全权负责,后来做第一版推荐 → A Overture 开放数据 + DuckDB 直接读 S3;三层去连锁、去重、LLM 写描述、补地址;每批人工抽 50 条 → R 前 5 城 11,000+,后来 28 个市场约 5.5 万;9 月交接
+
+口述版(约 45 秒) <span class="en">Script, about 45 seconds</span>
+
+> [S] DiyoWater is a small founder-led startup with a drink-discovery app. The venue map had to cover each launch city, and the product rule was no national chains.
+>
+> [T] I owned the venue data pipeline end to end, and then a first recommendation layer.
+>
+> [A] I rebuilt the pipeline on Overture Maps, an open places dataset, reading each city straight from public S3 files with DuckDB. Then a three-layer chain filter, deduplication, LLM-written descriptions and address recovery. <u>Every batch was hand-checked against a 95% precision target before import.</u>
+>
+> [R] The first five cities came to over 11,000 venues, about three times the launch target of 3,600, and it later grew to 28 markets and about 55,000 venues. It wrapped up in September, and my handover lists what silently breaks if nobody runs it.
+
+这段在说什么:你一个人负责一整条线,规模有数字,质量靠每批抽查。推荐那条只按「设计 + 数据够了才上线」讲。
+<span class="en">You owned a whole pipeline, with scale in numbers and quality from batch checks. Describe the recommender only as designed and gated.</span>
+
+追问表
+<span class="en">Follow-ups</span>
+
+| 追问 <span class="en">Follow-up</span> | 回答 <span class="en">Answer</span> |
+|---|---|
+| 三层去连锁?<span class="en">The chain filter?</span> | 第一层看品牌字段;第二层查黑名单;第三层看同一品牌在一个城市有没有 3 家以上,最后拿不准的交给 LLM。<span class="en">Brand field, then a blocklist, then three or more same-brand venues in a city, with an LLM for the unclear ones.</span> |
+| 去重?<span class="en">Dedup?</span> | 按「规范化后的名字 + 取整后的坐标」判重。<span class="en">Normalized name plus rounded coordinates.</span> |
+| 95% 怎么来的?<span class="en">Where's the 95%?</span> | 是每批的目标线:人工抽 50 条,错超过 3 条就先修管线再导入。说成「目标」,不说成「全库测出来 95%」。<span class="en">It was the per-batch target: hand-check 50 rows, and fix the pipeline first if more than 3 are wrong. Call it a target, not a measured overall number.</span> |
+| 推荐系统?<span class="en">The recommender?</span> | 用 boto3 直接读 S3 上的 Parquet,算每个用户对各品类的偏好,写进 DynamoDB 特征表;每 5 个位置留一个给官方内容;Trending 和 Popular 两种排序用 6 万条合成事件验证过。双塔模型做了设计,并设了「交互数据够了才训练」的门槛,当时数据太少,没有上线。<span class="en">Per-user category affinity from S3 Parquet into a DynamoDB feature table, one slot in five reserved for official content, trending versus popular checked on 60,000 synthetic events. The two-tower model was designed and gated on data volume, not launched.</span> |
+| 为什么用 DuckDB?<span class="en">Why DuckDB?</span> | 不用起服务器,能按城市的经纬度范围直接查 S3 上的 Parquet 文件;Overture 有约 6,400 万个地点,只读需要的那块。<span class="en">No server, and it reads only the city's slice of the Parquet files on S3; Overture has about 64 million places.</span> |
+
+## 2.9 iQIYI 和 J&J · iQIYI and J&J
+
+两段都在简历上,但这家公司不太会深挖。各准备 30 秒。
+<span class="en">Both are on the resume but unlikely to be probed. Thirty seconds each.</span>
+
+iQIYI 口述版 <span class="en">iQIYI script</span>
+
+> [Pipeline] At iQIYI I worked on a PyTorch image-generation pipeline that content teams used for batch production.
+>
+> [What I did] I profiled where the time went across preprocessing, model inference and post-processing, <u>cut end-to-end latency by about 30%</u>, and fixed more than fifteen production issues, like GPU out-of-memory errors and stuck batch queues.
+>
+> [Also] I evaluated video restoration and LLM-based subtitle translation for legacy films.
+
+J&J 口述版 <span class="en">J&J script</span>
+
+> [What] At J&J Medical in Shanghai, I built a Python and SQL pipeline that pulled product data on AI systems from more than twenty smart-surgery companies into one normalized schema, so the team could benchmark them automatically.
+>
+> [Result] That <u>cut manual evaluation effort by about 60%</u>.
+
+| 追问 <span class="en">Follow-up</span> | 回答 <span class="en">Answer</span> |
+|---|---|
+| iQIYI 的 30% 具体怎么来的?<span class="en">How did you get 30% at iQIYI?</span> | 你 5 月的面试稿里写的做法:先分段测时间(去噪网络、VAE 解码、主机到显卡的拷贝),再上混合精度,把固定 batch 32 改成动态 8 到 16,缓存重复计算。具体每步省了多少,请你确认后再说(附录 D)。<span class="en">From your May notes: profile each stage, use mixed precision, switch from a fixed batch of 32 to a dynamic 8 to 16, and cache repeated work. Confirm the per-step numbers before quoting them.</span> |
+| 15 个线上问题是什么类型?<span class="en">What kind of production issues?</span> | 显存溢出(OOM)、批处理队列卡住、风格不一致这几类。<span class="en">Out-of-memory errors, stuck batch queues, inconsistent styles.</span> |
+| J&J 的 60% 怎么算?<span class="en">How is J&J's 60% measured?</span> | 你以前的面试稿里是按每家公司的整理时间算:原来约 30 分钟,管线加人工核对后约 12 分钟,省 60%。这个拆法没有原始记录,确认前别主动报,被问就说按每家公司的整理时间比较。<span class="en">Your older notes compare per-company time, about 30 minutes by hand versus about 12. There's no original record, so until you confirm, just say it was measured as time per company.</span> |
+
+## 2.10 简历上没有、但值得口头带出的 · Not on the resume, worth mentioning
+
+都是真做过的。被问 "anything else you'd like to share?" 或技术聊开了再说。
+<span class="en">All real. Bring them up when asked for anything else, or when the conversation turns technical.</span>
+
+**E6792(Deep Learning on the Edge,简历课程行里有这门课)约 30 秒** <span class="en">E6792, the edge deep-learning course on your resume, about 30 seconds</span>
+
+> [Host side] In my edge deep-learning course, I implemented <u>the host side of a CUDA inference path</u>: allocating GPU memory, moving data, choosing block and grid sizes and handling data types. Then I rebuilt a CNN's forward pass on top of the provided kernels and matched PyTorch's outputs.
+>
+> [Profiling] I also profiled YOLO on a Jetson Nano. TensorRT ran inference <u>about twelve times faster than PyTorch</u>, 13 frames a second versus about one, and I used nvprof to look at SM efficiency, occupancy and DRAM read throughput.
+>
+> [CLIP] And I ran CLIP zero-shot classification live on the Nano, caching the text embeddings so each frame only runs the image encoder.
+
+- 中文:主机端是你写的,kernel 是课程给的。**不要说「手写 CUDA kernel」**。
+  <span class="en">You wrote the host side; the kernels came with the course.</span>
+
+**BOLT 研究(本学期)约 45 秒** <span class="en">BOLT research this semester, about 45 seconds</span>
+
+> [What] This semester I'm in a research project on LLVM BOLT, a tool that reorders a compiled binary so its hot code sits together.
+>
+> [Problem] After a compiler upgrade, an old profile no longer matches the new binary. With a fresh profile the program gets 1.30 times faster; with the stale one it keeps <u>only about 30% of that gain</u>.
+>
+> [Numbers] A newer method, Wax, recovers 92%, versus 81% for BOLT's own matching, and both drop as the compiler gap grows, to 84% and 70% by Clang 18.
+>
+> [My part] I ran the version-gap experiments and the attribution. Only 4.5% of the hot code was unchanged; about a fifth changed through inlining, and about a third each through block structure and instructions.
+>
+> [Lesson] I also learned to control measurements: without a fixed benchmark setup, <u>the same Wax binary measured only 73%</u>.
+
+- 中文:旧 profile 来自 Clang 14 编的程序,新程序用 Clang 15 到 18 编;原始流水线是同组 Wenxuan 搭的,你做版本差距、归因脚本和 Wax 误差分析。
+  <span class="en">The stale profile came from a Clang 14 build; Wenxuan built the original pipeline, and you did the version gap, attribution and Wax error analysis.</span>
+- 为什么对 Alpaca 有用:推理引擎的性能也是「数据放在哪、怎么排」决定的;测量要控制条件。
+  <span class="en">Why it matters: inference-engine speed also comes down to data layout, and measurements need controlled conditions.</span>
+
+**OTA 毕设(交大,和联合汽车电子合作)约 30 秒,固件方向用** <span class="en">Your OTA capstone with UAES, about 30 seconds, for firmware conversations</span>
+
+> [What] My undergraduate capstone, with UAES, was an over-the-air update system for cars on Linux. Instead of replacing the whole file system, we shipped only the files that changed.
+>
+> [My part] I wrote the in-vehicle installer in C. It reads a manifest, patches each file, restores permissions, checks MD5, and <u>rolls everything back if any check fails</u>, so a car is never left half-updated.
+>
+> [Result] Packages got more than 60% smaller, and updates more than 70% faster.
+
+- 中文:五个人的组,你确认过的部分是车端安装器。「是不是组长」还没确认,不主动说 led。
+  <span class="en">A five-person team; your confirmed part is the installer. Don't say you led it until confirmed.</span>
+
+不主动提的:mbook(C++ 订单簿)、CS Interview Coach(Rust 桌面 App)、basecamp。三个都是你撤下的项目。Coach 是技能行里 Rust 的唯一出处,被问到 Rust 怎么说见附录 D。
+<span class="en">Don't raise mbook, CS Interview Coach or basecamp; you withdrew all three. Coach is the only source for Rust on your skills line; see Appendix D if Rust comes up.</span>
+
+## 2.11 技能行和课程可能被点到的 · Skills and courses
+
+| 简历上的词 <span class="en">On the resume</span> | 怎么说 <span class="en">What to say</span> |
+|---|---|
+| Rust | 唯一出处是你撤下的 Coach 桌面 App(Tauri 2)。被问时三种说法见附录 D,由你选。<span class="en">The only source is the withdrawn Coach app; pick a phrasing from Appendix D.</span> |
+| C/C++ | OTA 车端安装器(C);BOLT 研究的对象是 C++ 程序;E6792 的 CUDA 主机端。<span class="en">OTA installer in C, BOLT on C++ binaries, CUDA host code.</span> |
+| Go | TikTok 里改过一个 Go 写的 DAG 引擎(异步触发 + skip/retry 修复),周报写的是「协助」。<span class="en">Two changes in a Go DAG engine at TikTok, as an assist.</span> |
+| C# | 柏林 VR 游戏(Unity)。<span class="en">The Unity VR game.</span> |
+| Verilog | 本科 ECE 课程。<span class="en">Undergrad ECE coursework.</span> |
+| Lock-free Structures | 简历库里出处不清楚,被问就说课程层面,深度请你确认。<span class="en">Source unclear; say coursework level unless you confirm more.</span> |
+| World Models / Diffusion | Ctrl-World 复现(扩散世界模型,DL for Robotic Manipulation 那门课);iQIYI 的图像生成。<span class="en">The Ctrl-World reproduction and iQIYI image generation.</span> |
+| High-Performance ML Systems | **本学期在上**,不要说修完了。<span class="en">In progress this semester.</span> |
+| Software Engineering | 本学期在上。<span class="en">In progress.</span> |
+| Deep Learning on the Edge | E6792,2026 春;RCRI 是这门课的期末项目。<span class="en">E6792, spring 2026; RCRI was its final project.</span> |
+
+## 2.12 他们可能还看到的另外两份简历 · The two Handshake resumes
+
+同一个招聘团队可能也看到了你在 Handshake 上的两次投递。和 MLE_3proj 不一样的地方:
+<span class="en">The same team may also see your two Handshake applications. Differences:</span>
+
+| 投递 <span class="en">Application</span> | 文件 <span class="en">File</span> | 要注意的 <span class="en">Watch out for</span> |
+|---|---|---|
+| Application Engineer,9/28 | `simplify15/Yijing Jia_Alpaca_ApplicationEngineer.pdf` | ① 第一条写成 "Designed and shipped Firefly",把平台名当成了你的 agent。被问就说:*Firefly is the platform; what I designed and shipped is the analysis agent on it.* ② 有 Go DAG 那条,说成「两处改动、协助」。③ 项目是 HabitLedger 和 LuxRent;LuxRent 简历写 Python/FastAPI,真实是 Java Spring Boot。<span class="en">It calls the platform "Firefly" as if it were your agent; it includes the Go DAG line; LuxRent is listed as Python but was really Java Spring Boot.</span> |
+| ML Research Scientist,10/3 | `handshake1003/Yijing Jia_AlpacaResearch_MLResearchScientist.pdf` | TikTok 多了两条:在线特征链路(20 分钟缓存)和指标采集器。你 10/20 确认两条都参与了。被问按「参与、接入和验证」说:20 分钟缓存和按 object id 哈希降级是平台已有机制,不是你发明的。<span class="en">Two extra TikTok lines: the online feature path and the metrics collector. You took part in both; the cache and hash-based fallback were existing platform mechanisms you integrated and validated.</span> |
+
+---
+
+# 第 3 章 · 题库 · Question Bank
+
+这一轮是初聊,所以 A 部分(动机和安排)是主体;B 部分是可能冒出来的技术追问;C 部分是押题区。
+<span class="en">This is an intro call, so Part A, motivation and logistics, is the core; Part B covers possible technical follow-ups; Part C is the likely-question list.</span>
+
+全部都是【预测】,因为没有这家公司的面经。依据写在每题标题后面。
+<span class="en">Everything here is a prediction, since there are no interview reports; the basis is noted per question.</span>
+
+## A 部分 · 动机和安排 · Part A: Motivation and Logistics
+
+### 3.1 Why Alpaca?(约 75 秒)【预测:初聊必问】
+
+> 提纲:我相信强模型该跑在人自己的设备上(RCRI 就是不上云)→ 卡点在内存:一个人用时,每出一个字都要把权重读一遍 → 所以推理引擎 + 内存架构是对的抓手 → 设备、模型、评测、应用四层我都碰过,想在一起设计的地方做 → 早期团队,我在能负责到底的地方做得最好
+
+要点 <span class="en">Key points</span>
+- 先说你相信什么,再用 RCRI 证明不是空话。
+  <span class="en">Belief first, then RCRI as proof.</span>
+- 第二段要有一个数字,证明你懂他们为什么从内存下手(第 3 章 B 有推导)。
+  <span class="en">One number to show you understand why they start from memory.</span>
+- 第三段把四层经历对上他们的整套做法。
+  <span class="en">Map your four layers to their full stack.</span>
+
+口述版 <span class="en">Script</span>
+
+> [Belief] I think the strongest models should run on hardware people own: for privacy, for latency, and so they're always there. I built RCRI that way, with no cloud upload, and I'd love to do the same for much bigger models.
+>
+> [Bottleneck] And I think you're going after the right bottleneck. For one person, generating text is limited by memory, not compute, because every new token reads all the weights once. A 70-billion-parameter model at 4 bits is about 35 gigabytes, so even at 800 gigabytes a second you're capped around 23 tokens a second. <u>That's a memory problem</u>, which is why an inference engine plus a memory architecture makes sense to me.
+>
+> [Fit] I've worked on each layer separately: the device with RCRI and my CUDA course, the model with TaskMap, evaluation with the Walmart research, and the application at TikTok. I'd love to work where <u>those layers are designed together</u>.
+>
+> [Stage] And I do my best work when I own something end to end. At TikTok I designed the system myself and shipped it. An early team where everyone owns a big piece is where I want to be.
+
+这段在说什么:第一段是立场 + 证据;第二段证明你懂他们的技术赌注(35 GB、800 GB/s、23 个字每秒在 3.13 推导过,3.14 的脚本实跑过);第三段是「为什么是你」;第四段是「为什么是早期公司」。
+<span class="en">A belief with evidence, proof you understand their technical bet, why you fit, and why an early team.</span>
+
+如果对方追问「你为什么说是内存问题,不是算力?」:直接用 3.13 的 60 秒答案。
+<span class="en">If they ask why memory and not compute, use the 60-second answer in 3.13.</span>
+
+### 3.2 Why personal / local AI?(约 45 秒)【预测】
+
+> 提纲:隐私(TikTok 花很多设计保护用户数据,在个人设备上这是默认)→ 延迟和可用性(没有来回,断网也能用;RCRI 就是这样)→ 成本(机器是你的,长任务不按字数收费,可以让 agent 跑几个小时)
+
+要点 <span class="en">Key points</span>
+- 三个理由,每个配一个你自己的例子。
+  <span class="en">Three reasons, each with your own example.</span>
+
+口述版 <span class="en">Script</span>
+
+> [Privacy] At TikTok, a lot of my design went into protecting user data: the agent acts as the user, inputs are read-only, and nothing leaves without approval. On a personal device, <u>that becomes the default</u> instead of an add-on.
+>
+> [Latency] There's no round trip, and it works offline. That's why RCRI runs on the Nano and not in the cloud.
+>
+> [Cost] And once you own the hardware, a long-running agent mostly costs electricity, not tokens. At TikTok my analyses could run for three hours; that kind of work gets much cheaper when the model is yours.
+
+这段在说什么:每个理由都落在你做过的事上,不是泛泛而谈。
+<span class="en">Every reason lands on something you've built.</span>
+
+### 3.3 Which team? What do you want to work on?【预测:邮件说会介绍岗位;招聘会表上有四个团队】
+
+> 提纲:表上选的是 Software 的推理方向 → 想做:让模型在设备的内存和功耗预算里跑快 → 视觉模型在 Jetson 上做过,想做语言模型 → 应用这边也能上手(TikTok)→ 反问你们怎么想
+
+要点 <span class="en">Key points</span>
+- 和招聘会表上的选择保持一致(Software:Firmware, Inference)。
+  <span class="en">Stay consistent with the team you picked on the form.</span>
+- 说清楚你会什么、想学什么。没做过 LLM 推理优化,就说「想做」,不说「做过」。
+  <span class="en">Say what you've done and what you want to learn; don't claim LLM inference work you haven't done.</span>
+- 最后把问题还给他们,因为岗位还没说清。
+  <span class="en">Hand the question back, since the role is still open.</span>
+
+口述版(默认按「推理」写,你要换方向见附录 D 第 4 条) <span class="en">Script, written for the inference team by default; see Appendix D item 4 to switch</span>
+
+> [Choice] On your form at the fair I picked Software, on the inference side, and that's still my first choice: <u>making models run fast inside a device's memory and power budget</u>.
+>
+> [Evidence] I've done that for vision models on the Jetson, and I'd love to do it for language models.
+>
+> [Flexible] I'm also comfortable on the application side, which is what I shipped at TikTok, so I'm flexible about where I'd add the most early on. Which team did you have in mind for me?
+
+这段在说什么:和你 10/1 填的表一致;证据是真的;没做过的说成「想做」;最后把决定权交回去,顺便问出岗位。
+<span class="en">Consistent with your form, honest about what you've done, and it draws out which role they mean.</span>
+
+如果对方问「你在 Handshake 上投了两个岗,招聘会又填了表,到底想做哪个?」:
+<span class="en">If they ask why you applied three ways:</span>
+
+> I'm excited about the company more than a specific title. My background spans applications, inference and research, and the fair form let me pick a team, so I picked inference. I'd value your view on where I'd add the most.
+
+### 3.4 Early startup, no structure(约 50 秒)【官方:Application Engineer 帖写 "thrive without structure"】
+
+> 提纲:TikTok 要在一个没用过的内部 agent 框架里加新业务域,没有现成模板 → 先读一个现成的域(值班助手),照着搭 → 三天 20 个提交跑通 → 设计决定自己做(先预览、再确认、批准才上传)→ DiyoWater 小创业公司,直接向创始人汇报,整条管线我负责 → 我习惯自己想清楚做什么,不只是怎么做
+
+要点 <span class="en">Key points</span>
+- 用两个真实场景:大公司里的新领域,小公司里的整条线。
+  <span class="en">Two real settings: a new domain inside a big company, and a whole pipeline at a startup.</span>
+- 有数字:三天 20 个提交(提交记录 7/8 到 7/10)。
+  <span class="en">A number: twenty commits in three days.</span>
+
+口述版 <span class="en">Script</span>
+
+> [New ground] At TikTok I had to add a new domain to an internal agent framework I'd never used, with no template for our use case. I started from an existing domain, the on-call assistant, mirrored its structure, and had the first version working in <u>about twenty commits over three days</u>.
+>
+> [Own the calls] Then I made the design calls myself: preview first, confirm with the user, and never upload without approval.
+>
+> [Startup] At DiyoWater, a small founder-led startup, I reported to the founder and owned the whole venue pipeline. So I'm used to <u>figuring out what to build, not just how</u>.
+
+这段在说什么:没有结构时你怎么开工(找能跑的例子)、怎么推进(自己做设计决定)、你在小公司待过。
+<span class="en">How you start without structure, how you make the calls, and that you've worked at a startup.</span>
+
+### 3.5 能不能 offer 后 4 周内到岗?· Starting within four weeks【原邮件 + 预测】
+
+这是这次通话风险最大的一题。下面先摆事实,再给三种说法。用哪种,你来定(附录 D 第 1 条)。
+<span class="en">This is the riskiest topic in the call. Facts first, then three ways to say it; you choose.</span>
+
+**事实**
+<span class="en">Facts</span>
+
+1. 你已经书面答应过:10/18 回信写了 "Yes, I can confirm that I'm able to start full-time and in person within 4 weeks if offered a position.";10/1 招聘会的表上「能否立刻全职」也选了 Yes。
+   <span class="en">You already said yes in writing, in your Oct 18 email and on the fair form.</span>
+2. 硕士 12 月中结束。你的记录是 12/15(周二),以 I-20 上的项目结束日期为准。
+   <span class="en">Your degree ends mid-December, December 15th per your notes; the I-20 date is what counts.</span>
+3. F-1 学生毕业前一般不能在校外全职上班。有没有别的许可(比如 CPT)能提前,要问哥大国际学生办公室(ISSO),这里不下结论。
+   <span class="en">On F-1 you generally can't work full-time off campus before graduating; whether anything like CPT applies is a question for Columbia's international student office.</span>
+4. 毕业后用 OPT:开始日期最早是项目结束后的第二天(12/16),最晚结束后 60 天(2/13);**必须先拿到工卡(EAD)才能上班**。申请(I-765)最早结束前 90 天(9/16)可以递,最晚结束后 60 天。【USCIS】
+   <span class="en">After graduation you work on OPT: the start date can be any day from December 16th to February 13th, but you can't start until the EAD card arrives. You can file from 90 days before to 60 days after your program ends.</span>
+5. 审批多久:有学校网站写平均 10 到 14 周;可以付费加急(premium processing,2026 年 3 月 1 日起 $1,780),加急后 USCIS 约 30 天内处理。你的 I-765 交没交,我不知道(附录 D 第 2 条)。
+   <span class="en">Processing often takes 10 to 14 weeks; premium processing costs $1,780 and takes about 30 days. I don't know whether you've filed.</span>
+6. 算一下:offer 在 11/18 或之后发,4 周后就落在 12/16 或之后;如果今天(10/23)就发 offer,4 周后是 11/20,你还在上课。
+   <span class="en">The math: an offer on or after November 18th puts four weeks on or after December 16th. An offer today would mean November 20th, while you're still in classes.</span>
+
+一张小图:
+<span class="en">A small timeline:</span>
+
+```
+10/23 初聊 ── 几轮面试 ── offer(O)── +4 周 ──> 他们希望的到岗日(D)
+                                         12/15 毕业(G)── 拿到工卡(E)──> 你最早能上班(S)
+S = G 和 E 里更晚的那天;D ≥ S 就没问题
+```
+
+> 🔤 O = offer 日期;D = O 加 4 周;G = 项目结束日(你的记录是 12/15);E = OPT 工卡到手的日子;S = 你真正能开始上班的最早日子,等于 G 和 E 里更晚的那个。
+> <span class="en">O is the offer date; D is four weeks after it; G is your program end date, December 15th in your notes; E is when your OPT card arrives; S, your earliest real start, is the later of G and E. You are fine whenever D falls on or after S.</span>
+
+**说法 A:主动说清楚(聊到时间安排时说,或最后几分钟主动补一句)**
+<span class="en">Option A: say it proactively.</span>
+
+> [Set up] One thing I want to be precise about, since you mentioned starting within four weeks.
+>
+> [Date] My Master's ends on December 15th, and I can start full-time, in person, right after that. The only dependency is my OPT work card. So realistically, <u>the second half of December or the first week of January</u>.
+>
+> [Fit] If your process wraps up in late November, that fits inside your four weeks.
+
+- 意味着什么:和你邮件里的承诺不矛盾(多轮面试走完通常也到 11 月中下旬了);对方现在就知道准确日期,不会到 offer 时才发现;风险是如果他们真的急着 11 月要人,可能现在就不往下走。
+  <span class="en">It stays consistent with your email, gives them the exact date now rather than at offer time, and the only risk is that a team needing someone in November may stop here.</span>
+
+**说法 B:只在被问到时说**
+<span class="en">Option B: only if asked.</span>
+
+> I finish my degree on December 15th, so I can start right after that, once my OPT card comes through. The second half of December, or early January.
+
+- 意味着什么:事实一样,但如果整场没人问,对方可能默认你「现在就能来」。到发 offer 时才对不上,会让人觉得邮件里没说实话,offer 也可能因此出问题。
+  <span class="en">Same facts, but if nobody asks, they may assume you can start now, and finding out at offer time could hurt trust and the offer.</span>
+
+**说法 C:对方说「我们 11 月就需要人」时**
+<span class="en">Option C: if they need someone in November.</span>
+
+> [Honest] I want to be straightforward with you. Because I'm on a student visa, <u>I can't start full-time before my degree ends on December 15th</u>.
+>
+> [Check] I can ask Columbia's international student office whether there's any way to start earlier, but I won't promise something I'm not sure I can do.
+>
+> [Door open] If a start right after graduation works for you, I'd really like to make it work.
+
+- 意味着什么:诚实、留了余地;**不要当场答应「可以先远程兼职」**,身份上能不能做,只有 ISSO 能回答。
+  <span class="en">Honest and leaves the door open. Don't agree on the spot to part-time remote work before graduation; only the international office can say whether that's allowed.</span>
+
+我的倾向是 A:你已经书面答应了 4 周,早说清楚比 offer 时再说安全;12 月中到岗,对一个「offer 后 4 周」的岗位并不远。但这是你的决定。
+<span class="en">My lean is A, since you already agreed in writing and clarity now is safer than surprises later. Your call.</span>
+
+被追问「工卡什么时候能到?」:按你 I-765 的真实情况说(附录 D 第 2 条),不要猜日期。
+<span class="en">If asked when the card will arrive, answer from your actual filing status; don't guess.</span>
+
+### 3.6 波士顿/剑桥坐班 · In person in the Boston area【官方:所有岗位都写坐班】
+
+事实:他们所有岗位都写在波士顿或剑桥,全职坐班,不能远程。你住在纽约。邮件只说了 in person,没说城市。
+<span class="en">Every posting says Boston or Cambridge, fully in person. You live in New York.</span>
+
+三种说法,由你定(附录 D 第 3 条):
+<span class="en">Three options; you decide.</span>
+
+- A 愿意,毕业就搬:
+  > Yes. I know the team is in the Boston area, and I'm planning to move right after I graduate in December.
+  <span class="en">Willing, moving right after graduation.</span>
+- B 愿意,但 1 月初到:
+  > Yes, I'd relocate. I'd move after finals and be settled by the first week of January.
+  <span class="en">Willing, settled by early January.</span>
+- C 只想留在纽约:
+  > I was hoping to stay in New York. Is there any flexibility on location?
+  <span class="en">Prefer New York.</span>
+  - 意味着什么:他们写明了只坐班,C 基本等于结束这一家。通话前想好。
+    <span class="en">They require in person, so C likely ends it. Decide before the call.</span>
+
+顺便可以问一句(第 4 章第 5 题):*Is the team in Cambridge or Boston day to day?*
+<span class="en">You can also ask which office the team works from.</span>
+
+### 3.7 工作身份 · Work authorization【预测】
+
+> 提纲:F-1 → 毕业后 OPT,覆盖第一年 → STEM 学位可再延 24 个月 → 长期需要 H-1B
+
+口述版 <span class="en">Script</span>
+
+> I'm on an F-1 student visa. After I graduate, I'll work on OPT, which covers the first year, and because my degree is in a STEM field I can extend it by two more years. <u>Longer term, I would need H-1B sponsorship.</u>
+
+被追问「现在需要我们做什么吗?」:
+<span class="en">If they ask what they'd need to do:</span>
+
+> Nothing to start. For the STEM extension a year in, the employer needs to be enrolled in E-Verify and sign a training plan with me.
+
+- 中文:STEM OPT 要求雇主加入 E-Verify,并和你一起填 I-983 培训计划。小创业公司可能还没加入 E-Verify,这句话让他们早点知道。
+  <span class="en">STEM OPT requires an E-Verify employer and an I-983 training plan; a small startup may not be enrolled yet, so it helps to flag it early.</span>
+- 规则来源:你的口径是「美国岗签证题答不需要担保」,但面试里被问到要如实说 OPT 和 H-1B。
+  <span class="en">On forms you answer no to sponsorship, but in interviews you state OPT and H-1B honestly.</span>
+
+### 3.8 产品题:个人 AI 设备上你第一个想做什么?(约 45 秒)【官方:应用岗要 "strong product instinct"】
+
+> 提纲:一个读你自己文件的「分析助手」→ 和 TikTok 一样的流程:先看样例、跟你确认、后台跑长任务、你批准才外传 → 区别是全在你的机器上,数据不出门 → 怎么知道它够好:用一小组代表真实用法的测试题(Walmart 研究)
+
+口述版 <span class="en">Script</span>
+
+> [Idea] I'd start with an analyst that works over your own files: your documents, your spreadsheets, your notes.
+>
+> [Flow] It would follow the same pattern I shipped at TikTok. It looks at a sample, confirms with you what it's about to do, runs the long job in the background, and <u>nothing leaves your machine unless you approve it</u>.
+>
+> [Why local] The difference is that everything stays on hardware you own, so people can point it at private data they'd never upload.
+>
+> [Quality] And to know it's good enough on a local model, I'd test it on a small set of tasks that represents how people actually use it, which is what my Walmart research is about.
+
+这段在说什么:产品想法不是空想,而是把你上线过的流程搬到本地,再用你研究的评测方法保证质量。
+<span class="en">The idea reuses a flow you shipped and a testing method you research.</span>
+
+### 3.9 A mistake you made(约 60 秒)【预测】
+
+> 提纲:我改一行配置,把我们的域接到框架共享的 Redis checkpointer(存对话进度的组件)→ 发版后每条回复都报错 → 先回滚,服务恢复 → 再查:确认是我那行;更深的问题是那个 Redis 在另一个区域、只做缓存,内存紧了会删数据 → 不再把缓存当真相,状态搬到 MongoDB → 后来的长任务就建在这上面
+
+口述版 <span class="en">Script</span>
+
+> [S] At TikTok I wanted conversations to survive across requests, so I pointed our domain at the agent framework's shared Redis checkpointer. It was a one-line config change.
+>
+> [What went wrong] After that release, <u>every agent reply came back as an error</u>.
+>
+> [A] I rolled back first, and service recovered. Then I dug in. It was my config line, and underneath there was a bigger problem: that Redis was a cache-only instance in another region, so even when it worked, it could evict our state under memory pressure.
+>
+> [R] So I stopped treating a cache as the source of truth and moved task state and history to MongoDB. The long-running analyses were built on that.
+>
+> [Learned] Now I read a component's guarantees before I build on it, and when something breaks after my change, <u>I roll back first and investigate second</u>.
+
+这段在说什么:错是你自己的,处理顺序对(先止血),根因挖到了设计层,最后变成更好的设计。出处:研发决策文档(那次发版出错后回滚)和提交 519df97。
+<span class="en">Your own mistake, the right order of response, a design-level root cause, and a better design. Sources: your decision log and commit 519df97.</span>
+
+### 3.10 Learning something new fast(约 40 秒)【预测:早期公司看重上手速度】
+
+> 提纲:TikTok 的 agent 框架:先读现成的域、照着搭,三天 20 个提交 → BOLT 和 perf 也是:先跑通能跑的例子,一次改一处 → 测量要控制条件(不控制时同一个二进制只测出 73%)
+
+口述版 <span class="en">Script</span>
+
+> [Method] When I start on something new, I find a working example, get it running, then change one thing at a time. That's how I got a new domain running in TikTok's agent framework in about twenty commits over three days.
+>
+> [Measure] This semester I did the same with LLVM BOLT and Linux perf. I also learned to control the measurement itself: without a fixed benchmark setup, the same binary measured 73% instead of 92%.
+
+这段在说什么:你上手的方法 + 一个「测量本身要可靠」的教训。推理引擎调性能,最怕测不准。
+<span class="en">Your ramp-up method plus a lesson on trustworthy measurement, which matters a lot when tuning an inference engine.</span>
+
+### 3.11 Salary expectations【官方:岗位帖写了范围】
+
+规则:岗位帖写多少就说多少。他们的 Application Engineer 写的是 $160K–$180K 加股权。
+<span class="en">Rule: quote their posted range, $160K to $180K plus equity for the application engineer role.</span>
+
+> I saw $160K to $180K plus equity on your application engineer posting, and something in that range would work for me. I'm most focused on the role and the team right now.
+
+- 如果他们说的是别的岗位、没有公开范围:*I'd love to hear the range for this role first.*
+  <span class="en">If it's a different role without a posted range, ask for their range first.</span>
+
+### 3.12 Other interviews / timeline【预测】
+
+> I'm in process with a few other companies, at different stages. Nothing forces a decision yet, and I'll let you know right away if that changes.
+
+- 中文:不点名、不报数量。「没有需要马上决定的」只在属实时说(附录 D 第 10 条)。
+  <span class="en">No names or counts; only say nothing is forcing a decision if that's true.</span>
+
+## B 部分 · 本地跑大模型:从零讲 · Part B: Running Large Models Locally
+
+为什么准备这部分:CEO 据资料做过深度学习的 CUDA kernel 优化;公司核心是推理引擎和内存架构;你在表上选的是推理方向。哪怕是初聊,也可能顺口问一句「你觉得本地跑大模型难在哪」。【预测】
+<span class="en">Why this part: the CEO reportedly optimized CUDA kernels, their core is an inference engine and memory, and you picked inference. Even an intro call may ask what makes local LLMs hard.</span>
+
+### 3.13 本地跑大模型卡在哪 · What limits a large model on a personal device
+
+**先打个比方**
+<span class="en">An analogy first</span>
+
+- 厨师做菜。每做一道菜(生成一个字),都要把整本菜谱(模型的全部权重)从书架搬到灶台,从头翻一遍。
+  <span class="en">A cook has to carry the whole recipe book from the shelf to the stove for every single dish, that is, every token.</span>
+- 厨师手很快(计算单元很强),但书架到灶台只有一条窄走廊(内存带宽)。所以一秒能做几道菜,看的是走廊多宽,不是厨师手多快。
+  <span class="en">The cook is fast, but the hallway is narrow, so the hallway, the memory bandwidth, sets the pace.</span>
+- 书架放不放得下这本书 = 内存容量。把菜谱印成小一号的字 = 量化。灶台边记「客人刚才说过什么」的便利贴 = KV 缓存,聊得越久越厚。
+  <span class="en">Whether the book fits on the shelf is capacity; printing it smaller is quantization; the sticky notes about the conversation so far are the KV cache.</span>
+- 餐厅(数据中心)的办法:同时接几百桌的单,书搬一趟,几百桌一起用。家里只有你一个人,凑不出几百桌。
+  <span class="en">A restaurant, the datacenter, batches hundreds of orders per trip; at home there's only you.</span>
+
+**一张小图**
+<span class="en">A small diagram</span>
+
+```
+          容量 C:能放下多大的 W 和 K
+   ┌─────────────────────────────────┐
+   │  内存 M:   权重 W   +   KV 缓存 K  │
+   └────────────────┬────────────────┘
+                    │  带宽 B:每秒能搬多少字节
+                    ▼
+   ┌─────────────────────────────────┐
+   │  计算单元 U:很快,大部分时间在等数据 │ ──> 出 1 个 token
+   └─────────────────────────────────┘
+   单人生成:每出 1 个 token,W 要从 M 整个搬一遍到 U
+   速度上限 ≈ B ÷ W 的字节数
+```
+
+> 🔤 M = 内存(memory);W = 模型权重(weights),也就是全部参数;K = KV 缓存,模型对前文的「笔记」;C = 内存容量(capacity),能放下多少字节;B = 内存带宽(bandwidth),每秒能读多少字节;U = 计算单元,GPU 或 NPU 里做乘加的部分。
+> <span class="en">M is memory; W is the model weights, all the parameters; K is the KV cache, the model's notes on the conversation; C is capacity, how many bytes fit; B is bandwidth, bytes read per second; U is the compute units that do the multiply-adds. For one user, every token moves all of W from M to U, so speed is at most B divided by the size of W.</span>
+
+**几个数算一遍**(脚本在 3.14,已实跑)
+<span class="en">The numbers, computed by the script in 3.14</span>
+
+1. 放不放得下:字节数 = 参数个数 × 每个参数的位数 ÷ 8。
+   <span class="en">Bytes equal parameters times bits per parameter divided by eight.</span>
+   - Qwen2.5-1.5B(你 TaskMap 用的骨干):15.4 亿 × 16 位 ÷ 8 ≈ 3.1 GB;4 位约 0.8 GB。
+     <span class="en">Your TaskMap backbone is about 3.1 GB at 16 bits and 0.8 GB at 4 bits.</span>
+   - 70B 模型(比如 Llama-3-70B):16 位 140 GB;8 位 70 GB;4 位 35 GB。
+     <span class="en">A 70B model is 140 GB at 16 bits, 70 at 8, 35 at 4.</span>
+   - 真实的 4 位格式,常见做法是每 32 个数多存一个 16 位缩放系数:4 + 16 ÷ 32 = 4.5 位,所以 35 GB 实际约 39.4 GB。
+     <span class="en">Real 4-bit formats often add one 16-bit scale per 32 weights, about 4.5 bits, so roughly 39.4 GB.</span>
+   - RTX 4090 只有 24 GB 显存,放不下;Apple M2 Ultra 最多 192 GB 统一内存,放得下。
+     <span class="en">An RTX 4090's 24 GB can't hold it; an M2 Ultra with up to 192 GB can.</span>
+2. 一秒几个字:上限 ≈ 带宽 ÷ 每个字要读的字节数。还是 70B、4 位、35 GB:
+   <span class="en">Tokens per second is at most bandwidth over bytes read per token. For the 35 GB model:</span>
+   - M2 Ultra,800 GB/s → 最多约 22.9 个/秒。
+     <span class="en">An M2 Ultra at 800 GB/s: at most about 22.9 tokens a second.</span>
+   - 普通台式机,双通道 DDR5-5600,2 × 8 字节 × 56 亿次/秒 = 89.6 GB/s → 最多约 2.6 个/秒。
+     <span class="en">A desktop with dual-channel DDR5-5600, two channels times 8 bytes times 5.6 billion transfers a second, is 89.6 GB/s: at most about 2.6 tokens a second.</span>
+   - 数据中心的 H100,约 3,350 GB/s → 最多约 95.7 个/秒(放得下的话)。
+     <span class="en">A datacenter H100 at about 3,350 GB/s: at most about 95.7 tokens a second, if the model fits.</span>
+3. KV 缓存多大:每个 token 占 2(K 和 V)× 层数 × KV 头数 × 每个头的维度 × 2 字节。
+   <span class="en">KV cache per token is two, for K and V, times layers times KV heads times head size times two bytes.</span>
+   - Llama-3-70B:2 × 80 × 8 × 128 × 2 = 327,680 字节,约 320 KiB;8K 个 token 约 2.68 GB,32K 个约 10.7 GB。
+     <span class="en">About 320 KiB per token for Llama-3-70B: 2.7 GB at 8K tokens, 10.7 GB at 32K.</span>
+   - Qwen2.5-1.5B:2 × 28 × 2 × 128 × 2 = 28,672 字节,28 KiB;32K 个约 0.94 GB。
+     <span class="en">28 KiB per token for Qwen2.5-1.5B.</span>
+   - 每生成一个字,这些笔记也要读一遍,所以聊得越长越慢。
+     <span class="en">The cache is read for every new token too, so long chats slow down.</span>
+4. 为什么数据中心便宜:每个参数、每个 token 做一次乘加,算 2 次运算;16 位参数占 2 字节。所以单人生成时,每搬 1 字节只做约 1 次运算。
+   <span class="en">Each parameter does one multiply-add, two operations, per token, and takes two bytes at 16 bits, so single-user decoding does about one operation per byte.</span>
+   - H100 每秒约 989 万亿次运算(BF16)、每秒搬 3.35 TB,算下来每字节要做约 295 次运算才能让计算单元忙起来。
+     <span class="en">An H100 needs about 295 operations per byte to keep its compute busy.</span>
+   - 也就是要同时处理约 300 个 token。数据中心把几百个请求凑成一批,一次读权重服务几百人;个人设备只有你一个人。
+     <span class="en">That means roughly 300 tokens in flight; datacenters batch hundreds of requests per weight read, a personal device can't.</span>
+5. MoE(混合专家模型):每个 token 只用一部分「专家」。DeepSeek-V3 共 6,710 亿参数,每个 token 只激活 370 亿。
+   <span class="en">Mixture of experts: DeepSeek-V3 has 671 billion parameters but activates 37 billion per token.</span>
+   - 4 位时要放下 335.5 GB,但每个字只读 18.5 GB,800 GB/s 时最多约 43.2 个/秒。
+     <span class="en">At 4 bits you must hold 335.5 GB but read only 18.5 GB per token, so up to about 43 tokens a second at 800 GB/s.</span>
+   - 结论:MoE 吃容量、省带宽,「大而便宜的内存」最占便宜。
+     <span class="en">MoE is capacity-hungry but bandwidth-light, which rewards large, cheap memory.</span>
+
+**为什么**
+<span class="en">Why</span>
+
+- 一个人用的时候(批大小 = 1),生成阶段卡在内存上,不卡在算力上。所以个人设备的上限由两个数决定:能放多大(容量),一秒读多少(带宽)。
+  <span class="en">With one user, decoding is memory-bound, so capacity and bandwidth set the limits.</span>
+- 这就是 Alpaca 把「内存架构」放在核心的原因。你在通话里说出这一点,就证明你看懂了他们的技术赌注。
+  <span class="en">That's why Alpaca puts the memory architecture at the core; saying so shows you understand their bet.</span>
+- 例外:读入提示词(prefill)时,几千个 token 一起算,读一次权重能算很多 token,这一步卡在算力上。
+  <span class="en">The exception is prefill, where the whole prompt is processed at once and compute becomes the limit.</span>
+
+**代价和取舍**
+<span class="en">Trade-offs</span>
+
+| 办法 <span class="en">Lever</span> | 省了什么 <span class="en">What it saves</span> | 代价 <span class="en">Cost</span> |
+|---|---|---|
+| 量化,16 位 → 4 位 <span class="en">Quantization</span> | 字节少约 3.6 倍(算上缩放系数),单人生成接近按比例变快,也放得下更大的模型。<span class="en">About 3.6x fewer bytes, so faster decoding and bigger models fit.</span> | 位数越低越容易掉质量,4 位以下更明显;每次都要在真实任务上重新评测。<span class="en">Quality drops, especially below 4 bits; re-evaluate on real tasks every time.</span> |
+| GQA,少用几个 KV 头 <span class="en">Grouped-query attention</span> | Llama-3-70B 用 64 个查询头配 8 个 KV 头,KV 缓存比每头都存小 8 倍。<span class="en">8 KV heads for 64 query heads makes the cache 8x smaller.</span> | 训练时就要这么设计,部署时改不了。<span class="en">Decided at training time.</span> |
+| KV 缓存量化或只留最近一段 <span class="en">KV quantization or windows</span> | 长对话省内存和带宽。<span class="en">Saves memory and bandwidth on long chats.</span> | 长上下文的准确度可能下降。<span class="en">Long-context accuracy may drop.</span> |
+| 投机解码 <span class="en">Speculative decoding</span> | 小模型先猜 k 个字,大模型一次前向同时验证 k 个,平均每读一次权重出不止一个字。<span class="en">A draft model guesses k tokens and the big model verifies them in one pass.</span> | 要多放一个小模型;猜错的部分白算;效果看猜中率。<span class="en">Extra memory, wasted work on misses, gains depend on acceptance rate.</span> |
+| 批处理 <span class="en">Batching</span> | 一次读权重服务很多请求,吞吐高。<span class="en">One weight read serves many requests.</span> | 个人设备请求少;批越大,每个人等得越久。<span class="en">Few requests on a personal device; bigger batches mean longer waits.</span> |
+| MoE <span class="en">Mixture of experts</span> | 每个字读得少。<span class="en">Fewer bytes per token.</span> | 全部专家都要放下;放在慢内存里换专家会卡。<span class="en">All experts must fit; swapping from slow memory stalls.</span> |
+
+**面试怎么答(约 60 秒)**
+<span class="en">How to say it in the interview</span>
+
+> 提纲:单人生成卡内存不卡算力 → 70B 4 位 35 GB,800 GB/s 约 23 个/秒 → 数据中心靠批处理(H100 要约 300 次运算/字节,单人只有约 1)→ 个人设备只能靠容量和带宽 → 能动的杠杆:每字少读字节(量化、KV、MoE)、每次读权重多出字(投机解码)
+
+> [Core] For one user, generating text is mostly limited by memory, not compute. Every new token has to read all the weights once. So a 70-billion-parameter model at 4 bits moves about 35 gigabytes per token, and on a machine with 800 gigabytes a second that caps you around 23 tokens a second, before you even count the KV cache.
+>
+> [Datacenter] Datacenters get around this by batching: one read of the weights serves hundreds of requests. An H100 needs roughly 300 operations per byte to be compute-bound, and single-user decoding does about one.
+>
+> [Device] A personal device serves one person, so <u>memory capacity and bandwidth decide what you can run and how fast</u>. That's why an inference engine plus a memory architecture seems like the right place to attack it.
+>
+> [Levers] The levers are fewer bytes per token, through quantization, smaller KV caches and mixture-of-experts models, and more tokens per weight read, through speculative decoding.
+
+这段在说什么:先给结论(卡内存),再给一个能心算的例子,再解释数据中心为什么不一样,最后列出能动的杠杆。每个数都在上面算过。
+<span class="en">Conclusion, a worked example, why datacenters differ, then the levers. Every number is computed above.</span>
+
+**追问表**
+<span class="en">Follow-ups</span>
+
+| 追问 <span class="en">Follow-up</span> | 回答 <span class="en">Answer</span> |
+|---|---|
+| 量化是什么,能压到多低?<span class="en">What is quantization, how low can you go?</span> | 把每个权重存成更少的位数,每一小块(比如 32 个数)配一个缩放系数,用的时候乘回来。16 位到 4 位,算上缩放系数字节少约 3.6 倍,单人生成速度接近按比例提升。代价:4 位以下质量更容易掉,少数特别大的「离群值」会被压坏;所以每次量化都要在真实任务上重新评测,这正是我在 Walmart 研究里做的事。<span class="en">Store weights in fewer bits with a scale per small block. 16 to 4 bits is about 3.6x fewer bytes, so close to proportionally faster decoding. Below 4 bits quality drops and outliers get crushed, so re-evaluate on real tasks, which is what my Walmart research is about.</span> |
+| KV 缓存是什么,为什么重要?<span class="en">What is the KV cache?</span> | 模型对已读内容的笔记:每个 token、每一层存一对 K、V 向量,下一个字只算新的一行,不用把前文重算。Llama-3-70B 每个 token 约 320 KiB,32K 上下文约 10.7 GB,而且每生成一个字都要读一遍。办法:GQA(8 个 KV 头而不是 64 个)、把 KV 存成 8 位、只留最近一段。代价是长上下文的准确度。<span class="en">Saved K and V vectors for every past token and layer, so the model doesn't recompute the past. About 320 KiB per token for a 70B model, 10.7 GB at 32K, read on every step. Fixes: GQA, 8-bit KV, sliding windows, at some long-context accuracy cost.</span> |
+| prefill 和 decode 有什么不同?<span class="en">Prefill vs. decode?</span> | prefill 把整段提示词一次算完,很多 token 共用一次权重读取,卡在算力上;decode 一次一个 token,卡在带宽上。所以「出第一个字要多久」看算力,「之后每秒几个字」看带宽。同一台设备上要给两者排期,比如把长提示词切块,和生成交替进行。<span class="en">Prefill processes the prompt in one go and is compute-bound; decode is one token at a time and bandwidth-bound. Time to first token tracks compute, tokens per second track bandwidth, and a device has to schedule both, for example by chunking long prompts.</span> |
+| 数据中心为什么每个字更便宜?<span class="en">Why are datacenters cheaper per token?</span> | 批处理。H100 每字节要约 295 次运算才饱和,单人生成只有约 1 次;凑几百个请求一批,一次读权重服务几百人,成本就摊薄了。个人设备凑不了批,只能让「读权重」本身更便宜:更多、更便宜的容量和更高的带宽。<span class="en">Batching amortizes each weight read across hundreds of requests. A personal device can't batch, so reading weights itself has to get cheaper: more, cheaper capacity and more bandwidth.</span> |
+| MoE 对个人设备是好是坏?<span class="en">Is MoE good for personal devices?</span> | 每个字只读激活的专家。DeepSeek-V3 每个 token 用 6,710 亿里的 370 亿,4 位时要放 335.5 GB,但每个字只读 18.5 GB,800 GB/s 上限约 43 个/秒。所以它吃容量、省带宽,适合「内存大」的设备。代价:专家要全放下;如果专家放在慢内存里,切换会卡。<span class="en">It reads only active experts, so it needs lots of capacity but little bandwidth per token, which suits memory-rich devices, as long as all experts fit in fast memory.</span> |
+| 投机解码怎么回事?<span class="en">How does speculative decoding work?</span> | 小的草稿模型先猜后面 k 个字;大模型做一次前向,同时检查这 k 个,猜对的直接收下。大模型读一次权重就验证了多个字,平均每次读权重出不止一个字。效果取决于猜中率;代价是多放一个小模型,猜错的部分白算。<span class="en">A small draft model proposes k tokens and the big model checks all k in one pass, so one weight read can yield several tokens. It depends on the acceptance rate and costs extra memory and wasted work on misses.</span> |
+| 你会怎么测一个推理引擎?<span class="en">How would you benchmark an inference engine?</span> | 分开测:出第一个字的时间(看 prefill)、之后每秒几个字(看 decode)、每个字延迟的 P50 和 P99(TikTok 养成的习惯,看尾巴不只看平均)、内存峰值、每个字耗多少能量。再和带宽上限比:比如上限 23 个/秒、实测 18 个/秒,就是上限的 78%,说明还有多少空间。测量要控制条件:BOLT 研究里,不固定测速环境时同一个二进制只测出 73%,固定后是 92%。<span class="en">Measure time to first token, tokens per second, per-token P50 and P99, peak memory and energy per token, then compare with the bandwidth ceiling, for example 18 out of 23 is 78%. And control the setup: in my BOLT work, the same binary measured 73% without controls and 92% with them.</span> |
+| GPU、CPU、统一内存怎么选?<span class="en">GPU, CPU or unified memory?</span> | 显卡显存快但小:RTX 4090 是 1,008 GB/s、24 GB;普通内存大但慢:双通道 DDR5-5600 约 89.6 GB/s;Apple M2 Ultra 的统一内存最多 192 GB、800 GB/s,两头都要一点。真正的取舍是「每 GB 多少钱」和「每 GB/s 多少钱」,这正是做内存架构的人在优化的东西。<span class="en">GPU memory is fast but small, system RAM is big but slow, and unified memory sits in between. The real trade-off is cost per gigabyte versus cost per gigabyte per second, which is what a memory architecture optimizes.</span> |
+| 那为什么不全放云上?<span class="en">Why not just use the cloud?</span> | 云在「每个字的成本」上今天确实占优,因为能批处理。本地赢在隐私、延迟、断网可用,以及长任务不按字收费。我不会说云不好,而是说有一大类场景(私人数据、长时间跑的 agent)本地更合适。<span class="en">The cloud wins on cost per token today because of batching. Local wins on privacy, latency, offline use and long-running agents. It's about which workloads belong on your own hardware.</span> |
+
+### 3.14 算账脚本(已实跑)· The estimate script (run locally)
+
+已实跑:2026-10-20 在本机用 python3 跑通,输出贴在代码下面。结构参数来自 Hugging Face 上两个模型的 config.json;设备带宽来自厂商公开规格。
+<span class="en">Run on 2026-10-20 with python3; output below. Model shapes come from the models' config files; bandwidths from vendor specs.</span>
+
+```python
+# 本地跑大模型的四个账:装不装得下、一秒几个字、KV 缓存多大、为什么数据中心便宜
+GB = 1e9  # 这里的 GB 按 10^9 字节算,和厂商标的带宽单位一致
+
+def weight_gb(params, bits):
+    # 权重占多少内存 = 参数个数 × 每个参数的位数 / 8
+    return params * bits / 8 / GB
+
+def kv_bytes_per_token(layers, kv_heads, head_dim, bytes_per_val=2):
+    # 每生成/读入一个 token,要存 K 和 V 两份(×2),每层一份,每个 KV 头一份
+    return 2 * layers * kv_heads * head_dim * bytes_per_val
+
+def decode_tok_per_s(bandwidth_gbps, gb_read_per_token):
+    # 单人(batch=1)生成时,每出一个字都要把权重从内存里完整读一遍
+    # 所以上限 = 每秒能搬的字节 / 每个字要搬的字节
+    return bandwidth_gbps / gb_read_per_token
+
+# 1) 权重内存
+models = {"Qwen2.5-1.5B": 1.54e9, "Llama-3-70B": 70e9, "DeepSeek-V3 (MoE)": 671e9}
+for name, p in models.items():
+    print(f"{name:18s} 16-bit {weight_gb(p,16):7.1f} GB | 8-bit {weight_gb(p,8):7.1f} GB | 4-bit {weight_gb(p,4):7.1f} GB")
+
+# 2) KV 缓存(两个模型的结构参数来自 Hugging Face config.json)
+qwen = kv_bytes_per_token(layers=28, kv_heads=2, head_dim=128)    # 1536/12 = 128
+llama = kv_bytes_per_token(layers=80, kv_heads=8, head_dim=128)   # 8192/64 = 128
+for name, b in [("Qwen2.5-1.5B", qwen), ("Llama-3-70B", llama)]:
+    print(f"{name:13s} KV per token {b:,} bytes = {b/1024:.0f} KiB; 8K tokens {b*8192/GB:.2f} GB; 32K tokens {b*32768/GB:.2f} GB")
+
+# 3) 一秒几个字(只算读权重,忽略 KV 和计算,所以是上限)
+devices = {"PC, 64 GB DDR5-5600 x2ch": (2*8*5.6, 64),  # 2 通道 × 8 字节 × 5.6G 次/秒 = 89.6 GB/s
+           "Apple M2 Ultra": (800, 192),
+           "RTX 4090": (1008, 24),
+           "H100 SXM": (3350, 80)}
+w70_int4 = weight_gb(70e9, 4)
+for name, (bw, cap) in devices.items():
+    if cap < w70_int4:  # 装不下就谈不上速度
+        print(f"{name:26s} {bw:7.1f} GB/s, {cap} GB -> 70B 4-bit ({w70_int4:.0f} GB) does NOT fit")
+        continue
+    print(f"{name:26s} {bw:7.1f} GB/s, {cap} GB -> 70B 4-bit ({w70_int4:.0f} GB): <= {decode_tok_per_s(bw, w70_int4):5.1f} tok/s")
+
+# 4) MoE:容量按全部参数算,每个字只读激活的那部分
+ds_total, ds_active = weight_gb(671e9, 4), weight_gb(37e9, 4)
+print(f"DeepSeek-V3 4-bit: hold {ds_total:.1f} GB, read {ds_active:.1f} GB per token -> at 800 GB/s <= {decode_tok_per_s(800, ds_active):.1f} tok/s")
+
+# 5) 为什么数据中心便宜:批处理让一次读权重服务很多人
+flops_per_param = 2            # 每个参数每个 token 一次乘加 = 2 次运算
+bytes_per_param_fp16 = 2
+intensity_b1 = flops_per_param / bytes_per_param_fp16   # batch=1 时每搬 1 字节做几次运算
+ridge = 989e12 / 3.35e12                                 # H100:算力 / 带宽,超过它才是算力瓶颈
+print(f"batch=1 intensity {intensity_b1:.0f} FLOP/byte; H100 needs about {ridge:.0f} FLOP/byte -> batch of about {ridge/intensity_b1:.0f} to stop being memory-bound")
+```
+
+输出:
+<span class="en">Output:</span>
+
+```
+Qwen2.5-1.5B       16-bit     3.1 GB | 8-bit     1.5 GB | 4-bit     0.8 GB
+Llama-3-70B        16-bit   140.0 GB | 8-bit    70.0 GB | 4-bit    35.0 GB
+DeepSeek-V3 (MoE)  16-bit  1342.0 GB | 8-bit   671.0 GB | 4-bit   335.5 GB
+Qwen2.5-1.5B  KV per token 28,672 bytes = 28 KiB; 8K tokens 0.23 GB; 32K tokens 0.94 GB
+Llama-3-70B   KV per token 327,680 bytes = 320 KiB; 8K tokens 2.68 GB; 32K tokens 10.74 GB
+PC, 64 GB DDR5-5600 x2ch      89.6 GB/s, 64 GB -> 70B 4-bit (35 GB): <=   2.6 tok/s
+Apple M2 Ultra               800.0 GB/s, 192 GB -> 70B 4-bit (35 GB): <=  22.9 tok/s
+RTX 4090                    1008.0 GB/s, 24 GB -> 70B 4-bit (35 GB) does NOT fit
+H100 SXM                    3350.0 GB/s, 80 GB -> 70B 4-bit (35 GB): <=  95.7 tok/s
+DeepSeek-V3 4-bit: hold 335.5 GB, read 18.5 GB per token -> at 800 GB/s <= 43.2 tok/s
+batch=1 intensity 1 FLOP/byte; H100 needs about 295 FLOP/byte -> batch of about 295 to stop being memory-bound
+```
+
+怎么读这段输出:
+<span class="en">How to read it:</span>
+
+- 第 1 到 3 行:同一个模型,位数减半,内存减半。
+  <span class="en">Halve the bits, halve the memory.</span>
+- 第 4、5 行:KV 缓存按 token 线性涨,32K 上下文时 70B 模型要多 10.7 GB。
+  <span class="en">KV cache grows linearly with tokens: 10.7 GB extra at 32K for a 70B model.</span>
+- 第 6 到 9 行:同一个 35 GB 的模型,速度上限和带宽成正比;4090 带宽最高,但放不下。
+  <span class="en">Speed scales with bandwidth, but the fastest card here can't hold the model.</span>
+- 最后一行:单人生成每字节约 1 次运算,H100 要约 295 次才吃饱,这就是数据中心靠批处理省钱的原因。
+  <span class="en">One operation per byte versus 295 needed is why datacenters batch.</span>
+- 这些都是上限:真实系统还要读 KV 缓存、有计算和调度开销,实际会更低。
+  <span class="en">These are upper bounds; real systems are slower.</span>
+
+## C 部分 · 押题区(32 题)· Part C: Likely Questions
+
+都是【预测】。每题第一行是中文的问题和要点,后面跟英文问法;下面是能直接说的英文答案。前面讲过的标了章节号。
+<span class="en">All predictions. Each item gives the question and gist in Chinese, the English question, then an answer you can say; earlier sections are referenced.</span>
+
+**开场和公司** <span class="en">Opening and the company</span>
+
+1. 自我介绍:用 2.1(1 分钟)或 2.2(2 分钟)。<span class="en">Tell me about yourself.</span>
+   > Use the one-minute script in 2.1, or the two-minute one in 2.2 if they ask for more.
+2. 招聘会上为什么来我们摊位:你会前就把他们列进了优先名单,因为做的是 AI 推理硬件。<span class="en">What brought you to our booth?</span>
+   > I'd marked you before the fair because you build hardware and software for AI inference. Running a model on your own device is what I did in miniature with RCRI on a Jetson, so I wanted to hear how you're doing it for much bigger models.
+3. 你了解我们多少:用 1.3。<span class="en">What do you know about us?</span>
+   > You're building personal AI as a full stack, hardware, an inference engine, models and apps, so that owning a frontier model yourself becomes normal, and you're attacking it through the inference engine and memory architecture.
+4. 为什么是 Alpaca:用 3.1 的短版。<span class="en">Why Alpaca?</span>
+   > I believe models should run on hardware people own, you're attacking the real bottleneck, which is memory, and I've worked on every layer you're putting together.
+5. 为什么是个人 AI:隐私、延迟、长任务成本(3.2)。<span class="en">Why personal AI?</span>
+   > Privacy by default, no round trip, and long-running agents that cost electricity instead of tokens.
+6. 想进哪个团队:表上选的推理方向(3.3,附录 D 第 4 条)。<span class="en">Which team interests you?</span>
+   > Software, on the inference side, making models fast inside a device's memory and power budget. I'm flexible if you see me adding more elsewhere.
+7. 为什么投了好几个岗:看重公司胜过头衔(3.3)。<span class="en">Why did you apply to several roles?</span>
+   > I'm excited about the company more than one title. My background spans applications, inference and research, so I'd value your view on where I'd add the most.
+
+**项目** <span class="en">Projects</span>
+
+8. 讲一个最得意的项目:TikTok(2.4)。<span class="en">Walk me through a project you're proud of.</span>
+   > At TikTok I designed and shipped an LLM agent end to end that turned a manual evaluation-report loop into one conversation, with long analyses running for up to three hours in the background, and it stayed in production after I left.
+9. 讲讲 RCRI:2.5。<span class="en">Tell me about RCRI.</span>
+   > A climbing-route recognizer that runs entirely on a Jetson Nano: YOLOv8 trained on GCP, a TensorRT FP16 engine, 12 frames a second for hold detection in 0.7 GB and 5 watts, with no cloud upload.
+10. Nano 上为什么用 FP16 不用 INT8:硬件不支持 INT8。<span class="en">Why FP16 and not INT8 on the Nano?</span>
+    > The Nano's Maxwell GPU has fast FP16 but no INT8 path in TensorRT, so FP16 was the best precision available. On an Orin-class board I'd try INT8 with calibration.
+11. 你在自己电脑上跑过大模型吗:按附录 D 第 5 条的真实情况答;没跑过就用下面这句。<span class="en">Have you run LLMs locally?</span>
+    > Not as a daily setup. My hands-on local inference is on the vision side, the Jetson with TensorRT. For language models I've worked with a 1.5-billion-parameter model in BF16 on a GPU for research, but I haven't optimized LLM inference on consumer hardware yet. That's exactly what I'd like to learn here.
+    <span class="en">If you have run local LLMs, replace this with the model, tool, machine and speed you actually saw.</span>
+12. 讲讲你的论文:2.7。<span class="en">Tell me about your paper.</span>
+    > TaskMap writes each task's weight update as coefficients on shared orthogonal axes. I ran the ablations and cold-start experiments; the gains come from block-specific coefficients, and on unseen tasks the worst drop is 7.9 points versus 26.7 for shared LoRA, though LoRA has the higher average.
+13. 怎么知道一个模型「够好」:Walmart 研究(2.6)。<span class="en">How do you know a model is good enough?</span>
+    > Test it on a small set that still represents real usage: it should cover the same kinds of users, the same tool-use behavior and the same failures. In my Walmart-sponsored research all three have to reach 0.9 before we trust the smaller set.
+14. C/C++ 和 CUDA 经验:如实分清楚。<span class="en">What's your C, C++ and CUDA experience?</span>
+    > My C is from my capstone, the installer for over-the-air car updates. In my edge AI course I wrote the host side of a CUDA inference path, memory, transfers and launch configuration, on top of provided kernels. And my BOLT research works on C++ binaries at the code-layout level. I haven't written production CUDA kernels yet.
+15. 固件或嵌入式经验:OTA 安装器和 Jetson;单片机裸机固件做没做过见附录 D 第 9 条。<span class="en">Any firmware or embedded experience?</span>
+    > My closest experience is the in-vehicle installer for car software updates, in C on embedded Linux, with integrity checks and rollback, plus deploying models on the Jetson. I'd ramp up quickly on your firmware stack.
+
+**技术追问** <span class="en">Technical follow-ups</span>
+
+16. 本地跑大模型卡在哪:3.13 的 60 秒答案。<span class="en">What limits large models on a personal device?</span>
+    > Memory. Every new token reads all the weights, so a 35-gigabyte model on 800 gigabytes a second tops out around 23 tokens a second.
+17. 70B 模型要多少内存:140 / 70 / 35 GB,4 位实际约 39 GB。<span class="en">How much memory does a 70B model need?</span>
+    > About 140 gigabytes at 16 bits, 70 at 8, and 35 at 4, closer to 39 once you count the per-block scales, plus the KV cache.
+18. KV 缓存是什么:模型对前文的笔记,随长度线性涨。<span class="en">What's the KV cache?</span>
+    > Saved keys and values for every past token and layer, so the model doesn't recompute the past. For a 70B model it's about 320 kilobytes per token, roughly 10.7 gigabytes at 32K tokens.
+19. 为什么数据中心更便宜:批处理。<span class="en">Why are datacenters cheaper per token?</span>
+    > Batching. One read of the weights serves hundreds of requests. An H100 needs about 300 operations per byte to be busy, and single-user decoding does about one.
+20. 你会怎么让一个大模型在我们的设备上跑快:先测上限,再动杠杆。<span class="en">How would you make a big model fast on our device?</span>
+    > First measure where we are against the bandwidth ceiling, separately for prefill and decode. Then cut bytes per token with quantization, a smaller KV cache or a mixture-of-experts model, and get more tokens per weight read with speculative decoding, re-checking quality on a representative test set after every change.
+21. 平时用什么 AI 工具:Cursor 和 Claude Code。<span class="en">What AI tools do you use day to day?</span>
+    > Cursor and Claude Code, every day. At TikTok I built with Cursor, and on a side project with a small team I set up a Claude Code skills workflow that plans milestones, implements with tests, then commits and updates the spec.
+
+**做事方式** <span class="en">How you work</span>
+
+22. 没有结构的环境里你怎么做:3.4。<span class="en">How do you work without structure?</span>
+    > I find a working example, get it running, and make the design calls myself. At TikTok that meant a new agent domain in about twenty commits over three days.
+23. 讲一个你犯的错:Redis 那次(3.9)。<span class="en">Tell me about a mistake.</span>
+    > A one-line config pointed us at a shared cache-only Redis and broke every reply. I rolled back first, then moved our state to MongoDB. Now I check a component's guarantees before building on it.
+24. 怎么快速学新东西:3.10。<span class="en">How do you learn something new quickly?</span>
+    > Working example first, then one change at a time, and I make sure the measurement itself is trustworthy.
+25. 队友会怎么评价你:靠谱,写清楚交接。<span class="en">How would teammates describe you?</span>
+    > Reliable and thorough. At TikTok I left a handover document and a decision log that even kept the experiments we rolled back, so the next person would know why things are the way they are.
+26. 工作以外做什么:攀岩(RCRI 的用户就是攀岩的人)、网球、游泳、音乐剧。<span class="en">What do you do outside work?</span>
+    > I climb with Columbia's climbing club and play tennis. In undergrad I won the university-wide swimming championship, and I was music director of the musical theatre society.
+27. 三年后想成为什么样:负责推理栈的核心一块。<span class="en">Where do you see yourself in three years?</span>
+    > Owning a core piece of the inference stack end to end, and being someone newer engineers learn from.
+
+**安排** <span class="en">Logistics</span>
+
+28. 什么时候能到岗:3.5,用你选的 A/B/C。<span class="en">When can you start?</span>
+    > My degree ends December 15th, and I can start right after, once my OPT card arrives, so the second half of December or the first week of January.
+29. 能在波士顿坐班吗:3.6,用你选的说法;下面这句只适用于选项 A。<span class="en">Can you work in person in the Boston area?</span>
+    > Yes. I know the team is in the Boston area, and I'm planning to move after I graduate.
+30. 需要担保吗:3.7。<span class="en">Do you need sponsorship?</span>
+    > I'll work on OPT after graduating, with a STEM extension available, and longer term I'd need H-1B sponsorship.
+31. 期望薪资:3.11,照岗位帖的范围说。<span class="en">What are your salary expectations?</span>
+    > Something in the range on your application engineer posting, $160K to $180K plus equity, would work for me.
+32. 有什么想问我们的:第 4 章挑 2 到 3 个,第 6 个一定问。<span class="en">Any questions for us? Pick two or three from Chapter 4, always including the timeline question.</span>
+
+---
+
+# 第 4 章 · 反问 · Questions to Ask
+
+挑 2 到 3 个。第 1 个和第 6 个最重要:岗位还没说清,到岗时间是你最大的变数。
+<span class="en">Pick two or three. Numbers 1 and 6 matter most: the role is still unclear, and the start date is your biggest variable.</span>
+
+1. 岗位和第一个月 <span class="en">The role and the first month</span>
+   > Which team do you see me on, and what would my first month or two look like?
+   - 为什么问:邮件没说岗位。答案决定下一轮你准备推理、应用还是模型。
+     <span class="en">Why: the email didn't name the role, and the answer decides what you prepare next.</span>
+2. 推理引擎现在跑在什么上 <span class="en">What the inference engine runs on today</span>
+   > Today, while your own hardware is in progress, what does the inference engine run on, and what's the stack: C++, CUDA, Rust?
+   - 为什么问:显示你知道「硬件还在做,软件得先跑起来」这个阶段问题;答案告诉你该补哪门语言。
+     <span class="en">Why: it shows you understand the stage they're in, and tells you which language to brush up on.</span>
+3. 先做多大的模型、什么样的设备 <span class="en">Target model size and device</span>
+   > What size of model and what kind of device are you aiming for first? Whatever you can share.
+   - 为什么问:这是容量和带宽的取舍(3.13),你能接着聊;加一句「能说多少说多少」,不逼对方透露机密。
+     <span class="en">Why: it's the capacity versus bandwidth trade-off you can discuss, and "whatever you can share" respects confidentiality.</span>
+4. 怎么判断本地模型够好 <span class="en">Judging local model quality</span>
+   > How do you decide that a local model is good enough compared with a cloud model?
+   - 为什么问:直接接到你的 Walmart 评测研究,对方答完你可以补一句你的做法。
+     <span class="en">Why: it leads straight into your evaluation research.</span>
+5. 团队和地点 <span class="en">Team and location</span>
+   > How big is the team now, how are hardware, software, model and product split, and is everyone in Cambridge or Boston day to day?
+   - 为什么问:岗位帖有的写波士顿、有的写剑桥;四个团队怎么分你也需要知道。
+     <span class="en">Why: postings say Boston or Cambridge, and you need to know how the teams are split.</span>
+6. 后面的流程和到岗时间 <span class="en">Next steps and start date</span>
+   > What do the next steps look like, and when would you ideally want someone to start?
+   - 为什么问:先听他们的真实时间线,再按 3.5 说你的日期。如果他们说「12 月底或 1 月初都行」,4 周的问题就自然解决了。
+     <span class="en">Why: hear their real timeline before giving your date; if late December or early January works, the four-week question resolves itself.</span>
+
+---
+
+# 附录 A · 故事对照表 · Story Map
+
+| 问题 <span class="en">Question</span> | 主故事 <span class="en">Main story</span> | 备用 <span class="en">Backup</span> |
+|---|---|---|
+| 自我介绍 <span class="en">Tell me about yourself</span> | RCRI + TikTok(2.1)<span class="en">RCRI and TikTok</span> | 2 分钟版加 E6792(2.2)<span class="en">Two-minute version with E6792</span> |
+| 为什么是 Alpaca <span class="en">Why Alpaca</span> | 内存是瓶颈 + 四层经历(3.1)<span class="en">Memory bottleneck and your four layers</span> | RCRI 不上云(2.5)<span class="en">RCRI with no cloud</span> |
+| 最得意的项目 <span class="en">Proudest project</span> | TikTok 分析 agent(2.4)<span class="en">TikTok analysis agent</span> | RCRI(2.5) |
+| 设备端 / 推理经验 <span class="en">On-device or inference experience</span> | RCRI 的 TensorRT FP16 部署(2.5)<span class="en">RCRI's TensorRT FP16 deployment</span> | E6792 CUDA 主机端 + TensorRT 12 倍(2.10)<span class="en">E6792 host-side CUDA and 12x TensorRT</span> |
+| 固件 / 嵌入式 <span class="en">Firmware, embedded</span> | OTA 车端安装器(2.10)<span class="en">The OTA installer</span> | Jetson 部署 <span class="en">Jetson deployment</span> |
+| 模型 / 研究 <span class="en">Models, research</span> | TaskMap(2.7) | Walmart 评测(2.6)<span class="en">Walmart evaluation</span> |
+| 评估模型够不够好 <span class="en">Judging model quality</span> | Walmart 的 Q-function(2.6)<span class="en">Walmart's Q-function</span> | TaskMap 主动说局限 <span class="en">TaskMap's stated limits</span> |
+| 没有结构 / 主动性 <span class="en">Ambiguity, initiative</span> | TikTok 新业务域三天 20 个提交(3.4)<span class="en">TikTok's new domain in three days</span> | DiyoWater 整条管线(2.8)<span class="en">The DiyoWater pipeline</span> |
+| 犯错 <span class="en">A mistake</span> | Redis checkpointer 回滚(3.9)<span class="en">The Redis rollback</span> | 撤回抽样(2.4)<span class="en">Reverting the sampling</span> |
+| 先量再改 / 测量 <span class="en">Measure first</span> | 12.5 GB 文件反复数行(2.4)<span class="en">Re-reading the 12.5 GB file</span> | BOLT 不控制条件只测出 73%(2.10)<span class="en">BOLT's 73% without controls</span> |
+| 产品感 <span class="en">Product sense</span> | 本地「分析助手」(3.8)<span class="en">A local analyst</span> | RCRI 和攀岩馆的对话(2.5)<span class="en">RCRI and the climbing gym</span> |
+| 学得快 <span class="en">Learning fast</span> | 现成例子 → 一次改一处(3.10)<span class="en">Working example, one change at a time</span> | BOLT 和 perf <span class="en">BOLT and perf</span> |
+
+---
+
+# 附录 B · 数字出处 · Where the Numbers Come From
+
+| 数字 <span class="en">Number</span> | 出处 <span class="en">Source</span> |
+|---|---|
+| 简历上的所有原话 <span class="en">Resume wording</span> | `1216/careerfair_1001/Yijing Jia_Resume_MLE_3proj.pdf`(用 pdftotext 读的)<span class="en">The MLE_3proj resume</span> |
+| 时间、链接、电话、PIN、4 周条件、你的回信 <span class="en">Time, links, condition, your reply</span> | 邮件线程 `jobs/mail_raw/yj2923@columbia.edu__1a13bc325c5b6542.json`(10/14 来信、10/18 回信、10/19 定时间)和 `__1a1548a0698a5e1b.json`(日历邀请)<span class="en">The two email threads</span> |
+| 招聘会表:团队、立刻全职 Yes、传了 MLE_3proj <span class="en">Fair form details</span> | `APPLICATIONS_TRACKER.md` 第 3443、3445 行;`CAREER_FAIR_1001.md` 第 19 行 <span class="en">Tracker lines 3443 and 3445</span> |
+| 另外两次投递 <span class="en">The other applications</span> | `jobs/JOBS.csv` 的 J-260928-088(Application Engineer)、J-261003-325(ML Research Scientist);tracker 第 3388、3852 行 <span class="en">JOBS.csv rows and tracker lines</span> |
+| RCRI:12 FPS、83 ms、0.77、0.7 GB、5 W;六类 5 FPS、200 ms、0.71、1.0 GB;416×416 <span class="en">RCRI Jetson results</span> | `careerfair_1001/RCRI_for_Kevin/RCRI_Highlights.pdf` 第 11 页实测表 <span class="en">Slide 11 of your RCRI deck</span> |
+| RCRI:0.825、5,341 张图 <span class="en">RCRI 0.825 on 5,341 images</span> | `~/Desktop/RCRI_PROJECT/README.md` <span class="en">The RCRI README</span> |
+| RCRI:你是负责人;IoU 0.3 合并;trtexec --fp16;引擎绑定设备 <span class="en">Lead role, merge logic, engine build</span> | `RCRI_PROJECT/docs/TASK_ASSIGNMENTS.md`、`scripts/jetson_inference_lite.py`、`scripts/jetson_export_trt.sh` <span class="en">Repo docs and scripts</span> |
+| RCRI:难度特征、姿态 + A*、不上云 <span class="en">Difficulty features, pose, no cloud</span> | 同一份幻灯片第 2、7、10 页 <span class="en">Slides 2, 7 and 10</span> |
+| RCRI:GCP 训练、和攀岩馆谈过 <span class="en">GCP training, gym talks</span> | 记忆 rcri-project-facts(9/20、9/22 你本人说的)<span class="en">Your own statements in memory notes</span> |
+| Nano 不支持 INT8 <span class="en">No INT8 on the Nano</span> | NVIDIA 开发者论坛(附录 C)<span class="en">NVIDIA forums</span> |
+| TikTok:900 秒、3 小时 <span class="en">900 seconds, 3 hours</span> | `~/Desktop/result/` 完整交接文档 <span class="en">Your handover document</span> |
+| TikTok:12.5 GB、约 25 万行、1.6 GB 一两分钟、反复数行 <span class="en">File sizes and the row-count bug</span> | `~/Desktop/agent_harness` 提交 1802890、4e097c5、caa86d3 的说明 <span class="en">Commit messages</span> |
+| TikTok:三天 20 个提交 <span class="en">Twenty commits in three days</span> | agent_harness 的 git log,作者 jiayijing,7/8 到 7/10 <span class="en">Git log</span> |
+| TikTok:1/5/10/20 压测、约 20 个会话 <span class="en">Load-test plan</span> | 完整交接文档(并发那一节)<span class="en">Handover document</span> |
+| TikTok:Redis 回滚 <span class="en">Redis rollback</span> | 研发决策文档;提交 519df97 <span class="en">Decision log and commit</span> |
+| TikTok:100 ms → 10 ms / 60 ms、8 个接口、Top2 加权 P99 <span class="en">Timeout tuning results</span> | `~/Desktop/result/SKILLS：下游服务延时监控与超时调整/` 第 5 节 <span class="en">The skills document, section 5</span> |
+| TikTok:走后还在生产 <span class="en">Still in production</span> | 记忆 tiktok-internship-facts(9/28 同事微信)<span class="en">A colleague's message, Sept 28</span> |
+| Walmart:Q-function 公式、贪心选择 <span class="en">Q-function and selection</span> | `~/Desktop/Walmart Project 2026/10_16_tau2_design/tau2_bench_design_v7.docx` 第 6、7 节 <span class="en">Design doc v7</span> |
+| Walmart:207/456、Q 0.962;94/456、Q 0.931 <span class="en">Subset sizes</span> | `10_16_tau2_design/runs/run_retail/.../selection.json`;`reading_pack/repos/chatbots-adaptive/.../tau2_retail_offline/.../selection.json` <span class="en">The two selection outputs</span> |
+| Walmart:20 条、69 个错误、50 种、4 条不是 agent 的错 <span class="en">Failure-labeling test</span> | `10_19_tau2_failure/README_failure_test.md`、`findings.md` <span class="en">Failure test README and findings</span> |
+| Walmart:VISTA 三个指标 <span class="en">VISTA metrics</span> | `Walmart Project 2026/7_2/VISTA_paper_导读.md` <span class="en">Your VISTA notes</span> |
+| Walmart:HDBSCAN 1.43 / 1.57;Q 0.852 / 0.811;你的分工;每周会议 <span class="en">Baselines, role, meetings</span> | 记忆 walmart-arklex-research(10/6、10/16、9/22)<span class="en">Memory notes</span> |
+| TaskMap 全部数字 <span class="en">All TaskMap numbers</span> | 记忆 taskmap-paper;`面试准备/TaskMap_实验讲解.html`(按 paper_1831.pdf 核过)<span class="en">Checked against the latest manuscript</span> |
+| DiyoWater:Overture 6,400 万、三层去连锁、每批 50 条、28 个市场 55,761 行、前 5 城 11,061、目标 3,600、boto3 读 S3、双塔未上线 <span class="en">DiyoWater facts</span> | 记忆 diyowater-drive-facts(10/16 读的共享盘)<span class="en">Notes from the shared Drive</span> |
+| DiyoWater:创始人 CEO 直接带、95% 是目标 <span class="en">Founder-led, 95% target</span> | `面试准备/Bloomberg_HR面小抄.html` <span class="en">Your Bloomberg cheat sheet</span> |
+| iQIYI 的做法(混合精度、动态 batch) <span class="en">iQIYI methods</span> | `~/Desktop/自我提升/project_kb_export/iqiyi.md`(你 5 月的面试稿)<span class="en">Your May notes</span> |
+| E6792:1.07 → 13.03 FPS、nvprof、CLIP、kernel 是课程给的 <span class="en">E6792 facts</span> | 记忆 e6792-gpu-projects <span class="en">Memory note</span> |
+| BOLT:1.30 倍、30%、92% / 81%、84% / 70%、4.5%、73% <span class="en">BOLT numbers</span> | `~/Desktop/EECS6894_P8/07_版本差距与归因_实验结果.md` <span class="en">Your Oct 11 results file</span> |
+| OTA:C 写的车端安装器、60%+、70%+ <span class="en">OTA facts</span> | `面试准备/Optiver_行为面_教案.md` 第 3 章(引自 Trexquant 教案和简历库)<span class="en">The Optiver manual</span> |
+| 本地推理的所有算例 <span class="en">All local-inference math</span> | 3.14 的脚本(已实跑);模型结构来自 Hugging Face config;设备规格见附录 C <span class="en">The script in 3.14</span> |
+| 11/18 + 28 天 = 12/16;10/23 + 28 天 = 11/20;12/15 + 60 天 = 2/13 <span class="en">Date math</span> | python3 的 datetime 算的 <span class="en">Computed with Python</span> |
+| OPT 规则、加急费 $1,780 <span class="en">OPT rules, premium fee</span> | USCIS OPT 页面;宾大国际办公室的新闻(附录 C)<span class="en">USCIS and Penn</span> |
+| 薪资范围 <span class="en">Salary ranges</span> | 他们的岗位帖(附录 C)<span class="en">Their postings</span> |
+
+---
+
+# 附录 D · 请你确认 · Please Confirm
+
+每条:可能的情况 → 回忆提示 → 没确认之前怎么说。
+<span class="en">Each item: possibilities, memory triggers, and what to say until you confirm.</span>
+
+1. **「4 周内到岗」用哪种说法(3.5)**
+   <span class="en">Which way to handle the four-week start (3.5).</span>
+   - A 主动说清楚(我倾向这个);B 被问再说;C 对方说必须 11 月到岗时的说法。
+     <span class="en">A: say it proactively, my lean; B: only if asked; C: the script for a November-only team.</span>
+   - 回忆提示:10/18 回信你写了 "Yes, I can confirm…";招聘会表上「立刻全职」也选了 Yes。
+     <span class="en">Trigger: your Oct 18 email said yes, and so did the fair form.</span>
+   - 没确认前:至少在被问到时按 B 的事实说,不要说「11 月就能来」。
+     <span class="en">Until you decide, at least state the December facts when asked; never imply a November start.</span>
+2. **OPT 申请(I-765)交了没有,选的开始日期是哪天;I-20 上的项目结束日是不是 12/15**
+   <span class="en">Whether your OPT application is filed and with what start date, and whether your I-20 end date is December 15th.</span>
+   - A 已交,开始日 12/16 左右:可以说 "My OPT application is already in."
+     <span class="en">A: filed with a start around December 16th, so you can say it's already in.</span>
+   - B 还没交:通话里只说 "I'll be on OPT after I graduate",不报工卡日期;要不要加急($1,780,约 30 天)你自己定。
+     <span class="en">B: not filed, so just say you'll be on OPT; whether to pay for premium processing is your call.</span>
+   - C 不确定:看 USCIS 账户或邮件里的 receipt notice。
+     <span class="en">C: unsure, so check your USCIS account or receipt notice.</span>
+   - 没确认前:*The only dependency is my OPT work card.* 不报具体日期。
+     <span class="en">Until confirmed, mention the OPT card as the only dependency, with no specific date.</span>
+3. **愿不愿意搬到波士顿/剑桥(3.6)**
+   <span class="en">Whether you'll move to the Boston area (3.6).</span>
+   - A 愿意,毕业就搬;B 愿意,1 月初到;C 想留纽约(基本等于这家不合适)。
+     <span class="en">A: move right after graduation; B: settled by early January; C: stay in New York, which likely rules this company out.</span>
+   - 回忆提示:回信时你知道他们在波士顿吗?
+     <span class="en">Trigger: did you know they were in Boston when you replied?</span>
+   - 没确认前:*I know the team is in the Boston area.* 不说「不搬」。
+     <span class="en">Until confirmed, acknowledge the location without ruling anything out.</span>
+4. **想进哪个团队(3.3)**
+   <span class="en">Which team to name (3.3).</span>
+   - A Software 推理方向(和你 10/1 表上一致,我写的默认);B 应用 / 产品;C 模型 / 研究。
+     <span class="en">A: software and inference, matching your form and my default; B: applications and product; C: models and research.</span>
+   - 回忆提示:你在 Handshake 上投的是应用岗和研究岗,表上选的是 Software。
+     <span class="en">Trigger: on Handshake you applied for the application and research roles; on the form you picked software.</span>
+   - 没确认前:按 A 说,并加 *I'm flexible.*
+     <span class="en">Until confirmed, say A and add that you're flexible.</span>
+5. **有没有在自己电脑上跑过大模型**(Ollama、llama.cpp、LM Studio、MLX 之类)
+   <span class="en">Whether you've run LLMs on your own machine, with tools like Ollama, llama.cpp, LM Studio or MLX.</span>
+   - A 跑过:把押题第 11 题换成真实的模型、工具、机器和速度。
+     <span class="en">A: yes, so put the real model, tool, machine and speed into question 11.</span>
+   - B 没跑过:用押题第 11 题原文。
+     <span class="en">B: no, so use question 11 as written.</span>
+   - 回忆提示:Mac 上装过 Ollama 吗?跑过哪个模型?
+     <span class="en">Trigger: have you installed Ollama on your Mac, and which model did you run?</span>
+6. **招聘会上和谁聊、聊了什么、答应过什么**
+   <span class="en">Who you spoke with at the fair, about what, and what you promised.</span>
+   - 可能:A 和 Kevin Chen 聊 RCRI,答应发演示(`RCRI_for_Kevin` 文件夹 10/1 下午做好,一直没发);B 和 Anthony 聊;C 只扫码填表,没深聊。
+     <span class="en">A: RCRI with Kevin Chen, with a demo promised that was never sent; B: a talk with Anthony; C: only the QR form.</span>
+   - 回忆提示:你的记录写 Kevin 在 Alpaca 摊位、背景是 Amazon TPM;LinkedIn 好友申请还没处理;二维码记的是 Anthony 的。
+     <span class="en">Trigger: your notes put Kevin at the booth with an Amazon TPM background, his LinkedIn request is pending, and the QR code was Anthony's.</span>
+   - 没确认前:*It was great to talk with your team at the fair.* 不点名。如果对方提到 RCRI,可以说 *I have a short demo video from the Jetson if that's useful.*
+     <span class="en">Until confirmed, thank "your team" without names; offer the RCRI demo video only if they bring it up.</span>
+7. **被问 Rust 怎么说**(唯一出处是你撤下的 Coach)
+   <span class="en">How to answer about Rust; the only source is the Coach app you withdrew.</span>
+   - A 只在被问时简单提:*a small personal desktop app in Rust with Tauri.*
+     <span class="en">A: mention the app briefly, only if asked.</span>
+   - B 不提项目名:*I've used Rust on a personal project, at a lighter level than Python or C.*
+     <span class="en">B: a personal project, no name.</span>
+   - C 说只在学:*I'm still early with Rust.*
+     <span class="en">C: still early with Rust.</span>
+   - 没确认前:用 B。
+     <span class="en">Until you choose, use B.</span>
+8. TikTok **「一周到当天」**
+   <span class="en">The "a week to same day" claim from TikTok.</span>
+   - A 你记得调一次超时原来要一周:可以说,并讲清是怎么量的。
+     <span class="en">A: you remember a manual tuning taking a week, so say it and explain how it was measured.</span>
+   - B 记不清:不说这句,只讲两个真实服务(2.4 追问表)。
+     <span class="en">B: you don't, so skip it and talk about the two real services.</span>
+   - 没确认前:用 B。
+     <span class="en">Until confirmed, use B.</span>
+9. **单片机 / 裸机固件做过没有**(NYU 的 AIoT、软硬件协同设计课)
+   <span class="en">Whether you've written microcontroller or bare-metal firmware, for example in the NYU AIoT or co-design courses.</span>
+   - A 做过:说哪块板、做了什么,加到押题第 15 题。
+     <span class="en">A: yes, so add the board and what you built to question 15.</span>
+   - B 没做过:押题第 15 题原文。
+     <span class="en">B: no, so use question 15 as written.</span>
+10. **现在有没有别家 offer 或截止日**
+    <span class="en">Whether you have other offers or deadlines now.</span>
+    - 没有:用 3.12 原文。
+      <span class="en">None: use 3.12 as written.</span>
+    - 有:*I do have a timeline elsewhere, and I'm happy to share it if that helps.*
+      <span class="en">If you do, say you have a timeline and offer to share it.</span>
+11. Walmart **的子集数字要不要报、报哪个**
+    <span class="en">Whether to quote a Walmart subset size, and which one.</span>
+    - 默认不报,只讲方法和这周的失败标注数字。要报就用 207/456(o4-mini,10/16),并说明还在迭代。
+      <span class="en">Default: don't; describe the method and this week's labeling numbers. If you do, use 207 of 456 and say it's still evolving.</span>
+12. iQIYI **5 月面试稿里的细节**(显存降 40%、batch 从 32 改成动态 8 到 16)是不是真的
+    <span class="en">Whether the iQIYI details in your May notes are accurate: 40% less GPU memory, batch 32 to a dynamic 8 to 16.</span>
+    - A 都对:可以在追问时说。B 部分对:只说做法,不报数。C 记不清:只说「分段测时间、混合精度、调 batch」。
+      <span class="en">A: all true, use them; B: partly, give methods without numbers; C: unsure, say profiling, mixed precision and batch tuning only.</span>
+13. J&J **的 60%(每家约 30 分钟 → 12 分钟)是不是这么算的**
+    <span class="en">Whether J&J's 60% really came from about 30 minutes per company down to 12.</span>
+    - 没确认前:只说「按每家公司的整理时间比较」。
+      <span class="en">Until confirmed, just say it was measured as time per company.</span>
+14. **被问 GPA**
+    <span class="en">If asked about GPA.</span>
+    - 简历写 4.0;9 月的成绩单累计 3.7 左右。A:*It's on my resume*,然后转回经历。B:直接说真实累计约 3.7。
+      <span class="en">The resume says 4.0 and the September transcript about 3.7. A: point to the resume and move on; B: give the real cumulative, about 3.7.</span>
+15. **被问长期打算(比如会不会读博)**
+    <span class="en">If asked about long-term plans, such as a PhD.</span>
+    - 你 10/1 给 NYU 教授的信里提过明年申博。A:*Right now I want to build; I'm not planning a PhD in the near term.* B:如实说可能以后读。由你定,通话里不主动提。
+      <span class="en">You told an NYU professor on Oct 1 that you'd apply next year. A: say you want to build now; B: say you may go back later. Your call; don't raise it yourself.</span>
+16. **RCRI 和攀岩馆谈到哪一步**
+    <span class="en">How far the RCRI gym conversation went.</span>
+    - A 只聊过想法;B 给对方演示过;C 有后续(试用、合作意向)。
+      <span class="en">A: ideas only; B: a demo; C: a follow-up such as a trial.</span>
+    - 没确认前:*We talked with a climbing gym about using it.*
+      <span class="en">Until confirmed, say you talked with a gym about using it.</span>
+17. DiyoWater **日期被细问**
+    <span class="en">If asked for exact DiyoWater dates.</span>
+    - 简历写 Aug 2026 起;共享盘写 6/19 到 8/19 的 60 天;Bloomberg 小抄写 6/15 到 9/4 兼职。默认只说「9 月结束」。
+      <span class="en">The resume says from August, the shared Drive says a 60-day scope from June 19 to August 19, and your Bloomberg notes say part-time June 15 to September 4. By default just say it ended in September.</span>
+
+---
+
+# 附录 C · 来源和名词表 · Sources and Glossary
+
+## C.1 来源 · Sources
+
+**面经:没有找到任何一篇。**
+<span class="en">Interview reports: none found.</span>
+
+搜过 Glassdoor、Reddit、一亩三分地、Blind 和一般网页。Glassdoor 上叫 "Alpaca" 的公司页(E2301035)有 30 多条面经、提到多伦多和布达佩斯等地,多半是 Alpaca Markets 或别的同名公司,不是这家 2026 年才成立的小公司,不能用( https://www.glassdoor.com/Interview/Alpaca-Interview-Questions-E2301035.htm )。所以本手册所有题都标【预测】。
+<span class="en">Searched Glassdoor, Reddit, 1point3acres, Blind and the web. The Glassdoor "Alpaca" page, with 30-plus reports mentioning Toronto and Budapest, is most likely Alpaca Markets or another namesake, not this 2026 startup, so every question here is a prediction.</span>
+
+公司信息(新的在前)
+<span class="en">Company information, newest first</span>
+
+1. Univ. of Rochester 职业网站上的 HR Coordinator 帖(10/17 开始,11/17 截止):剑桥坐班、$80–90K、公司介绍(整套个人 AI、把前沿 AI 从数据中心搬到个人设备)。已直接打开。 https://careereducation.rochester.edu/jobs/alpaca-research-corp-human-resources-coordinator/
+   <span class="en">HR coordinator posting, opened directly: Cambridge in person, $80K to $90K, and the company description.</span>
+2. Behance 上的 Founding UI/UX Designer 帖(10/1 发):「自己拥有前沿模型成为默认」的说法、团队是 MIT 辍学生和应届生、波士顿全职坐班、$150–175K + 股权、招聘联系人 Kevin Chen。已直接打开。 https://www.behance.net/joblist/fulltime/365649/Founding-UIUX-Designer
+   <span class="en">Founding UI/UX designer posting, opened directly: the ownership framing, MIT dropouts and recent grads, Boston in person, $150K to $175K plus equity, hiring contact Kevin Chen.</span>
+3. MIT 职业网站上的 Application Engineer 帖(9 月中发,10/17 过期):波士顿坐班、$160–180K + 股权、核心是推理引擎和内存架构、想做美国领先的开放前沿实验室。现在打开是 404,内容来自搜索摘要;本机另有一份 JD:`1216/auto/gen/jd/hs_alpaca_appeng.txt`(Handshake 11455004)。 https://capd.mit.edu/jobs/alpaca-research-corp-application-engineer/
+   <span class="en">Application engineer posting: Boston in person, $160K to $180K plus equity, the inference engine and memory architecture, the open-frontier-lab goal. Now a 404, so from search summaries, plus a local copy of the JD.</span>
+4. MIT 职业网站上的 Founding Industrial Designer 帖:波士顿、$150–175K + 股权。404,来自搜索摘要。 https://capd.mit.edu/jobs/alpaca-research-corp-founding-industrial-designer/
+   <span class="en">Founding industrial designer posting, from search summaries.</span>
+5. Crunchbase:定制内存芯片 + 高速推理引擎 + 软件 + 本地应用;麻省剑桥;11–50 人;一笔 grant,资助方写 MIT。页面 403,来自搜索摘要。 https://www.crunchbase.com/organization/alpaca-research
+   <span class="en">Crunchbase profile, from search summaries: custom memory chips, inference engine, software and local apps; Cambridge; 11 to 50 people; one grant from MIT.</span>
+6. MIT Zardini Lab 上 Anthony Donegan 的页面:大二,兴趣横跨芯片、体系结构、编译器、操作系统、嵌入式;在实验室用图示方法优化深度学习 CUDA kernel;下一站「alpa.ca 创始人」。已直接打开。 https://zardini.mit.edu/people/anthony-donegan/
+   <span class="en">Anthony Donegan's MIT lab page, opened directly: hardware-stack interests, CUDA kernel optimization, next position founder of alpa.ca.</span>
+7. RocketReach:Anthony Donegan 是 Alpaca Research 的 CEO(2026 年起);公司约 10 人,2026 年成立。商业数据库,可信度低一档,来自搜索摘要。 https://rocketreach.co/alpaca-research-corp-profile_b659a066cb4f43e9
+   <span class="en">RocketReach, less reliable: CEO since 2026, about 10 people, founded 2026.</span>
+8. LinkedIn 上 Anthony Donegan 的主页:写着 Alpaca Research 和 MIT。被拦,来自搜索摘要。 https://www.linkedin.com/in/anthonysdone/
+   <span class="en">His LinkedIn, blocked, from search snippets: Alpaca Research and MIT.</span>
+9. 官网 alpa.ca:只有一张羊驼图和一句玩笑,没有信息。已直接打开。 https://alpa.ca
+   <span class="en">Their website, opened directly: just an alpaca picture and a joke.</span>
+
+本机资料
+<span class="en">Local files</span>
+
+- 邮件:`1216/jobs/mail_raw/` 的线程 1a13bc325c5b6542、1a1548a0698a5e1b。
+  <span class="en">The two email threads.</span>
+- 投递记录:`1216/APPLICATIONS_TRACKER.md` 第 3388、3440、3443、3445、3480、3852、4691、5146–5147、5812 行;`1216/jobs/JOBS.csv` 的 J-261019-041、J-260928-088、J-261003-325;`1216/CAREER_FAIR_1001.md`。
+  <span class="en">Tracker lines, the three JOBS.csv rows, and your career fair notes.</span>
+- 简历:`careerfair_1001/Yijing Jia_Resume_MLE_3proj.pdf`(主)、`careerfair_1001/` 里同日打印的 MLE / SDE / Quant 三版、`simplify15/Yijing Jia_Alpaca_ApplicationEngineer.pdf`、`handshake1003/Yijing Jia_AlpacaResearch_MLResearchScientist.pdf`。
+  <span class="en">The main resume, the three printed versions from the same day, and the two Handshake resumes.</span>
+- 项目:`careerfair_1001/RCRI_for_Kevin/`、`~/Desktop/RCRI_PROJECT/`、`~/Desktop/agent_harness`(git log)、`~/Desktop/result/`(TikTok 交接文档)、`~/Desktop/Walmart Project 2026/`(10_16 和 10_19 两个文件夹)、`~/Desktop/EECS6894_P8/`、`面试准备/TaskMap_实验讲解.html`、`面试准备/Optiver_行为面_教案.md`、`面试准备/Bloomberg_HR面小抄.html`。
+  <span class="en">Project folders, git history, handover documents, the Walmart folders, BOLT results and earlier manuals.</span>
+- 记忆笔记:tiktok-internship-facts、walmart-arklex-research、taskmap-paper、rcri-project-facts、diyowater-drive-facts、diyowater-ended-oct-2026、e6792-gpu-projects、p8bolt-project、project-base-languages、ota-project-facts、agentic-pipelines-she-built、personal-form-facts、graduation-date-rule、resume-selection-rules、salary-answer-rule。
+  <span class="en">The fact notes in memory.</span>
+
+技术和身份规则
+<span class="en">Technical and immigration references</span>
+
+- Qwen2.5-1.5B 结构参数: https://huggingface.co/Qwen/Qwen2.5-1.5B/raw/main/config.json
+  <span class="en">Qwen2.5-1.5B config.</span>
+- Llama-3-70B 结构参数(社区镜像): https://huggingface.co/NousResearch/Meta-Llama-3-70B/raw/main/config.json
+  <span class="en">Llama-3-70B config, community mirror.</span>
+- DeepSeek-V3 总参数 671B、每个 token 激活 37B: https://arxiv.org/abs/2412.19437
+  <span class="en">DeepSeek-V3: 671B total, 37B active per token.</span>
+- Apple M2 Ultra 800 GB/s、最多 192 GB: https://www.apple.com/newsroom/2023/06/apple-introduces-m2-ultra/
+  <span class="en">M2 Ultra: 800 GB/s, up to 192 GB.</span>
+- RTX 4090 1,008 GB/s、24 GB: https://www.notebookcheck.net/NVIDIA-GeForce-RTX-4090-GPU-Benchmarks-and-Specs.674574.0.html
+  <span class="en">RTX 4090: 1,008 GB/s, 24 GB.</span>
+- H100 SXM 约 3.35 TB/s、BF16 约 989 TFLOPS(第三方规格页): https://www.spheron.network/blog/nvidia-h100-specs/ 、 https://glennklockwood.com/garden/processors/H100
+  <span class="en">H100 SXM: about 3.35 TB/s and 989 dense BF16 TFLOPS, from third-party spec pages.</span>
+- Jetson Nano 不支持 INT8: https://forums.developer.nvidia.com/t/is-int8-ptq-even-possible-on-jetson-nano/218184
+  <span class="en">No INT8 on the Jetson Nano.</span>
+- OPT 规则(递交窗口、拿到 EAD 才能上班、STEM 延期要 E-Verify): https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors/optional-practical-training-opt-for-f-1-students
+  <span class="en">USCIS OPT rules: filing window, EAD before work, E-Verify for STEM.</span>
+- 加急费 2026-03-01 起 $1,780: https://global.upenn.edu/news-articles/uscis-premium-processing-fee-increase-effective-march-1-2026
+  <span class="en">Premium processing fee of $1,780 since March 1, 2026.</span>
+- STEM OPT 的 I-983 培训计划: https://boisestate.edu/global-international-scholars-faculty/opt-stem-opt
+  <span class="en">The I-983 training plan for STEM OPT.</span>
+
+## C.2 名词表 · Glossary
+
+- **推理引擎(inference engine)**:让训练好的模型真正跑起来、算出回答的那层软件。 The software layer that runs a trained model.
+- **内存容量(memory capacity)**:内存一共能放多少字节,决定放不放得下一个模型。 How many bytes fit in memory.
+- **内存带宽(memory bandwidth)**:每秒能从内存读多少字节。单人生成时,它决定一秒能出几个字。 Bytes per second memory can deliver; it sets single-user decoding speed.
+- **量化(quantization)**:把每个权重存成更少的位数(比如 16 位变 4 位),每一小块配一个缩放系数。字节少了,速度快了,质量可能掉。 Storing weights in fewer bits with per-block scales.
+- **BF16 / FP16**:两种 16 位浮点格式,每个数 2 字节。BF16 的数值范围更大,训练常用。 Two 16-bit float formats, 2 bytes per number.
+- **INT8 / INT4**:8 位和 4 位整数格式,用于量化。 8-bit and 4-bit integer formats used for quantization.
+- **KV 缓存(KV cache)**:模型对已读内容的「笔记」。每个 token、每一层存一对 K、V 向量,对话越长越大,每生成一个字都要读一遍。 Saved keys and values for every past token and layer.
+- **prefill**:把整段提示词一次读进去的阶段。很多 token 一起算,主要卡在算力上。 Reading in the whole prompt at once; mostly compute-bound.
+- **decode**:一个字一个字往外生成的阶段。单人使用时主要卡在内存带宽上。 Generating one token at a time; memory-bound for a single user.
+- **批处理(batching)**:把很多请求凑在一起算,一次读权重服务很多人。数据中心便宜的主要原因。 Serving many requests per weight read.
+- **MoE(混合专家)**:模型里有很多「专家」,每个 token 只走其中几个。要放下全部参数,但每个字只读一小部分。 Mixture of experts; each token uses only a few experts.
+- **投机解码(speculative decoding)**:小模型先猜几个字,大模型一次验证,猜对的直接收下,平均每读一次权重出不止一个字。 A draft model guesses, the big model verifies several tokens at once.
+- **GQA(分组查询注意力)**:让多个查询头共用一组 K、V,KV 缓存变小。Llama-3-70B 是 64 个查询头配 8 个 KV 头。 Grouped-query attention; query heads share K and V to shrink the cache.
+- **TensorRT**:NVIDIA 的推理编译器。把模型针对某一块 GPU 编译成引擎,合并层、挑最快的实现、用低精度。 NVIDIA's inference compiler for a specific GPU.
+- **ONNX**:一种通用的模型格式。PyTorch 训练好先导出成 ONNX,再交给 TensorRT 编译。 A portable model format between training and deployment.
+- **Jetson Nano**:NVIDIA 的小型边缘计算板。你用的是 2 GB 版,CPU 和 GPU 共用内存,GPU 不支持 INT8。 NVIDIA's small edge board; yours is the 2 GB version.
+- **YOLOv8**:一类实时目标检测模型,有 n、s、m 等大小,越大越准越慢。 A family of real-time object detectors.
+- **mAP50**:目标检测的准确度指标。框和真实框重叠超过一半算对,再对各类取平均精度。 Detection accuracy counting a box as correct at 50% overlap.
+- **IoU(交并比)**:两个框的重叠面积除以合起来的面积,0 到 1。 Overlap area divided by combined area of two boxes.
+- **FPS**:每秒处理的帧数。 Frames per second.
+- **CUDA**:NVIDIA GPU 的编程接口。主机端负责分配显存、搬数据、决定怎么启动 kernel;kernel 是在 GPU 上跑的函数。 NVIDIA's GPU programming interface; host code launches kernels.
+- **nvprof**:NVIDIA 的老版性能分析工具,能看 SM 利用率、占用率、显存读带宽。 NVIDIA's older GPU profiler.
+- **CLIP**:把图片和文字映射到同一个向量空间的模型,可以不训练直接按文字描述分类(零样本)。 A model that maps images and text into one vector space.
+- **LangGraph**:把 agent 写成「步骤图」的框架,每个对话线程的状态会存下来。 A framework that models an agent as a graph of steps.
+- **MCP(Model Context Protocol)**:把工具交给模型调用的标准接口。 A standard interface for giving tools to a model.
+- **SSE(服务器推送事件)**:服务器一条连接持续往浏览器推消息的方式,常用于流式输出。 Server-sent events, a one-way stream from server to browser.
+- **ACK(确认回执)**:请求先回一句「收到了」,活在后台继续做。 A quick acknowledgement before the work continues in the background.
+- **sandbox(沙箱)**:隔离的运行环境,代码在里面跑,碰不到外面的数据和网络。 An isolated environment for running code.
+- **MongoDB**:文档型数据库。你用它按对话线程存任务状态。 A document database; you stored task state in it.
+- **Redis checkpointer**:框架里用 Redis 存对话进度的组件。那个 Redis 只做缓存,内存紧时会删数据。 The framework component that saved conversation progress in Redis.
+- **P99**:99% 的请求都比它快的那个延迟值,用来看最慢的那一小撮。 The latency that 99% of requests beat.
+- **Q-function**:Walmart 研究里给测试子集打的总分,代表性、行为、失败覆盖三项平均,每项都要到 0.9。 The total score of a test subset in the Walmart research.
+- **τ²-bench**:公开的 agent 评测基准,有航空、零售、电信三个领域的对话任务。 A public agent benchmark with airline, retail and telecom tasks.
+- **VISTA**:哥大的一篇用户模拟评测论文,你借用了它的三个工具使用指标。 A Columbia user-simulation paper whose tool metrics you reuse.
+- **HDBSCAN**:一种按密度聚类的方法,不用事先定簇数。 Density-based clustering without a preset number of clusters.
+- **LLM 判官(LLM judge)**:用大模型读对话、按规则打标签或打分。 Using an LLM to label or score conversations.
+- **LoRA**:给大模型加两个小矩阵来微调,只训练这两个小矩阵。 Fine-tuning a model through two small added matrices.
+- **正交基(orthonormal basis)**:一组两两垂直、长度为 1 的方向。用它当坐标轴,系数就是唯一的坐标。 Perpendicular unit directions used as coordinate axes.
+- **负迁移(negative transfer)**:适配之后某个任务反而变差。TaskMap 看的是最差那个任务掉多少。 A task getting worse after adaptation.
+- **冷启动(cold start)**:模型从没见过的任务,只能靠任务描述来适配。 Adapting to a task never seen before, from its description.
+- **BOLT**:LLVM 的二进制优化工具,按实际运行数据重新排列编译好的程序,让常跑的代码挨在一起。 LLVM's tool that reorders a compiled binary by its runtime profile.
+- **PGO(按运行数据优化)**:先跑程序收集哪里常跑,再按这些数据优化。数据过期了就会失效。 Profile-guided optimization.
+- **Wax**:一种把过期的运行数据重新对到新程序上的方法,你们的研究拿它和 BOLT 自带的方法比。 A method for remapping stale profiles onto a new binary.
+- **OTA(空中升级)**:设备通过网络远程更新软件。你的毕设是汽车上的差分升级。 Over-the-air software updates.
+- **DuckDB**:不用服务器的分析型数据库,能直接查 S3 上的 Parquet 文件。 An embedded analytics database that queries files directly.
+- **Overture Maps**:亚马逊、Meta、微软等公司发起的开放地图数据,约 6,400 万个地点。 An open map dataset with about 64 million places.
+- **双塔模型(two-tower model)**:用户和物品各用一个网络算向量,按相似度召回。DiyoWater 只做了设计和上线门槛。 Separate user and item encoders matched by vector similarity.
+- **OPT**:F-1 学生毕业后的工作许可,一般 12 个月。 Work authorization for F-1 graduates, usually 12 months.
+- **STEM OPT**:STEM 学位可以在 OPT 之后再延 24 个月,要求雇主加入 E-Verify 并签 I-983 培训计划。 A 24-month extension for STEM degrees with an E-Verify employer.
+- **EAD(工卡)**:移民局发的工作许可卡。OPT 必须拿到它才能开始上班。 The employment authorization card.
+- **I-765**:申请 EAD 的表。OPT 最早可以在项目结束前 90 天递。 The form used to apply for the EAD.
+- **I-20**:学校出的 F-1 身份文件,上面写着项目结束日期。 The school document for F-1 status, with the program end date.
+- **CPT**:F-1 学生在读期间、和课程相关的校外实习许可,由学校批。 Work authorization during studies, approved by the school.
+- **ISSO**:哥大的国际学生和学者办公室,管 F-1 的工作许可。 Columbia's international students and scholars office.
+- **E-Verify**:美国政府的雇佣资格核验系统。雇主加入后,员工才能用 STEM OPT。 The government's employment eligibility system.
+- **I-983**:STEM OPT 的培训计划表,学生和雇主一起填。 The STEM OPT training plan signed with the employer.
+- **H-1B**:美国的工作签证,要雇主担保。 A US work visa that requires employer sponsorship.
+- **premium processing(加急)**:付费让移民局在约 30 天内处理,2026 年 3 月起 OPT 加急费是 $1,780。 Paid faster USCIS processing, about 30 days.
+</script>
+<script type="application/json" id="gloss">{"推理引擎": "推理引擎(inference engine):让训练好的模型真正跑起来、算出回答的那层软件。 The software layer that runs a trained model.", "inference engine": "推理引擎(inference engine):让训练好的模型真正跑起来、算出回答的那层软件。 The software layer that runs a trained model.", "内存容量": "内存容量(memory capacity):内存一共能放多少字节,决定放不放得下一个模型。 How many bytes fit in memory.", "memory capacity": "内存容量(memory capacity):内存一共能放多少字节,决定放不放得下一个模型。 How many bytes fit in memory.", "内存带宽": "内存带宽(memory bandwidth):每秒能从内存读多少字节。单人生成时,它决定一秒能出几个字。 Bytes per second memory can deliver; it sets single-user decoding speed.", "memory bandwidth": "内存带宽(memory bandwidth):每秒能从内存读多少字节。单人生成时,它决定一秒能出几个字。 Bytes per second memory can deliver; it sets single-user decoding speed.", "量化": "量化(quantization):把每个权重存成更少的位数(比如 16 位变 4 位),每一小块配一个缩放系数。字节少了,速度快了,质量可能掉。 Storing weights in fewer bits with per-block scales.", "quantization": "量化(quantization):把每个权重存成更少的位数(比如 16 位变 4 位),每一小块配一个缩放系数。字节少了,速度快了,质量可能掉。 Storing weights in fewer bits with per-block scales.", "BF16": "BF16 / FP16:两种 16 位浮点格式,每个数 2 字节。BF16 的数值范围更大,训练常用。 Two 16-bit float formats, 2 bytes per number.", "FP16": "BF16 / FP16:两种 16 位浮点格式,每个数 2 字节。BF16 的数值范围更大,训练常用。 Two 16-bit float formats, 2 bytes per number.", "INT8": "INT8 / INT4:8 位和 4 位整数格式,用于量化。 8-bit and 4-bit integer formats used for quantization.", "INT4": "INT8 / INT4:8 位和 4 位整数格式,用于量化。 8-bit and 4-bit integer formats used for quantization.", "KV 缓存": "KV 缓存(KV cache):模型对已读内容的「笔记」。每个 token、每一层存一对 K、V 向量,对话越长越大,每生成一个字都要读一遍。 Saved keys and values for every past token and layer.", "KV cache": "KV 缓存(KV cache):模型对已读内容的「笔记」。每个 token、每一层存一对 K、V 向量,对话越长越大,每生成一个字都要读一遍。 Saved keys and values for every past token and layer.", "prefill": "prefill:把整段提示词一次读进去的阶段。很多 token 一起算,主要卡在算力上。 Reading in the whole prompt at once; mostly compute-bound.", "decode": "decode:一个字一个字往外生成的阶段。单人使用时主要卡在内存带宽上。 Generating one token at a time; memory-bound for a single user.", "批处理": "批处理(batching):把很多请求凑在一起算,一次读权重服务很多人。数据中心便宜的主要原因。 Serving many requests per weight read.", "batching": "批处理(batching):把很多请求凑在一起算,一次读权重服务很多人。数据中心便宜的主要原因。 Serving many requests per weight read.", "MoE": "MoE(混合专家):模型里有很多「专家」,每个 token 只走其中几个。要放下全部参数,但每个字只读一小部分。 Mixture of experts; each token uses only a few experts.", "混合专家": "MoE(混合专家):模型里有很多「专家」,每个 token 只走其中几个。要放下全部参数,但每个字只读一小部分。 Mixture of experts; each token uses only a few experts.", "投机解码": "投机解码(speculative decoding):小模型先猜几个字,大模型一次验证,猜对的直接收下,平均每读一次权重出不止一个字。 A draft model guesses, the big model verifies several tokens at once.", "speculative decoding": "投机解码(speculative decoding):小模型先猜几个字,大模型一次验证,猜对的直接收下,平均每读一次权重出不止一个字。 A draft model guesses, the big model verifies several tokens at once.", "GQA": "GQA(分组查询注意力):让多个查询头共用一组 K、V,KV 缓存变小。Llama-3-70B 是 64 个查询头配 8 个 KV 头。 Grouped-query attention; query heads share K and V to shrink the cache.", "分组查询注意力": "GQA(分组查询注意力):让多个查询头共用一组 K、V,KV 缓存变小。Llama-3-70B 是 64 个查询头配 8 个 KV 头。 Grouped-query attention; query heads share K and V to shrink the cache.", "TensorRT": "TensorRT:NVIDIA 的推理编译器。把模型针对某一块 GPU 编译成引擎,合并层、挑最快的实现、用低精度。 NVIDIA's inference compiler for a specific GPU.", "ONNX": "ONNX:一种通用的模型格式。PyTorch 训练好先导出成 ONNX,再交给 TensorRT 编译。 A portable model format between training and deployment.", "Jetson Nano": "Jetson Nano:NVIDIA 的小型边缘计算板。你用的是 2 GB 版,CPU 和 GPU 共用内存,GPU 不支持 INT8。 NVIDIA's small edge board; yours is the 2 GB version.", "YOLOv8": "YOLOv8:一类实时目标检测模型,有 n、s、m 等大小,越大越准越慢。 A family of real-time object detectors.", "mAP50": "mAP50:目标检测的准确度指标。框和真实框重叠超过一半算对,再对各类取平均精度。 Detection accuracy counting a box as correct at 50% overlap.", "IoU": "IoU(交并比):两个框的重叠面积除以合起来的面积,0 到 1。 Overlap area divided by combined area of two boxes.", "交并比": "IoU(交并比):两个框的重叠面积除以合起来的面积,0 到 1。 Overlap area divided by combined area of two boxes.", "FPS": "FPS:每秒处理的帧数。 Frames per second.", "CUDA": "CUDA:NVIDIA GPU 的编程接口。主机端负责分配显存、搬数据、决定怎么启动 kernel;kernel 是在 GPU 上跑的函数。 NVIDIA's GPU programming interface; host code launches kernels.", "nvprof": "nvprof:NVIDIA 的老版性能分析工具,能看 SM 利用率、占用率、显存读带宽。 NVIDIA's older GPU profiler.", "CLIP": "CLIP:把图片和文字映射到同一个向量空间的模型,可以不训练直接按文字描述分类(零样本)。 A model that maps images and text into one vector space.", "LangGraph": "LangGraph:把 agent 写成「步骤图」的框架,每个对话线程的状态会存下来。 A framework that models an agent as a graph of steps.", "MCP": "MCP(Model Context Protocol):把工具交给模型调用的标准接口。 A standard interface for giving tools to a model.", "Model Context Protocol": "MCP(Model Context Protocol):把工具交给模型调用的标准接口。 A standard interface for giving tools to a model.", "SSE": "SSE(服务器推送事件):服务器一条连接持续往浏览器推消息的方式,常用于流式输出。 Server-sent events, a one-way stream from server to browser.", "服务器推送事件": "SSE(服务器推送事件):服务器一条连接持续往浏览器推消息的方式,常用于流式输出。 Server-sent events, a one-way stream from server to browser.", "ACK": "ACK(确认回执):请求先回一句「收到了」,活在后台继续做。 A quick acknowledgement before the work continues in the background.", "确认回执": "ACK(确认回执):请求先回一句「收到了」,活在后台继续做。 A quick acknowledgement before the work continues in the background.", "sandbox": "sandbox(沙箱):隔离的运行环境,代码在里面跑,碰不到外面的数据和网络。 An isolated environment for running code.", "MongoDB": "MongoDB:文档型数据库。你用它按对话线程存任务状态。 A document database; you stored task state in it.", "Redis checkpointer": "Redis checkpointer:框架里用 Redis 存对话进度的组件。那个 Redis 只做缓存,内存紧时会删数据。 The framework component that saved conversation progress in Redis.", "P99": "P99:99% 的请求都比它快的那个延迟值,用来看最慢的那一小撮。 The latency that 99% of requests beat.", "Q-function": "Q-function:Walmart 研究里给测试子集打的总分,代表性、行为、失败覆盖三项平均,每项都要到 0.9。 The total score of a test subset in the Walmart research.", "τ²-bench": "τ²-bench:公开的 agent 评测基准,有航空、零售、电信三个领域的对话任务。 A public agent benchmark with airline, retail and telecom tasks.", "VISTA": "VISTA:哥大的一篇用户模拟评测论文,你借用了它的三个工具使用指标。 A Columbia user-simulation paper whose tool metrics you reuse.", "HDBSCAN": "HDBSCAN:一种按密度聚类的方法,不用事先定簇数。 Density-based clustering without a preset number of clusters.", "LLM 判官": "LLM 判官(LLM judge):用大模型读对话、按规则打标签或打分。 Using an LLM to label or score conversations.", "LLM judge": "LLM 判官(LLM judge):用大模型读对话、按规则打标签或打分。 Using an LLM to label or score conversations.", "LoRA": "LoRA:给大模型加两个小矩阵来微调,只训练这两个小矩阵。 Fine-tuning a model through two small added matrices.", "正交基": "正交基(orthonormal basis):一组两两垂直、长度为 1 的方向。用它当坐标轴,系数就是唯一的坐标。 Perpendicular unit directions used as coordinate axes.", "orthonormal basis": "正交基(orthonormal basis):一组两两垂直、长度为 1 的方向。用它当坐标轴,系数就是唯一的坐标。 Perpendicular unit directions used as coordinate axes.", "负迁移": "负迁移(negative transfer):适配之后某个任务反而变差。TaskMap 看的是最差那个任务掉多少。 A task getting worse after adaptation.", "negative transfer": "负迁移(negative transfer):适配之后某个任务反而变差。TaskMap 看的是最差那个任务掉多少。 A task getting worse after adaptation.", "冷启动": "冷启动(cold start):模型从没见过的任务,只能靠任务描述来适配。 Adapting to a task never seen before, from its description.", "cold start": "冷启动(cold start):模型从没见过的任务,只能靠任务描述来适配。 Adapting to a task never seen before, from its description.", "BOLT": "BOLT:LLVM 的二进制优化工具,按实际运行数据重新排列编译好的程序,让常跑的代码挨在一起。 LLVM's tool that reorders a compiled binary by its runtime profile.", "PGO": "PGO(按运行数据优化):先跑程序收集哪里常跑,再按这些数据优化。数据过期了就会失效。 Profile-guided optimization.", "按运行数据优化": "PGO(按运行数据优化):先跑程序收集哪里常跑,再按这些数据优化。数据过期了就会失效。 Profile-guided optimization.", "Wax": "Wax:一种把过期的运行数据重新对到新程序上的方法,你们的研究拿它和 BOLT 自带的方法比。 A method for remapping stale profiles onto a new binary.", "OTA": "OTA(空中升级):设备通过网络远程更新软件。你的毕设是汽车上的差分升级。 Over-the-air software updates.", "空中升级": "OTA(空中升级):设备通过网络远程更新软件。你的毕设是汽车上的差分升级。 Over-the-air software updates.", "DuckDB": "DuckDB:不用服务器的分析型数据库,能直接查 S3 上的 Parquet 文件。 An embedded analytics database that queries files directly.", "Overture Maps": "Overture Maps:亚马逊、Meta、微软等公司发起的开放地图数据,约 6,400 万个地点。 An open map dataset with about 64 million places.", "双塔模型": "双塔模型(two-tower model):用户和物品各用一个网络算向量,按相似度召回。DiyoWater 只做了设计和上线门槛。 Separate user and item encoders matched by vector similarity.", "two-tower model": "双塔模型(two-tower model):用户和物品各用一个网络算向量,按相似度召回。DiyoWater 只做了设计和上线门槛。 Separate user and item encoders matched by vector similarity.", "OPT": "OPT:F-1 学生毕业后的工作许可,一般 12 个月。 Work authorization for F-1 graduates, usually 12 months.", "STEM OPT": "STEM OPT:STEM 学位可以在 OPT 之后再延 24 个月,要求雇主加入 E-Verify 并签 I-983 培训计划。 A 24-month extension for STEM degrees with an E-Verify employer.", "EAD": "EAD(工卡):移民局发的工作许可卡。OPT 必须拿到它才能开始上班。 The employment authorization card.", "工卡": "EAD(工卡):移民局发的工作许可卡。OPT 必须拿到它才能开始上班。 The employment authorization card.", "I-765": "I-765:申请 EAD 的表。OPT 最早可以在项目结束前 90 天递。 The form used to apply for the EAD.", "I-20": "I-20:学校出的 F-1 身份文件,上面写着项目结束日期。 The school document for F-1 status, with the program end date.", "CPT": "CPT:F-1 学生在读期间、和课程相关的校外实习许可,由学校批。 Work authorization during studies, approved by the school.", "ISSO": "ISSO:哥大的国际学生和学者办公室,管 F-1 的工作许可。 Columbia's international students and scholars office.", "E-Verify": "E-Verify:美国政府的雇佣资格核验系统。雇主加入后,员工才能用 STEM OPT。 The government's employment eligibility system.", "I-983": "I-983:STEM OPT 的培训计划表,学生和雇主一起填。 The STEM OPT training plan signed with the employer.", "H-1B": "H-1B:美国的工作签证,要雇主担保。 A US work visa that requires employer sponsorship.", "premium processing": "premium processing(加急):付费让移民局在约 30 天内处理,2026 年 3 月起 OPT 加急费是 $1,780。 Paid faster USCIS processing, about 30 days.", "加急": "premium processing(加急):付费让移民局在约 30 天内处理,2026 年 3 月起 OPT 加急费是 $1,780。 Paid faster USCIS processing, about 30 days."}</script>
+<div id="tip"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+const md=document.getElementById('src').textContent;
+const main=document.getElementById('body');
+main.innerHTML=marked.parse(md,{mangle:false,headerIds:false});
+main.querySelectorAll('p,li,td').forEach(el=>{el.innerHTML=el.innerHTML.replace(/🈶([^<）]*)/g,'<span class="zh">🈶$1</span>');});
+const DKEY='alpaca_intro_done_v1';const FKEY='alpaca_intro_fav_v1';const LKEY='alpaca_intro_later_v1';
+function ld(k,d){try{return JSON.parse(localStorage.getItem(k)||d)}catch(e){return JSON.parse(d)}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let done=ld(DKEY,'{}');
+function hkey(t){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))>>>0;return 'h'+h.toString(36)}
+
+/* 篇 banners + TOC groups */
+const tl=document.getElementById('tl');const heads=[];let n=0;
+let group=null,gwrap=null,lastL2=null,l2count=0;
+const groups=[];
+main.querySelectorAll('h1,h2,h3').forEach(h=>{
+  const raw=h.textContent.trim();
+  const id='s'+(n++);h.id=id;heads.push(h);
+  if(h.tagName==='H1'&&raw.startsWith('篇')){
+    const desc=h.nextElementSibling&&h.nextElementSibling.tagName==='BLOCKQUOTE'?h.nextElementSibling:null;
+    const d=document.createElement('div');d.className='part';d.id=id;
+    d.innerHTML='<div class="k">PART</div><h1></h1>'+(desc?'<p>'+desc.textContent+'</p>':'');
+    d.querySelector('h1').textContent=raw;h.replaceWith(d);if(desc)desc.remove();
+    group=document.createElement('details');group.open=true;
+    group.innerHTML='<summary>'+raw+'<span class="pp"></span></summary>';
+    gwrap=document.createElement('div');group.appendChild(gwrap);tl.appendChild(group);
+    groups.push({el:group,items:[]});
+    return;
+  }
+  const key=hkey(raw);h.dataset.k=key;
+  const a=document.createElement('a');a.href='#'+id;a.textContent=raw;
+  a.className=h.tagName==='H1'?'l1':h.tagName==='H2'?'l2':'l3';
+  if(h.tagName==='H3'){if(lastL2)a.classList.add('of-'+lastL2);}
+  if(h.tagName==='H2'){lastL2=key;a.dataset.k=key;}
+  if(done[key])a.classList.add('done');
+  a.dataset.hk=key;
+  (gwrap||tl).appendChild(a);
+  if(h.tagName!=='H1'&&groups.length)groups[groups.length-1].items.push(key);
+  if(h.tagName==='H2'){a.addEventListener('click',()=>{a.classList.toggle('open');});}
+  /* heading widgets */
+  const chk=document.createElement('span');chk.className='chk'+(done[key]?' on':'');chk.textContent=done[key]?'✓ 掌握':'☐ 掌握';chk.title='勾上=这节我掌握了';
+  chk.onclick=()=>{done[key]=!done[key];if(!done[key])delete done[key];sv(DKEY,done);chk.className='chk'+(done[key]?' on':'');chk.textContent=done[key]?'✓ 掌握':'☐ 掌握';a.classList.toggle('done',!!done[key]);prog();};
+  h.appendChild(chk);
+  {const fv=ld(FKEY,'{}');const st=document.createElement('span');st.className='fav'+(fv[key]?' on':'');st.textContent=fv[key]?'★ 已收藏':'☆ 收藏';st.title='收藏这一节,集中显示在页面最上面';
+   st.onclick=()=>{const f=ld(FKEY,'{}');if(f[key])delete f[key];else f[key]={t:raw.slice(0,80),ts:Date.now()};sv(FKEY,f);st.className='fav'+(f[key]?' on':'');st.textContent=f[key]?'★ 已收藏':'☆ 收藏';renderFavs();};
+   h.appendChild(st);}
+  {const lv=ld(LKEY,'{}');const lt=document.createElement('span');lt.className='lat'+(lv[key]?' on':'');lt.textContent=lv[key]?'🔖 待看':'🔖 稍后';lt.title='标记稍后再看';if(lv[key])a.classList.add('lat-on');
+   lt.onclick=()=>{const f=ld(LKEY,'{}');if(f[key])delete f[key];else f[key]={t:raw.slice(0,80),ts:Date.now()};sv(LKEY,f);lt.className='lat'+(f[key]?' on':'');lt.textContent=f[key]?'🔖 待看':'🔖 稍后';a.classList.toggle('lat-on',!!f[key]);renderLater();};
+   h.appendChild(lt);}
+  const ask=document.createElement('a');ask.className='ask';ask.textContent='＋问';ask.title='对这一节提问';
+  ask.onclick=()=>{setSec(h);document.getElementById('qtext').focus();};
+  h.appendChild(ask);
+});
+function prog(){
+  let T=0,D=0;
+  groups.forEach(g=>{const t=g.items.length,d=g.items.filter(k=>done[k]).length;T+=t;D+=d;g.el.querySelector('.pp').textContent=d+'/'+t;});
+  document.getElementById('allprog').innerHTML='已掌握 '+D+' / '+T+' 节<div class="bar"><i style="width:'+(T?100*D/T:0)+'%"></i></div>';
+}
+prog();
+function secNodes(h){const out=[];const lvl=+h.tagName[1];let e=h.nextElementSibling;while(e){if(/^H[1-3]$/.test(e.tagName)&&(+e.tagName[1])<=lvl)break;if(!e.classList.contains('chnav'))out.push(e);e=e.nextElementSibling;}return out;}
+function renderFavs(){const box=document.getElementById('favs');const f=ld(FKEY,'{}');const ks=Object.keys(f).sort((a,b)=>f[a].ts-f[b].ts);
+  box.innerHTML='';const h2=document.createElement('h2');h2.textContent='⭐ 我的收藏 ('+ks.length+')';box.appendChild(h2);
+  if(!ks.length){const p=document.createElement('p');p.className='hint';p.textContent='点任意标题旁的「☆ 收藏」,那一节会集中出现在这里;可以一键全部展开,面试前只看这一块。收藏存在这台设备的浏览器里。';box.appendChild(p);return;}
+  const all=document.createElement('button');all.className='fbtn';all.textContent='全部展开';let open=false;
+  all.onclick=()=>{open=!open;all.textContent=open?'全部收起':'全部展开';box.querySelectorAll('.fi').forEach(fi=>fi._set(open));};h2.appendChild(all);
+  const cp=document.createElement('button');cp.className='fbtn';cp.textContent='复制收藏清单';cp.onclick=()=>{const txt=ks.map((k,i)=>(i+1)+'. '+f[k].t).join('\n');try{navigator.clipboard.writeText(txt).then(()=>{cp.textContent='已复制';setTimeout(()=>cp.textContent='复制收藏清单',1500);},()=>{prompt&&0;});}catch(e){}};h2.appendChild(cp);
+  ks.forEach(k=>{const h=heads.find(x=>x.dataset.k===k);const fi=document.createElement('div');fi.className='fi';const row=document.createElement('div');row.className='row';
+    const a=document.createElement('a');a.className='t';a.textContent=f[k].t;if(h)a.href='#'+h.id;row.appendChild(a);
+    const tg=document.createElement('button');tg.className='fbtn';tg.textContent='展开';row.appendChild(tg);
+    const rm=document.createElement('button');rm.className='fbtn';rm.textContent='✕';rm.title='取消收藏';rm.onclick=()=>{const g=ld(FKEY,'{}');delete g[k];sv(FKEY,g);if(h){const st=h.querySelector('.fav');if(st){st.className='fav';st.textContent='☆ 收藏';}}renderFavs();};row.appendChild(rm);
+    fi.appendChild(row);const body=document.createElement('div');body.className='body';body.hidden=true;fi.appendChild(body);
+    fi._set=(on)=>{if(on&&!body.childNodes.length&&h){secNodes(h).forEach(n=>{const c=n.cloneNode(true);c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));c.removeAttribute&&c.removeAttribute('id');body.appendChild(c);});}body.hidden=!on;tg.textContent=on?'收起':'展开';};
+    tg.onclick=()=>fi._set(body.hidden);box.appendChild(fi);});
+}
+renderFavs();
+function renderLater(){const box=document.getElementById('later');const f=ld(LKEY,'{}');const ks=Object.keys(f).sort((a,b)=>f[a].ts-f[b].ts);
+  box.innerHTML='';if(!ks.length){box.hidden=true;return;}box.hidden=false;
+  const h2=document.createElement('h2');h2.textContent='🔖 稍后再看 ('+ks.length+')';box.appendChild(h2);
+  ks.forEach(k=>{const h=heads.find(x=>x.dataset.k===k);const fi=document.createElement('div');fi.className='fi';const row=document.createElement('div');row.className='row';
+    const a=document.createElement('a');a.className='t';a.textContent=f[k].t;if(h)a.href='#'+h.id;row.appendChild(a);
+    const tg=document.createElement('button');tg.className='fbtn';tg.textContent='展开';row.appendChild(tg);
+    const ok=document.createElement('button');ok.className='fbtn';ok.textContent='看完了';ok.title='从稍后再看里移除';
+    ok.onclick=()=>{const g=ld(LKEY,'{}');delete g[k];sv(LKEY,g);if(h){const lt=h.querySelector('.lat');if(lt){lt.className='lat';lt.textContent='🔖 稍后';}const ta=tl.querySelector('a[data-hk="'+k+'"]');if(ta)ta.classList.remove('lat-on');}renderLater();};row.appendChild(ok);
+    fi.appendChild(row);const body=document.createElement('div');body.className='body';body.hidden=true;fi.appendChild(body);
+    tg.onclick=()=>{const on=body.hidden;if(on&&!body.childNodes.length&&h){secNodes(h).forEach(n=>{const c=n.cloneNode(true);c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));body.appendChild(c);});}body.hidden=!on;tg.textContent=on?'收起':'展开';};
+    box.appendChild(fi);});
+}
+renderLater();
+/* quick links */
+const Q=[["速览", "第 0 章"], ["公司", "第 1 章"], ["开场项目", "第 2 章"], ["动机安排", "A 部分"], ["本地大模型", "B 部分"], ["押题 32", "C 部分"], ["反问", "第 4 章"], ["请你确认", "附录 D"]];
+const quick=document.getElementById('quick');
+(function(){try{const last=JSON.parse(localStorage.getItem('alpaca_intro_last_v1')||'null');if(last&&last.k){const h=heads.find(x=>x.dataset.k===last.k);if(h){const a=document.createElement('a');a.href='#'+h.id;a.textContent='↩ 上次看到:'+last.title.slice(0,18);a.style.borderColor='var(--acc)';a.style.color='var(--acc)';quick.appendChild(a);}}}catch(e){}})();
+Q.forEach(([label,pre])=>{const h=heads.find(x=>x.textContent.trim().startsWith(pre)||x.textContent.trim().includes(pre));if(!h)return;const a=document.createElement('a');a.href='#'+h.id;a.textContent=label;quick.appendChild(a);});
+/* search: match H1/H2/H3, show matched H3 */
+document.getElementById('q').addEventListener('input',e=>{const v=e.target.value.toLowerCase().trim();
+  tl.querySelectorAll('a').forEach(a=>{const hit=!v||a.textContent.toLowerCase().includes(v);a.hidden=!hit;if(a.classList.contains('l3'))a.style.display=(v&&hit)?'block':'';});
+  tl.querySelectorAll('details').forEach(d=>{d.open=true;});
+});
+main.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b)}catch(e){}});
+
+/* ---- 生动化:给标注块上色 ---- */
+main.querySelectorAll('blockquote').forEach(q=>{
+  const t=q.textContent.trim();
+  main.querySelectorAll('blockquote').forEach(bq=>{const t=bq.textContent.trim();if(t.startsWith('🔤')){const p=document.createElement('p');p.className='legend';p.innerHTML=bq.innerHTML.replace(/<\/?p>/g,' ').replace('🔤','');bq.replaceWith(p);}});
+  const map=[['🔰','co-basic','零基础版'],['⚠️','co-warn','注意'],['🔴','co-hot','重要'],['✅','co-ok','已核实'],['💡','co-tip','提示'],['📍','co-hot','阅读位置'],['🈶','co-say','中文']];
+  for(const [e,c,l] of map){if(t.startsWith(e)||t.startsWith('**'+e)){q.classList.add('co',c);q.dataset.l=l;return;}}
+  if(/^["“*]/.test(t)||/^[A-Z][a-z]/.test(t)){q.classList.add('co','co-say');q.dataset.l='面试原话';}
+});
+/* ---- 章标题:编号徽章 + 预计阅读时间 + 上一章/下一章 ---- */
+const CPM=420; /* 中文阅读速度:字/分钟 */
+const chapters=[];
+(function(){
+  const h1s=[...main.querySelectorAll('h1')].filter(h=>!h.closest('.part'));
+  h1s.forEach((h,i)=>{
+    let len=0;let e=h.nextElementSibling;const nodes=[];
+    while(e&&!(e.tagName==='H1')&&!e.classList.contains('part')){len+=e.innerText.length;nodes.push(e);e=e.nextElementSibling;}
+    const mins=Math.max(1,Math.round(len/CPM));
+    h.classList.add('ch');const sm=document.createElement('small');sm.textContent='预计阅读 ≈ '+mins+' 分钟 · '+nodes.filter(n=>n.tagName==='H2').length+' 节';h.appendChild(sm);
+    chapters.push({h,nodes,len,mins,last:nodes[nodes.length-1]||h});
+    const a=tl.querySelector('a[href="#'+h.id+'"]');if(a){const r=document.createElement('span');r.className='rt';r.textContent=mins+'′';a.appendChild(r);}
+  });
+  chapters.forEach((c,i)=>{
+    const nav=document.createElement('div');nav.className='chnav';
+    const prev=chapters[i-1],next=chapters[i+1];
+    nav.innerHTML=(prev?'<a href="#'+prev.h.id+'">← 上一章:'+prev.h.firstChild.textContent.trim().slice(0,22)+'</a>':'<span></span>')+(next?'<a href="#'+next.h.id+'">下一章:'+next.h.firstChild.textContent.trim().slice(0,22)+' →</a>':'<span></span>');
+    c.last.after(nav);
+  });
+  main.querySelectorAll('h2').forEach(h=>{const m=h.firstChild&&h.firstChild.textContent.match(/^\s*(§?\d+(?:\.\d+)*|附录 [A-C]|[一二三四五六七八九十]+、)/);if(m){const n=document.createElement('span');n.className='num';n.textContent=m[1].trim();h.firstChild.textContent=h.firstChild.textContent.replace(m[0],'').replace(/^[·\s]+/,'');h.prepend(n);}});
+})();
+function chapterStatus(){
+  const y=window.scrollY+140;let cur=null;
+  for(const c of chapters){if(c.h.offsetTop<=y)cur=c;else break;}
+  if(!cur)return;
+  const start=cur.h.offsetTop,end=cur.last.offsetTop+cur.last.offsetHeight;
+  const pct=Math.min(100,Math.max(0,Math.round(100*(y-start)/Math.max(1,end-start))));
+  document.getElementById('chname').textContent=cur.h.firstChild.textContent.trim().slice(0,40);
+  document.getElementById('chleft').textContent='还剩 ≈ '+Math.max(0,Math.round(cur.mins*(100-pct)/100))+' 分钟';
+  document.getElementById('chprog').style.width=pct+'%';document.getElementById('chpct').textContent=pct+'%';
+}
+window.addEventListener('scroll',()=>{clearTimeout(window.__c);window.__c=setTimeout(chapterStatus,60);});chapterStatus();
+
+/* ---- 名词悬停解释(来自附录 C) ---- */
+(function(){
+  const G=JSON.parse(document.getElementById('gloss').textContent||'{}');
+  const terms=Object.keys(G).sort((a,b)=>b.length-a.length);if(!terms.length)return;
+  const esc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re=new RegExp('('+terms.map(esc).join('|')+')','gi');
+  const lower={};terms.forEach(t=>lower[t.toLowerCase()]=t);
+  const appC=heads.find(h=>h.textContent.trim().startsWith('附录 C'));
+  const skip=n=>{for(let e=n.parentElement;e;e=e.parentElement){const tg=e.tagName;if(tg==='PRE'||tg==='CODE'||tg==='A'||tg==='H1'||tg==='H2'||tg==='H3'||tg==='SCRIPT'||e.classList.contains('gl')||e.classList.contains('part'))return true;}return false;};
+  let inC=false;
+  const blocks=main.querySelectorAll('p,li,td,th,blockquote');
+  blocks.forEach(bl=>{
+    if(appC&&bl.compareDocumentPosition(appC)&Node.DOCUMENT_POSITION_PRECEDING)return; /* skip glossary itself */
+    const seen=new Set();
+    const walker=document.createTreeWalker(bl,NodeFilter.SHOW_TEXT,{acceptNode:n=>skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+    const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(nd=>{
+      const txt=nd.nodeValue;if(!re.test(txt)){re.lastIndex=0;return;}re.lastIndex=0;
+      const frag=document.createDocumentFragment();let last=0,m,changed=false;
+      while((m=re.exec(txt))){const key=lower[m[1].toLowerCase()];if(!key||seen.has(key)){continue;}
+        /* latin terms must be whole words */
+        if(/^[A-Za-z0-9+.\- ]+$/.test(key)){const b=txt[m.index-1]||' ',a=txt[m.index+m[0].length]||' ';if(/[A-Za-z0-9_]/.test(b)||/[A-Za-z0-9_]/.test(a))continue;}
+        seen.add(key);frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+        const sp=document.createElement('span');sp.className='gl';sp.textContent=m[0];sp.dataset.d=G[key];frag.appendChild(sp);last=m.index+m[0].length;changed=true;}
+      if(changed){frag.appendChild(document.createTextNode(txt.slice(last)));nd.replaceWith(frag);}
+    });
+  });
+  const tip=document.getElementById('tip');
+  main.addEventListener('mouseover',e=>{const t=e.target.closest('.gl');if(!t)return;const d=t.dataset.d;const i=d.indexOf(':');tip.innerHTML='<b></b> ';tip.querySelector('b').textContent=d.slice(0,i);tip.appendChild(document.createTextNode(d.slice(i+1)));tip.style.display='block';
+    const r=t.getBoundingClientRect();let x=r.left,y=r.bottom+8;if(x+370>innerWidth)x=innerWidth-380;if(y+140>innerHeight)y=r.top-8-tip.offsetHeight;tip.style.left=x+'px';tip.style.top=y+'px';});
+  main.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('.gl'))tip.style.display='none';});
+})();
+document.getElementById('top').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+/* reading progress + current highlight */
+const rp=document.getElementById('rp');
+function savePos(){try{let best=null;for(const h of heads){if(!h.isConnected)continue;if(h.getBoundingClientRect().top<=120)best=h;else break;}if(best&&best.dataset.k){localStorage.setItem('alpaca_intro_pos_v1',JSON.stringify({k:best.dataset.k,off:Math.round(window.scrollY-(best.getBoundingClientRect().top+window.scrollY)),when:Date.now()}));}}catch(e){}}
+function onscroll(){const h=document.documentElement;rp.style.width=(100*h.scrollTop/(h.scrollHeight-h.clientHeight))+'%';clearTimeout(window.__t);window.__t=setTimeout(()=>{nearest();savePos();},80);}
+window.addEventListener('scroll',onscroll);
+setInterval(savePos,1000);window.addEventListener('pagehide',savePos);window.addEventListener('beforeunload',savePos);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')savePos();});
+
+/* ---- 右侧 Q&A:用 Claude 生成解答(只在 claude.ai 里打开的版本可用) ---- */
+let SAMPLE=null;const sampleReady=(async()=>{await new Promise(r=>setTimeout(r,0));try{if(window.claude&&window.claude.use){SAMPLE=await window.claude.use('sample');}}catch(e){SAMPLE=null;}try{render();}catch(e){}})();
+function secText(id){const h=document.getElementById(id);if(!h)return '';let t=[];let e=h.nextElementSibling;const lvl=+h.tagName[1];while(e){if(/^H[1-3]$/.test(e.tagName)&&(+e.tagName[1])<=lvl)break;if(!e.classList.contains('part'))t.push(e.innerText);e=e.nextElementSibling;}return t.join('\n').slice(0,6000);}
+async function answer(it,box,btn){
+  if(!SAMPLE){box.textContent='这个功能只在 claude.ai 上打开的版本可用。本地版请点「复制全部为 Markdown」发给我。';return;}
+  const ctx=secText(it.id);btn.disabled=true;box.className='ans think';box.textContent='Claude 在想…(5–60 秒)';
+  const prompt='你是在帮一位 2027 届新毕业生准备 Alpaca Research(波士顿/剑桥的个人 AI 全栈创业公司:硬件+推理引擎+模型+应用)Intro Call(10/23 周五 11:30 ET,30 分钟 Google Meet):公司、开场、项目深挖、动机和安排、本地跑大模型从零讲、32 题押题、反问。她正在读一份冲刺手册,看到下面这一节时提了一个问题。请用中文、零基础也能懂的口吻回答:先一句人话给结论,再展开解释,必要时给面试里可以直接说的一句英文原话。不要编造她的项目细节;涉及她的项目只引用手册原文。控制在 300 字以内。\n\n【她正在看的章节】'+(it.title||'')+'\n'+ctx+'\n\n【她的问题】'+it.text;
+  try{const {text}=await SAMPLE(prompt,{onText:({text})=>{box.className='ans';box.textContent=text;}});
+    const all=load();const i=all.findIndex(x=>x.k===it.k);if(i>=0){all[i].answer=text;store(all);}box.className='ans';box.textContent=text;}
+  catch(e){box.className='ans';box.textContent=e&&e.text?e.text:(e&&e.code==='not_granted'?'你没有允许这个页面使用 Claude,所以生成不了。':'生成失败('+(e&&e.code||'unknown')+'),稍后再试或发给我。');}
+  finally{btn.disabled=false;}
+}
+/* ---- 右侧 Q&A ---- */
+const KEY='alpaca_intro_qa_v1';
+let cur={id:'',title:'(未定位)'};
+function setSec(h){cur={id:h.id,title:h.textContent.replace('＋问','').replace(/[☐✓] 掌握/,'').replace(/[☆★] (已)?收藏/,'').replace(/🔖 (稍后|待看)/,'').trim()};try{if(h.dataset.k)localStorage.setItem('alpaca_intro_last_v1',JSON.stringify({k:h.dataset.k,title:cur.title,when:Date.now()}));}catch(e){}document.getElementById('cursec').textContent='当前章节:'+cur.title;
+  tl.querySelectorAll('a.cur').forEach(a=>a.classList.remove('cur'));const a=tl.querySelector('a[href="#'+h.id+'"]');if(a)a.classList.add('cur');}
+function nearest(){let best=null;for(const h of heads){if(!h.isConnected)continue;const r=h.getBoundingClientRect();if(r.top<=120)best=h;else break;}if(best)setSec(best);}
+nearest();
+(function(){try{const LAND="第 0 章";let _sv=null;try{_sv=JSON.parse(localStorage.getItem('alpaca_intro_pos_v1')||'null')||JSON.parse(localStorage.getItem('alpaca_intro_last_v1')||'null')}catch(e){}if(LAND&&!(_sv&&_sv.k)){const h=heads.find(x=>x.textContent.indexOf(LAND)>=0);if(h){const go=()=>{window.scrollTo({top:Math.max(0,h.getBoundingClientRect().top+window.scrollY-10),behavior:'auto'});try{h.scrollIntoView({block:'start',behavior:'auto'})}catch(e){}};go();setTimeout(go,300);setTimeout(go,1200);setTimeout(go,2500);return;}}let p=JSON.parse(localStorage.getItem('alpaca_intro_pos_v1')||'null');if(location.hash&&!(p&&p.k))return;if(!p||!p.k){const l=JSON.parse(localStorage.getItem('alpaca_intro_last_v1')||'null');if(l&&l.k)p={k:l.k,off:0};}if(!p||!p.k)return;const h=heads.find(x=>x.dataset.k===p.k);if(!h)return;const go=()=>{const y=h.getBoundingClientRect().top+window.scrollY+(p.off||0);window.scrollTo({top:Math.max(0,y),behavior:'auto'});};go();setTimeout(go,300);setTimeout(go,1200);}catch(e){}})();
+function load(){return ld(KEY,'[]')}
+function store(list){sv(KEY,list)}
+function render(){
+  const list=load();const box=document.getElementById('notes');box.innerHTML='';
+  if(!list.length){box.innerHTML='<div style="color:var(--mut);font-size:13px">还没有问题。</div>';return;}
+  list.slice().reverse().forEach(it=>{
+    const d=document.createElement('div');d.className='note'+(it.done?' answered':'');
+    d.innerHTML='<div class="t"><span>'+(it.title||'')+' · '+it.when+'</span><span><a data-a="jump">跳转</a> <a data-a="done">'+(it.done?'未答':'已答')+'</a> <a data-a="del">删</a></span></div><div class="b"></div>';
+    d.querySelector('.b').textContent=it.text;
+    const ab=document.createElement('div');ab.className='ans';ab.hidden=!it.answer;ab.textContent=it.answer||'';d.appendChild(ab);
+    const bb=document.createElement('div');bb.className='btns2';const gen=document.createElement('button');gen.textContent=it.answer?'重新生成解答':'生成解答';gen.title=SAMPLE?'用 Claude 生成这一题的解答':'只在 claude.ai 上打开的版本可用';gen.onclick=()=>{ab.hidden=false;answer(it,ab,gen);};bb.appendChild(gen);d.appendChild(bb);
+    d.querySelectorAll('.t a').forEach(a=>a.onclick=()=>{
+      const all=load();const i=all.findIndex(x=>x.k===it.k);if(i<0)return;
+      if(a.dataset.a==='del')all.splice(i,1);
+      if(a.dataset.a==='done')all[i].done=!all[i].done;
+      if(a.dataset.a==='jump'&&it.id){location.hash='#'+it.id;return;}
+      store(all);render();
+    });
+    box.appendChild(d);
+  });
+}
+document.getElementById('save').onclick=()=>{
+  const ta=document.getElementById('qtext');const text=ta.value.trim();if(!text)return;
+  const list=load();const now=new Date();const when=now.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  list.push({k:Date.now()+Math.random(),id:cur.id,title:cur.title,text,when,done:false});
+  store(list);ta.value='';render();
+};
+document.getElementById('clear').onclick=()=>{const b=document.getElementById('clear');if(load().length&&b.dataset.arm){store([]);render();delete b.dataset.arm;b.textContent='清空全部';}else{b.dataset.arm='1';b.textContent='再点一次确认清空';setTimeout(()=>{delete b.dataset.arm;b.textContent='清空全部';},3000);}};
+document.getElementById('copy').onclick=async()=>{
+  const list=load().filter(x=>!x.done);
+  const out=['## ❓ 待答(从 HTML 复制,'+new Date().toLocaleDateString('zh-CN')+')',''].concat(list.map(x=>'- **['+x.title+']** '+x.text.replace(/\n/g,' '))).join('\n');
+  const b=document.getElementById('copy');
+  try{await navigator.clipboard.writeText(out);b.textContent='已复制 '+list.length+' 条';}
+  catch(e){const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');b.textContent='已复制 '+list.length+' 条';}catch(_){b.textContent='复制失败,手动选中';}ta.remove();}
+  setTimeout(()=>b.textContent='复制全部为 Markdown',2000);
+};
+render();
+</script></body></html>
