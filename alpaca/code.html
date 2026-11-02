@@ -1,0 +1,339 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alpaca 8 道代码题 详注版</title><style>
+:root{--bg:#f7f6f2;--card:#fff;--fg:#1b1f23;--muted:#6b7280;--line:#e6e2d8;--accent:#1f5f8b;--accent2:#b4561f;--soft:#eaf2f8;--calc:#fff8e6;--ask:#eef7ee;--askb:#2f6b4f}
+@media (prefers-color-scheme:dark){:root{--bg:#141618;--card:#1d2024;--fg:#e8e6e1;--muted:#9aa3ad;--line:#2d3238;--accent:#7cb7e0;--accent2:#f0a571;--soft:#1e2a33;--calc:#2a2619;--ask:#1c2b22;--askb:#7cc39c;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB",sans-serif}
+.wrap{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);padding:14px 10px;background:var(--card);font-size:.9rem}
+aside a{display:block;color:var(--fg);text-decoration:none;padding:4px 8px;border-radius:6px}aside a:hover{background:var(--soft)}aside .top a{color:var(--accent);display:inline-block;margin-right:8px}
+main{padding:16px 24px 80px;max-width:980px}
+h1{font-size:1.5rem;margin:0 0 6px}.sub{color:var(--muted);margin:0 0 10px}
+h2{font-size:1.35rem;color:var(--accent);margin:44px 0 8px;padding-top:14px;border-top:4px solid var(--accent)}
+h3{font-size:1rem;color:var(--accent2);margin:18px 0 6px}
+.q{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);padding:10px 14px;border-radius:10px;margin:8px 0;font-weight:600}
+ul{margin:.3em 0;padding-left:1.25em}li{margin:6px 0}
+pre{background:#fbfaf6;border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font:13.5px/1.6 ui-monospace,Menlo,Consolas,monospace;color:#1b1f23}
+@media (prefers-color-scheme:dark){pre{background:#23272d;color:#e8e6e1}}
+pre .c{color:#2f6b4f}@media (prefers-color-scheme:dark){pre .c{color:#7cc39c}}
+.walk{background:var(--calc);border-left:4px solid var(--accent2);padding:10px 12px;border-radius:8px;margin:10px 0}
+.out{background:var(--soft);border-radius:8px;padding:8px 12px;margin:8px 0;font-family:ui-monospace,Menlo,monospace;font-size:.85rem;white-space:pre-wrap}
+.ask{background:var(--ask);border-left:4px solid var(--askb);padding:8px 12px;border-radius:8px;margin:10px 0}
+.ask b{color:var(--askb)}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}aside{position:static;height:auto;max-height:36vh}}
+</style></head><body><div class="wrap"><aside><div class="top"><a href="./">课件讲解</a><a href="manual.html">技术面手册</a><a href="projects.html">项目提纲</a></div><a href="#p0">3.1 KV 缓存的环形缓冲区(滑动窗口)</a><a href="#p1">3.2 带温度的 top-k 采样</a><a href="#p2">3.3 分块(tiling)矩阵乘</a><a href="#p3">3.4 int8 量化和反量化</a><a href="#p4">3.5 LRU 缓存</a><a href="#p5">3.6 流式 UTF-8 解码(模型一边吐字一边显示)</a><a href="#p6">3.7 流式输出里的停止词</a><a href="#p7">3.8 固件味:解析带校验的二进制头</a></aside><main>
+<h1>Alpaca 技术面 · 8 道代码题,每行注释版</h1><p class="sub">来自技术面手册第 3 章。每道:题目一句话 → 思路(开口先说的话)→ 逐行注释的代码(本机刚跑过,输出贴在下面)→ 拿例子走一遍 → 复杂度 → 追问怎么接。</p>
+<h2 id="p0">3.1 KV 缓存的环形缓冲区(滑动窗口)</h2><div class="q">题目:实现一个容量固定的缓存,不断追加 (k, v),满了就覆盖最旧的,还能按从旧到新的顺序读出来。这就是滑动窗口注意力里一层的 KV 缓存。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:旋转寿司的圆形传送带,只有 N 个位置。新盘子放到「下一个空位」;满了就把最老那盘挤掉,指针往前挪一格。</li><li>关键是两个数:start 指向最旧那格,size 是现在放了几个。写入位置 = (start + size) % 容量,下标取模就是「绕一圈回到开头」。</li><li>满了以后不搬动任何数据,只把 start 往前挪一格,这就是环形缓冲区 O(1) 的来源。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>class KVRing:
+    &quot;&quot;&quot;一层的滑动窗口 KV 缓存:容量固定的环形缓冲区。&quot;&quot;&quot;
+
+    def __init__(self, capacity):
+        self.cap = capacity            <span class="c"># 一共几格(窗口长度)</span>
+        self.k = [None] * capacity     <span class="c"># 存每个位置的 K 向量,预先分配好,不再扩容</span>
+        self.v = [None] * capacity     <span class="c"># 存每个位置的 V 向量</span>
+        self.start = 0                 <span class="c"># 最旧那一条在数组里的下标</span>
+        self.size = 0                  <span class="c"># 当前实际存了几条,最多到 cap</span>
+
+    def append(self, k, v):
+        <span class="c"># 新元素该放哪:从最旧那格往后数 size 格。超过数组末尾就取模绕回开头。</span>
+        end = (self.start + self.size) % self.cap
+        self.k[end], self.v[end] = k, v
+        if self.size &lt; self.cap:
+            <span class="c"># 还没满:只是多了一条</span>
+            self.size += 1
+        else:
+            <span class="c"># 已经满了:刚才那一写正好覆盖了最旧的那条(end == start)</span>
+            <span class="c"># 所以「最旧」要往前挪一格。size 不变,始终等于 cap。</span>
+            self.start = (self.start + 1) % self.cap
+
+    def items(self):
+        &quot;&quot;&quot;按从旧到新的顺序吐出 (k, v)。注意力要按时间顺序,所以不能直接遍历数组。&quot;&quot;&quot;
+        for i in range(self.size):
+            j = (self.start + i) % self.cap   <span class="c"># 第 i 旧的元素在数组里的真实位置</span>
+            yield self.k[j], self.v[j]
+
+
+<span class="c"># ---- 自测:容量 3,放 5 个 ----</span>
+c = KVRing(3)
+for t in range(5):
+    c.append(f&quot;k{t}&quot;, f&quot;v{t}&quot;)
+print([k for k, _ in c.items()])      <span class="c"># 期望 [&#x27;k2&#x27;, &#x27;k3&#x27;, &#x27;k4&#x27;]:最旧的 k0、k1 被挤掉</span>
+</pre><div class="out">运行输出:
+[&#x27;k2&#x27;, &#x27;k3&#x27;, &#x27;k4&#x27;]</div><h3>拿例子走一遍</h3><div class="walk">容量 3。放 k0:数组 [k0 . .],start=0,size=1。放 k1、k2:满,[k0 k1 k2],size=3。放 k3:end=(0+3)%3=0,覆盖 k0,变成 [k3 k1 k2],start 挪到 1。放 k4:end=(1+3)%3=1,覆盖 k1,[k3 k4 k2],start=2。读出:从 start=2 开始 k2 → k3 → k4。</div><h3>复杂度</h3><p>append 和 items 每条都是 O(1),总空间 O(容量)。不搬数据,不分配内存,适合固件和实时系统。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> 为什么不用 Python 的 deque?可以,但面试要你证明你知道底下怎么做;而且在 C 固件里没有 deque。</p><p><b>▸</b> 多层怎么办?每层一个 KVRing,或者把层数当第一维。</p><p><b>▸</b> 窗口滑掉的 token 还能被看到吗?不能,这就是滑动窗口注意力的取舍:省内存,丢远处上下文。Mistral 的 4096 窗口就是这么做的。</p><p><b>▸</b> 线程安全吗?不。一个生产者一个消费者时,start 和 size 分开由两边改可以做到无锁;多生产者要加锁。</p></div><h2 id="p1">3.2 带温度的 top-k 采样</h2><div class="q">题目:给一组 logits(模型对每个词的原始打分),只在最高的 k 个里按概率抽一个,温度控制「随机程度」。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:logits 是每个候选词的「得票数」。温度像把票数除以一个数再比:温度小,差距放大,基本只选第一名;温度大,差距抹平,更随机。</li><li>top-k 是先把候选名单砍到 k 个,再在这 k 个里做 softmax 抽签,防止尾巴上的垃圾词被抽到。</li><li>softmax 前先减最大值:exp 很容易溢出,减掉最大值后所有指数 ≤ 0,数值安全,结果不变(分子分母同乘一个常数)。</li><li>抽签用累积概率:随机数 r 落在哪一段,就选哪个。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>import math, random
+
+def sample_top_k(logits, k, temperature=1.0, rng=random):
+    &quot;&quot;&quot;从 logits 里按 top-k + 温度采样,返回被选中的下标。&quot;&quot;&quot;
+    if temperature &lt;= 0:
+        <span class="c"># 温度 0 约定为贪心:直接选分最高的,不抽签</span>
+        return max(range(len(logits)), key=lambda i: logits[i])
+
+    <span class="c"># 1) 按分数从高到低排序,只留前 k 个下标。O(n log n);n 很大时可用堆 O(n log k)</span>
+    top = sorted(range(len(logits)), key=lambda i: logits[i], reverse=True)[:k]
+
+    <span class="c"># 2) 除以温度。温度 &lt; 1 拉大差距(更确定),&gt; 1 缩小差距(更随机)</span>
+    scaled = [logits[i] / temperature for i in top]
+
+    <span class="c"># 3) softmax。先减最大值防止 exp 溢出:exp(1000) 会变成 inf</span>
+    m = max(scaled)
+    exps = [math.exp(s - m) for s in scaled]
+    total = sum(exps)
+    probs = [e / total for e in exps]          <span class="c"># 这 k 个概率加起来等于 1</span>
+
+    <span class="c"># 4) 轮盘赌:r 在 [0,1) 均匀随机,累加概率,第一次超过 r 的那个就是中奖者</span>
+    r = rng.random()
+    acc = 0.0
+    for idx, p in zip(top, probs):
+        acc += p
+        if r &lt; acc:
+            return idx
+    return top[-1]        <span class="c"># 浮点误差让 acc 没到 1.0 时的兜底,返回最后一个</span>
+
+
+<span class="c"># ---- 自测:固定随机种子,抽 10000 次看频率 ----</span>
+rng = random.Random(0)
+logits = [2.0, 1.0, 0.1, -3.0]
+counts = [0] * 4
+for _ in range(10000):
+    counts[sample_top_k(logits, k=2, temperature=1.0, rng=rng)] += 1
+print(counts)       <span class="c"># 只有下标 0 和 1 会被选到;0 的概率约 e^1/(e^1+1)=73%</span>
+print(sample_top_k(logits, k=2, temperature=0))   <span class="c"># 贪心 → 0</span>
+</pre><div class="out">运行输出:
+[7297, 2703, 0, 0]
+0</div><h3>拿例子走一遍</h3><div class="walk">logits [2.0, 1.0, 0.1, -3.0],k=2:留下标 0 和 1。温度 1,减最大值后是 [0, -1],exp 是 [1, 0.368],概率 [0.731, 0.269]。随机数 r=0.5 时,acc 累加到 0.731 就超过了,选 0。r=0.8 时,第一段没超过,第二段 acc=1.0 超过,选 1。</div><h3>复杂度</h3><p>排序 O(n log n),其余 O(k)。词表 n=128k 时排序约 2 百万次比较,用 heapq.nlargest 可以降到 O(n log k)。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> top-p(nucleus)怎么做?按概率从高到低累加,加到超过 p 就停,只在这些词里抽。比 top-k 自适应:分布尖时候选少,平时候选多。</p><p><b>▸</b> 温度为什么不能是负数?概率会反过来,没有意义;0 定义成贪心。</p><p><b>▸</b> 怎么让结果可复现?固定随机数生成器的种子,并且用同一套浮点运算顺序。GPU 上并行归约顺序不同,结果可能差一点。</p><p><b>▸</b> repetition penalty 加在哪?在 softmax 之前,对已经出现过的词的 logit 除以一个大于 1 的数。</p></div><h2 id="p2">3.3 分块(tiling)矩阵乘</h2><div class="q">题目:实现 C = A × B,但不要一行一列直接乘,而是把矩阵切成小块,一块一块算,让每次用到的数据放得进缓存。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:做 1000 道菜,每道菜要去仓库拿一次料很慢。分块就是一次把一小批菜要的料全搬到厨房台面(缓存)上,做完这批再换下一批。</li><li>朴素三重循环里,B[k][j] 在内层对 k 跳行,每次跳一行就是一次缓存未命中。分块后内层循环的 A 小块和 B 小块都在缓存里反复用。</li><li>外面三层循环走块的坐标(i0, k0, j0),里面三层走块内坐标。min(...) 是处理边角不满一块的情况。</li><li>最内层让 j 连续变化:C[i][j] 和 B[k][j] 都是连续内存,硬件预取和 SIMD 都能用上。这就是 TinyEngine 第 11 讲说的循环重排。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>def matmul_tiled(A, B, T=2):
+    &quot;&quot;&quot;分块矩阵乘。A 是 n×m,B 是 m×p,结果 C 是 n×p。T 是块的边长。&quot;&quot;&quot;
+    n, m, p = len(A), len(B), len(B[0])
+    C = [[0.0] * p for _ in range(n)]           <span class="c"># 结果先全置 0,后面往里累加</span>
+
+    <span class="c"># 外三层:走「块」的左上角坐标。步长 T,每次处理一个 T×T 的小块</span>
+    for i0 in range(0, n, T):                   <span class="c"># C 的行块</span>
+        for k0 in range(0, m, T):               <span class="c"># 公共维(A 的列 = B 的行)的块</span>
+            for j0 in range(0, p, T):           <span class="c"># C 的列块</span>
+                <span class="c"># 内三层:只在这个小块内部算。min 处理最后一块不满 T 的情况</span>
+                for i in range(i0, min(i0 + T, n)):
+                    for k in range(k0, min(k0 + T, m)):
+                        a = A[i][k]             <span class="c"># 提到最内层循环外面,少读 T 次</span>
+                        for j in range(j0, min(j0 + T, p)):
+                            <span class="c"># 最内层 j 连续,C[i][j] 和 B[k][j] 都是顺着内存走</span>
+                            C[i][j] += a * B[k][j]
+    return C
+
+
+<span class="c"># ---- 自测:和 numpy 对拍 ----</span>
+import numpy as np
+A = np.arange(12, dtype=float).reshape(3, 4)     <span class="c"># 3×4</span>
+B = np.arange(20, dtype=float).reshape(4, 5)     <span class="c"># 4×5</span>
+C = matmul_tiled(A.tolist(), B.tolist(), T=2)
+print(np.allclose(C, A @ B), C[0])               <span class="c"># True, 第一行 [70. 76. 82. 88. 94.]</span>
+</pre><div class="out">运行输出:
+True [70.0, 76.0, 82.0, 88.0, 94.0]</div><h3>拿例子走一遍</h3><div class="walk">A 是 3×4,B 是 4×5,T=2。i0 取 0、2;k0 取 0、2;j0 取 0、2、4。第一个块 (0,0,0):i∈{0,1},k∈{0,1},j∈{0,1},算的是 C 左上 2×2 块里来自 A 前两列和 B 前两行的那部分贡献。后面 k0=2 的块把剩下两列的贡献加上去,C 左上块才完整。</div><h3>复杂度</h3><p>算术量不变,仍是 2·n·m·p 次乘加。省的是内存搬运:每个 A、B 元素从主存读 O(n/T) 次降到 O(1) 次量级。T 的选法:让 A 块 + B 块 + C 块三块的字节数小于 L1 缓存(32 到 64 KB),float32 时 T 在 32 到 64 之间。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> C++ 版怎么写?同样六层循环,数组用一维行优先:A[i*m+k]、B[k*p+j]、C[i*p+j]。最内层能被编译器自动向量化。</p><p><b>▸</b> GPU 上对应什么?每个线程块把 A、B 的小块搬进 shared memory,线程块内的线程各算 C 块的一个元素。CS336 第 5 讲的分块省 T 倍读取就是这个。</p><p><b>▸</b> 还能快在哪?循环展开减少分支;用 FMA 指令一次乘加;多线程按 i0 分给不同核心,互不冲突因为写的是不同的 C 行。</p><p><b>▸</b> 为什么 k 放在 j 外面?这样 a = A[i][k] 能在 j 循环里复用,而且 B[k][j] 对 j 连续。</p></div><h2 id="p3">3.4 int8 量化和反量化</h2><div class="q">题目:把一组浮点数压成 8 位整数(省 4 倍内存),再还原回来,算一算误差有多大。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:用一把只有 127 格的尺子量东西。先看最长的那个有多长,把它定为 127 格,算出每格代表多少(scale)。其他数都按这把尺子四舍五入成整数格数。</li><li>对称量化:零点固定在 0,正负各 127 格。只需要存一个 scale,硬件实现最简单。</li><li>反量化就是格数 × 每格长度。误差最多半格,也就是 scale/2。</li><li>per-tensor 一整个矩阵共用一把尺子,某一行数值特别小就会全被量成 0。per-row 每行一把尺子,小的行也能保留精度。这就是第 6 讲讲的量化粒度。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>import numpy as np
+
+def quantize_int8(x):
+    &quot;&quot;&quot;对称、整张量一个 scale 的 int8 量化。q = round(x / scale),scale = max|x| / 127。&quot;&quot;&quot;
+    amax = float(np.max(np.abs(x)))             <span class="c"># 绝对值最大的那个数,决定尺子的量程</span>
+    scale = amax / 127 if amax &gt; 0 else 1.0     <span class="c"># 每一格代表多少;全 0 的张量避免除零</span>
+    q = np.round(x / scale)                     <span class="c"># 折算成格数并四舍五入</span>
+    q = np.clip(q, -127, 127).astype(np.int8)   <span class="c"># 保险起见截到 [-127,127],再转成 1 字节整数</span>
+    return q, scale                             <span class="c"># 存储时只存 q(1 字节/个)和一个 scale</span>
+
+def dequantize_int8(q, scale):
+    &quot;&quot;&quot;还原:格数 × 每格长度。结果是近似值,误差 ≤ scale/2。&quot;&quot;&quot;
+    return q.astype(np.float32) * scale
+
+
+<span class="c"># ---- 自测 1:单个向量 ----</span>
+x = np.array([0.1, -0.5, 1.27, -2.54, 0.0], dtype=np.float32)
+q, s = quantize_int8(x)
+print(q, round(s, 4))                     <span class="c"># [5 -25 64 -127 0] 0.02</span>
+err = np.abs(dequantize_int8(q, s) - x).max()
+print(round(float(err), 6), err &lt;= s / 2 + 1e-7)   <span class="c"># 最大误差 0.01 = scale/2,True</span>
+
+
+def quantize_per_row(W):
+    &quot;&quot;&quot;每一行一把尺子(per-row / per-channel)。W 是 2 维权重矩阵。&quot;&quot;&quot;
+    amax = np.abs(W).max(axis=1, keepdims=True)        <span class="c"># 每行各自的最大绝对值,形状 (rows,1)</span>
+    scale = np.where(amax &gt; 0, amax / 127, 1.0)        <span class="c"># 每行一个 scale</span>
+    q = np.clip(np.round(W / scale), -127, 127).astype(np.int8)   <span class="c"># 广播:每行除以自己的 scale</span>
+    return q, scale                                    <span class="c"># scale 多存 rows 个 float,代价很小</span>
+
+
+<span class="c"># ---- 自测 2:为什么要 per-row ----</span>
+W = np.array([[0.01, -0.02, 0.03],        <span class="c"># 第 0 行数值很小</span>
+              [10.0, -5.0, 2.5]], dtype=np.float32)   <span class="c"># 第 1 行数值很大</span>
+qt, st = quantize_int8(W)                 <span class="c"># 整张量:scale 由 10.0 决定 = 0.0787</span>
+qr, sr = quantize_per_row(W)              <span class="c"># 每行:第 0 行 scale = 0.03/127</span>
+print(qt[0], qr[0])                       <span class="c"># [0 0 0] vs [42 -85 127]:per-tensor 把小行全压成 0</span>
+</pre><div class="out">运行输出:
+[   5  -25   64 -127    0] 0.02
+0.01 True
+[0 0 0] [ 42 -85 127]</div><h3>拿例子走一遍</h3><div class="walk">x=[0.1,-0.5,1.27,-2.54,0],max|x|=2.54,scale=2.54/127=0.02。0.1/0.02=5;-0.5/0.02=-25;1.27/0.02=63.5 四舍五入到 64;-2.54/0.02=-127;0→0。还原:64×0.02=1.28,和 1.27 差 0.01,正好是 scale 的一半。</div><h3>复杂度</h3><p>量化和反量化都是 O(n)。存储从 4 字节/数降到 1 字节/数加一个 scale。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> 非对称量化是什么?零点可以不在 0,公式 q = round(x/scale) + zero_point,能充分利用 [0,255] 全部 256 格,适合 ReLU 之后全是正数的激活值。</p><p><b>▸</b> 为什么用 127 不用 128?对称要正负一样多,-128 没有对应的 +128,所以舍弃 -128。有的实现用 128 并允许 -128,两种口径面试说清楚就行。</p><p><b>▸</b> int8 矩阵乘的累加器为什么是 int32?两个 int8 相乘最大 127×127≈16129,再累加上千次会超过 int16,所以用 int32 累加,最后再乘两个 scale 转回浮点。</p><p><b>▸</b> 权重用对称、激活用非对称,为什么?权重分布大致关于 0 对称;激活经常有偏(比如全正),非对称不浪费量程。</p><p><b>▸</b> 4 位呢?同样公式,量程 [-7,7] 或 [-8,7],误差变成 16 倍,所以要用更细的分组(group 128)和 AWQ 这类缩放技巧,见第 13 讲。</p></div><h2 id="p4">3.5 LRU 缓存</h2><div class="q">题目:实现容量固定的缓存,get 和 put 都要 O(1),满了淘汰「最久没用」的那个。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:书桌上只能摆 N 本书。每次用过一本就放到最上面,要加新书时抽掉最底下那本。</li><li>两个结构配合:哈希表负责「按 key 一步找到」,双向链表负责「按使用时间排序」。哈希表的值直接指向链表节点,所以找到后能 O(1) 把它摘下来挪到头。</li><li>两个哨兵节点 head 和 tail 永远不存数据,只是让「摘节点」和「插头部」不用判断空链表和边界。</li><li>淘汰就是摘掉 tail.prev(最久没用的)并从哈希表删掉它的 key。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>class Node:
+    __slots__ = (&quot;key&quot;, &quot;val&quot;, &quot;prev&quot;, &quot;next&quot;)   <span class="c"># 固定字段,省内存、访问快</span>
+    def __init__(self, key=None, val=None):
+        self.key, self.val = key, val
+        self.prev, self.next = None, None         <span class="c"># 双向链表的前后指针</span>
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.map = {}                             <span class="c"># key → Node,O(1) 定位</span>
+        self.head, self.tail = Node(), Node()     <span class="c"># 两个哨兵,不存数据</span>
+        self.head.next = self.tail                <span class="c"># 空链表:head ⇄ tail</span>
+        self.tail.prev = self.head
+        <span class="c"># 约定:head 旁边是「最近用过」,tail 旁边是「最久没用」</span>
+
+    def _remove(self, n):
+        &quot;&quot;&quot;把节点 n 从链表里摘下来(不动 map)。O(1):只改前后两个邻居的指针。&quot;&quot;&quot;
+        n.prev.next = n.next
+        n.next.prev = n.prev
+
+    def _push_front(self, n):
+        &quot;&quot;&quot;把节点 n 插到 head 后面,表示「刚刚用过」。&quot;&quot;&quot;
+        n.prev, n.next = self.head, self.head.next
+        self.head.next.prev = n
+        self.head.next = n
+
+    def get(self, key):
+        n = self.map.get(key)
+        if n is None:
+            return -1                             <span class="c"># 没有这个 key</span>
+        self._remove(n)                           <span class="c"># 用过了:先摘下来</span>
+        self._push_front(n)                       <span class="c"># 再放到最前面</span>
+        return n.val
+
+    def put(self, key, val):
+        if key in self.map:
+            <span class="c"># 已存在:更新值,并当作「刚用过」挪到最前</span>
+            n = self.map[key]
+            n.val = val
+            self._remove(n)
+            self._push_front(n)
+            return
+        if len(self.map) == self.cap:
+            <span class="c"># 满了:淘汰 tail 前面那个,也就是最久没用的</span>
+            lru = self.tail.prev
+            self._remove(lru)
+            del self.map[lru.key]                 <span class="c"># 别忘了 map 里也要删,否则内存泄漏</span>
+        n = Node(key, val)
+        self.map[key] = n
+        self._push_front(n)
+
+
+<span class="c"># ---- 自测:容量 2 ----</span>
+c = LRUCache(2)
+c.put(1, &quot;a&quot;); c.put(2, &quot;b&quot;)   <span class="c"># 链表:2 → 1</span>
+c.get(1)                       <span class="c"># 用了 1:链表 1 → 2</span>
+c.put(3, &quot;c&quot;)                  <span class="c"># 满了,淘汰最久没用的 2</span>
+print(c.get(2), c.get(1), c.get(3))   <span class="c"># -1 a c</span>
+</pre><div class="out">运行输出:
+-1 a c</div><h3>拿例子走一遍</h3><div class="walk">容量 2。put(1) put(2) 后链表从新到旧是 2,1。get(1) 把 1 挪到最前:1,2。put(3) 时满了,tail.prev 是 2,摘掉并删 map[2],再插 3:3,1。所以 get(2) 返回 -1,get(1) 和 get(3) 都在。</div><h3>复杂度</h3><p>get 和 put 都是 O(1):哈希表查找 O(1),链表摘插只改常数个指针。空间 O(容量)。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> Python 一行版?collections.OrderedDict,get 用 move_to_end(key),满了 popitem(last=False)。面试先说有这个,再手写证明懂原理。</p><p><b>▸</b> 为什么要双向链表不用单向?摘掉中间节点要知道前驱,单向链表找前驱是 O(n)。</p><p><b>▸</b> 在推理引擎里用在哪?vLLM 的 prefix cache 用 LRU 淘汰不常用的 KV 块;Redis 的 maxmemory-policy allkeys-lru 也是这个思路,我在 TikTok 就踩过把持久状态放进 LRU 缓存被淘汰的坑。</p><p><b>▸</b> LFU 和 LRU 区别?LFU 按使用次数淘汰,实现要 O(1) 的话需要频次桶加双向链表,更复杂。</p><p><b>▸</b> 多线程怎么办?整个结构加一把锁最简单;高并发用分片,按 key 哈希到多个小 LRU。</p></div><h2 id="p5">3.6 流式 UTF-8 解码(模型一边吐字一边显示)</h2><div class="q">题目:模型按字节块往外吐,一个中文字(3 字节)可能被切在两块里。要求只输出已经完整的字符,半个字先攒着。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:快递把一本书拆成几箱寄来,一页纸可能被撕成两半分在两箱。你只能先摆出完整的页,半页先放一边等下一箱。</li><li>UTF-8 的规则写在第一个字节里:0xxxxxxx 是 1 字节字符;110xxxxx 开头是 2 字节;1110xxxx 是 3 字节;11110xxx 是 4 字节;10xxxxxx 是「后续字节」,不能单独出现。</li><li>所以只要从缓冲区末尾往回最多看 4 个字节,找到最后一个「首字节」,看它声明的长度够不够。不够就把它和它后面的字节留到下一次。</li><li>绝不能用 bytes.decode(errors=&#x27;replace&#x27;),那样会把半个字变成 � 输出出去,用户看到乱码。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>class StreamDecoder:
+    &quot;&quot;&quot;喂进来一块块字节,只吐出已经完整的 UTF-8 字符,半个字留到下次。&quot;&quot;&quot;
+
+    def __init__(self):
+        self.buf = b&quot;&quot;                            <span class="c"># 攒着的、还没输出的字节</span>
+
+    def feed(self, chunk: bytes) -&gt; str:
+        self.buf += chunk
+        cut = len(self.buf)                       <span class="c"># 默认全部都能输出</span>
+
+        <span class="c"># 从末尾往回最多看 4 个字节(UTF-8 一个字符最长 4 字节)</span>
+        for back in range(1, min(4, len(self.buf)) + 1):
+            b = self.buf[-back]                   <span class="c"># 倒数第 back 个字节</span>
+            if b &amp; 0b1100_0000 == 0b1000_0000:
+                <span class="c"># 10xxxxxx 是后续字节,不是开头,继续往前找首字节</span>
+                continue
+            <span class="c"># 到这里 b 是某个字符的首字节。按高位算出这个字符一共几个字节:</span>
+            if b &lt; 0x80:                need = 1  <span class="c"># 0xxxxxxx</span>
+            elif b &gt;&gt; 5 == 0b110:       need = 2  <span class="c"># 110xxxxx</span>
+            elif b &gt;&gt; 4 == 0b1110:      need = 3  <span class="c"># 1110xxxx</span>
+            else:                       need = 4  <span class="c"># 11110xxx</span>
+            if need &gt; back:
+                <span class="c"># 这个字符声明要 need 字节,但缓冲区末尾只有 back 个:没凑齐</span>
+                <span class="c"># 把它(含后面已到的几个字节)留下,cut 往前挪</span>
+                cut = len(self.buf) - back
+            break                                 <span class="c"># 只需要检查最后一个首字节</span>
+
+        out, self.buf = self.buf[:cut], self.buf[cut:]   <span class="c"># 前面输出,后面留着</span>
+        return out.decode(&quot;utf-8&quot;)                <span class="c"># 这里一定是完整字符,不会报错</span>
+
+
+<span class="c"># ---- 自测:每次只喂 2 个字节 ----</span>
+data = &quot;Hi 羊驼!&quot;.encode(&quot;utf-8&quot;)     <span class="c"># 羊 = E7 BE 8A,驼 = E9 A9 BC,各 3 字节</span>
+d = StreamDecoder()
+pieces = [d.feed(data[i:i + 2]) for i in range(0, len(data), 2)]
+print(pieces, &quot;&quot;.join(pieces) == &quot;Hi 羊驼!&quot;)
+<span class="c"># 期望 [&#x27;Hi&#x27;, &#x27; &#x27;, &#x27;羊&#x27;, &#x27;&#x27;, &#x27;驼!&#x27;] True:第 2 块只吐空格,E7 留着;第 4 块全留着</span>
+</pre><div class="out">运行输出:
+[&#x27;Hi&#x27;, &#x27; &#x27;, &#x27;羊&#x27;, &#x27;&#x27;, &#x27;驼!&#x27;] True</div><h3>拿例子走一遍</h3><div class="walk">字节序列 48 69 20 E7 BE 8A E9 A9 BC 21,每块 2 字节。块 1 [48 69]:末尾 69 是 1 字节字符,全吐,&quot;Hi&quot;。块 2 [20 E7]:末尾 E7 是 3 字节字符的首字节,只有 1 个,留;吐 &quot; &quot;。块 3 [BE 8A]:缓冲 E7 BE 8A,末尾 8A 是后续字节,再往前 BE 也是,再往前 E7 是首字节、需要 3、已有 3,够了,全吐 &quot;羊&quot;。块 4 [E9 A9]:E9 需要 3 只有 2,留,吐空串。块 5 [BC 21]:缓冲 E9 A9 BC 21,末尾 21 是 1 字节,全吐 &quot;驼!&quot;。</div><h3>复杂度</h3><p>每块只往回看最多 4 个字节,O(块大小)。缓冲区最多留 3 个字节。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> 为什么最多回看 4 个?UTF-8 字符最长 4 字节,末尾未完成的字符最多留 3 个字节,再加 1 个确认首字节。</p><p><b>▸</b> 非法字节怎么办?比如连续出现 4 个后续字节。生产代码里要设上限,超过就按错误处理(替换成 U+FFFD 并告警),而不是无限攒。</p><p><b>▸</b> 为什么推理引擎会切在字符中间?tokenizer 的一个 token 可能只是一个字符的一部分字节(byte-level BPE),所以模型逐 token 输出时天然会出现半个字。</p><p><b>▸</b> C 里怎么写?一模一样的位运算:(b &amp; 0xC0) == 0x80 判后续字节,b &gt;&gt; 5 == 0x6 判 2 字节,以此类推。</p></div><h2 id="p6">3.7 流式输出里的停止词</h2><div class="q">题目:模型一边流式输出一边要检测停止串(比如 &lt;/s&gt;),遇到就停,而且停止串本身一个字符都不能露给用户。难点是停止串可能被切在多个块里。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:你在念一封信,被告知读到「此致敬礼」就停,而且这四个字不能念出来。信是一行行递给你的,你读到「此致」时不知道下一行是不是「敬礼」,所以这两个字先憋着不念。</li><li>每收到一块就在累积的文本里找停止串。找到了:输出它前面的,结束。没找到:只输出「不可能是停止串开头」的部分,把可能是开头的尾巴留着。</li><li>尾巴留多长?看累积文本的后缀里,最长的那个恰好是停止串前缀的。最多留 len(stop)-1 个字符。</li><li>流结束时还留着尾巴,说明那不是停止串,全部吐出。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>def stream_with_stop(chunks, stop):
+    &quot;&quot;&quot;按块产出文本;一旦出现停止串 stop 就结束,且 stop 的任何一部分都不会被产出。&quot;&quot;&quot;
+    held = &quot;&quot;                                  <span class="c"># 攒着的、还没决定能不能输出的文本</span>
+    for ch in chunks:
+        held += ch
+        idx = held.find(stop)
+        if idx != -1:
+            <span class="c"># 找到完整停止串:它前面的可以给用户,然后整个流结束</span>
+            if held[:idx]:
+                yield held[:idx]
+            return
+
+        <span class="c"># 没找到完整的。检查 held 的尾巴是不是 stop 的开头(可能下一块才补全)</span>
+        keep = 0
+        for n in range(min(len(stop) - 1, len(held)), 0, -1):   <span class="c"># 从长到短试</span>
+            if stop.startswith(held[-n:]):     <span class="c"># 末尾 n 个字符正好是 stop 的前缀</span>
+                keep = n
+                break
+        safe = held[:len(held) - keep]         <span class="c"># 尾巴之前的部分绝对安全,可以输出</span>
+        if safe:
+            yield safe
+        held = held[len(held) - keep:]         <span class="c"># 只留下那段可疑的尾巴</span>
+
+    if held:
+        yield held                             <span class="c"># 流结束了,尾巴不是停止串,补发出去</span>
+
+
+<span class="c"># ---- 自测 ----</span>
+print(list(stream_with_stop([&quot;Hello &lt;&quot;, &quot;/s&quot;, &quot;&gt; extra&quot;], &quot;&lt;/s&gt;&quot;)))   <span class="c"># [&#x27;Hello &#x27;]</span>
+print(list(stream_with_stop([&quot;a&lt;b&quot;, &quot;c&quot;], &quot;&lt;/s&gt;&quot;)))                    <span class="c"># [&#x27;a&lt;b&#x27;, &#x27;c&#x27;] 或 [&#x27;a&#x27;, &#x27;&lt;b&#x27;, &#x27;c&#x27;]</span>
+</pre><div class="out">运行输出:
+[&#x27;Hello &#x27;]
+[&#x27;a&lt;b&#x27;, &#x27;c&#x27;]</div><h3>拿例子走一遍</h3><div class="walk">停止串 &quot;&lt;/s&gt;&quot;。块 1 &quot;Hello &lt;&quot;:没找到;末尾 &quot;&lt;&quot; 是 &quot;&lt;/s&gt;&quot; 的前缀,keep=1;输出 &quot;Hello &quot;,留 &quot;&lt;&quot;。块 2 &quot;/s&quot;:held=&quot;&lt;/s&quot;,没找到完整的;末尾 &quot;&lt;/s&quot; 整个是前缀,keep=3;没有安全部分可输出,全留。块 3 &quot;&gt; extra&quot;:held=&quot;&lt;/s&gt; extra&quot;,找到 &quot;&lt;/s&gt;&quot; 在下标 0,前面是空串,不输出,结束。用户只看到 &quot;Hello &quot;。</div><h3>复杂度</h3><p>每块 O(块长 × 停止串长)。留的尾巴最多 len(stop)-1 个字符,所以延迟最多多等几个字符。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> 多个停止串怎么办?对每个都算一遍 keep 取最大;或者用 Aho-Corasick 自动机一次扫完。</p><p><b>▸</b> 停止串按 token 比按字符有什么坑?同一段文字可以被切成不同 token,按 token 比对会漏;所以按解码后的文本比。</p><p><b>▸</b> 和上一题怎么拼?先过 UTF-8 解码器得到完整字符,再过停止词过滤器,两个都是「攒一小段再放行」的形状。</p><p><b>▸</b> 为什么不等全部生成完再切?那就不是流式了,用户要等几秒才看到第一个字。首字延迟是本地推理体验的关键指标。</p></div><h2 id="p7">3.8 固件味:解析带校验的二进制头</h2><div class="q">题目:设计一个 16 字节的二进制文件头:魔数、版本、标志、负载长度、CRC 校验,然后写打包和解析,解析时要把所有能出的错都查出来。</div><h3>思路(先说这几句再动笔)</h3><ul><li>比方:快递箱上贴的面单。魔数是「这是我们家的箱子」的标记;版本是面单格式第几版;长度告诉你箱子里应该有多少东西;CRC 是封条,拆开后算一遍对不上就说明路上被动过。</li><li>struct 的格式串 &quot;&lt;4sHHII&quot;:&lt; 是小端、不自动补齐;4s 四字节字符串;H 两字节无符号;I 四字节无符号。4+2+2+4+4 = 16 字节。</li><li>解析顺序很重要:先看长度够不够读头,再看魔数,再看负载够不够长,最后算 CRC。每一步失败都抛明确的错误,不要让后面的代码在坏数据上继续跑。</li><li>小端和大端:x86 和 ARM 默认小端(低字节在前),网络协议是大端。两边机器不一致就全错,所以格式里必须写死。</li></ul><h3>代码(每行有注释,本机跑过)</h3><pre>import struct, zlib
+
+<span class="c"># 文件头格式:小端(&lt;),不补齐。字段依次是:</span>
+<span class="c">#   4s  magic        4 字节,固定 b&quot;ALPC&quot;,用来确认「这确实是我们的文件」</span>
+<span class="c">#   H   version      2 字节无符号,格式版本,以后改格式靠它兼容</span>
+<span class="c">#   H   flags        2 字节无符号,位标志,比如是否压缩</span>
+<span class="c">#   I   payload_len  4 字节无符号,后面负载有多少字节</span>
+<span class="c">#   I   crc32        4 字节无符号,负载的 CRC32 校验值</span>
+<span class="c"># 总长 4 + 2 + 2 + 4 + 4 = 16 字节</span>
+HDR = struct.Struct(&quot;&lt;4sHHII&quot;)
+
+def pack(payload: bytes, version=1, flags=0):
+    &quot;&quot;&quot;打包:头 + 负载。CRC 对负载算,这样头里的 CRC 字段本身不参与校验。&quot;&quot;&quot;
+    return HDR.pack(b&quot;ALPC&quot;, version, flags, len(payload), zlib.crc32(payload)) + payload
+
+def parse(blob: bytes):
+    &quot;&quot;&quot;解析并校验。任何一步不对就抛错,绝不返回半对的数据。&quot;&quot;&quot;
+    if len(blob) &lt; HDR.size:
+        raise ValueError(&quot;short header&quot;)          <span class="c"># 连 16 字节头都不够</span>
+    magic, ver, flags, n, crc = HDR.unpack_from(blob, 0)   <span class="c"># 从偏移 0 解出 5 个字段</span>
+    if magic != b&quot;ALPC&quot;:
+        raise ValueError(&quot;bad magic&quot;)             <span class="c"># 不是我们的文件,或字节序错了</span>
+    payload = blob[HDR.size:HDR.size + n]         <span class="c"># 按头里声明的长度切出负载</span>
+    if len(payload) != n:
+        raise ValueError(&quot;truncated payload&quot;)     <span class="c"># 文件被截断,负载不够长</span>
+    if zlib.crc32(payload) != crc:
+        raise ValueError(&quot;crc mismatch&quot;)          <span class="c"># 负载被改过或传输出错</span>
+    return ver, flags, payload
+
+
+<span class="c"># ---- 自测 ----</span>
+blob = pack(b&quot;hello alpaca&quot;, version=1, flags=0b01)
+print(HDR.size, blob[:16].hex())                  <span class="c"># 16 字节头</span>
+print(parse(blob))                                <span class="c"># (1, 1, b&#x27;hello alpaca&#x27;)</span>
+for bad in [blob[:10], blob[:-3], b&quot;XXXX&quot; + blob[4:], blob[:-1] + b&quot;?&quot;]:
+    try:
+        parse(bad)
+    except ValueError as e:
+        print(&quot;rejected:&quot;, e)        <span class="c"># short header / truncated payload / bad magic / crc mismatch</span>
+</pre><div class="out">运行输出:
+16 414c5043010001000c000000b4d5d70a
+(1, 1, b&#x27;hello alpaca&#x27;)
+rejected: short header
+rejected: truncated payload
+rejected: bad magic
+rejected: crc mismatch</div><h3>拿例子走一遍</h3><div class="walk">pack(b&quot;hello alpaca&quot;):magic 41 4C 50 43,version 1 小端是 01 00,flags 01 00,长度 12 是 0C 00 00 00,再 4 字节 CRC,后面跟 12 字节负载。parse 时四种坏数据分别在四个检查点被拦下。</div><h3>复杂度</h3><p>打包和解析都是 O(负载长度),主要是算 CRC。头的解析是常数时间。</p><h3>追问怎么接</h3><div class="ask"><p><b>▸</b> 为什么 CRC 不包含头?如果包含,头里的 CRC 字段自己也要参与计算,就要先置 0 再算,麻烦。常见做法是头有自己的小校验,负载单独校验。</p><p><b>▸</b> CRC32 和哈希的区别?CRC 只防传输随机错误,不防故意篡改,攻击者能构造碰撞。要防篡改用 SHA-256 加签名。固件 OTA 升级包就是 CRC 快速查损坏、签名防伪造两层都要。我的交大毕设 OTA 项目用的是 MD5 校验加回滚。</p><p><b>▸</b> struct 为什么要写 &lt;?不写的话用本机字节序和自动补齐,HHII 前面可能被补成对齐 4 字节,头长度就不是 16 了,两台机器解析结果不同。</p><p><b>▸</b> C 里怎么写?#pragma pack(1) 或 __attribute__((packed)) 的 struct,读进来后用 le32toh 之类的宏转字节序。直接 memcpy 到 struct 上是常见 bug 来源。</p><p><b>▸</b> 版本号怎么用?解析时 if ver &gt; 当前支持的最高版本 就拒绝;新版本只在尾部加字段,老解析器读前面的还能用。</p></div></main></div></body></html>
