@@ -1,0 +1,1619 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Byte Veda 终面 Peter</title>
+<style>.hljs{color:var(--fg)}.hljs-keyword,.hljs-literal,.hljs-selector-tag{color:#a626a4}.hljs-string,.hljs-attr,.hljs-addition{color:#50a14f}.hljs-number,.hljs-symbol{color:#986801}.hljs-comment,.hljs-quote{color:#8a8a8a;font-style:italic}.hljs-title,.hljs-section{color:#4078f2}.hljs-built_in,.hljs-type{color:#c18401}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hljs-keyword,:root:not([data-theme="light"]) .hljs-literal{color:#c678dd}:root:not([data-theme="light"]) .hljs-string,:root:not([data-theme="light"]) .hljs-attr{color:#98c379}:root:not([data-theme="light"]) .hljs-number{color:#d19a66}:root:not([data-theme="light"]) .hljs-title{color:#61afef}:root:not([data-theme="light"]) .hljs-built_in{color:#e5c07b}}</style>
+<style>
+:root{--bg:#fbfaf8;--fg:#1b1a18;--mut:#6b6862;--line:#e3e0da;--acc:#b4503a;--acc2:#2f6f8f;--ok:#4e8a4a;--card:#fff;--code:#f4f2ee;--note:#fff8e6;--noteline:#e9d9a8;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16151a;--fg:#e9e7e2;--mut:#9a958c;--line:#2e2c33;--acc:#e08a70;--acc2:#7fb3d0;--ok:#8cc084;--card:#1e1d23;--code:#23222a;--note:#2a2618;--noteline:#5a4e2a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16151a;--fg:#e9e7e2;--mut:#9a958c;--line:#2e2c33;--acc:#e08a70;--acc2:#7fb3d0;--ok:#8cc084;--card:#1e1d23;--code:#23222a;--note:#2a2618;--noteline:#5a4e2a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif}
+#rp{position:fixed;top:0;left:0;height:3px;background:var(--acc);width:0;z-index:9}
+#wrap{display:flex;min-height:100%}
+#toc{width:300px;flex:0 0 300px;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto;height:100vh;position:sticky;top:0;background:var(--card)}
+#toc h2,#qa h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 10px 6px}
+#q{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font-size:14px;margin-bottom:10px}
+#allprog{font-size:12px;color:var(--mut);margin:0 6px 10px}
+.bar{height:5px;background:var(--code);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--ok);width:0}
+#toc details{margin:6px 0}
+#toc summary{cursor:pointer;font-weight:700;color:var(--acc);padding:5px 8px;border-radius:6px;list-style:none;font-size:14px}
+#toc summary::-webkit-details-marker{display:none}
+#toc summary .pp{float:right;font-weight:400;font-size:12px;color:var(--mut)}
+#toc a{display:block;padding:3px 8px;border-radius:6px;text-decoration:none;color:var(--fg);font-size:13.5px}
+#toc a:hover{background:var(--code)}
+#toc a.l1{font-weight:600;margin-top:6px;padding-left:12px}
+#toc a.l2{padding-left:26px;color:var(--mut);font-size:13px}
+#toc a.l3{padding-left:40px;color:var(--mut);font-size:12px;display:none}
+#toc a.l2.open ~ a.l3.of-{display:block}
+#toc a.done::before{content:"✓ ";color:var(--ok)}
+#toc a.cur{background:var(--code)}
+#main{flex:1;min-width:0;padding:22px 36px 120px;max-width:940px}
+#quick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+#quick a{font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--fg);background:var(--card)}
+#quick a:hover{border-color:var(--acc)}
+.part{margin:3.2em 0 1.2em;padding:18px 22px;border-radius:14px;background:linear-gradient(135deg,var(--card),var(--code));border:1px solid var(--line)}
+.part .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.part h1{border:none;margin:2px 0 4px;padding:0;font-size:1.9rem}
+.part p{margin:0;color:var(--mut)}
+#qa{width:330px;flex:0 0 330px;border-left:1px solid var(--line);padding:16px 14px;overflow-y:auto;height:100vh;position:sticky;top:0;background:var(--note)}
+#qa textarea{width:100%;min-height:110px;padding:10px;border:1px solid var(--noteline);border-radius:8px;background:var(--card);color:var(--fg);font:14px/1.6 inherit;resize:vertical}
+#qa .sec{font-size:12px;color:var(--mut);margin:6px 0 4px;min-height:1.2em}
+#qa .btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
+#qa button{border:1px solid var(--noteline);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+#qa button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.note{background:var(--card);border:1px solid var(--noteline);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:13.5px}
+.note .t{color:var(--mut);font-size:12px;display:flex;justify-content:space-between;gap:8px}
+.note .t a{color:var(--acc);text-decoration:none;cursor:pointer}
+.note .b{white-space:pre-wrap;margin-top:4px}
+.note.answered{border-color:#8cb37a}
+.ask{font-size:12px;color:var(--acc);margin-left:8px;cursor:pointer;opacity:.55;text-decoration:none}
+.ask:hover{opacity:1}
+.chk{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.chk.on{opacity:1;color:var(--ok);border-color:var(--ok)}
+.fav{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.fav.on{opacity:1;color:#c99400;border-color:#c99400}
+#favs{background:var(--card);border:1px solid #e6c55a;border-left:5px solid #c99400;border-radius:12px;padding:12px 16px;margin:0 0 14px}
+#favs h2{font-size:1.05rem;margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#favs .fbtn{font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:2px 8px;cursor:pointer}
+#favs .fi{border-top:1px dashed var(--line);padding:6px 0}
+#favs .fi .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#favs .fi a.t{color:var(--acc2);text-decoration:none;font-weight:600;flex:1;min-width:0}
+#favs .fi .body{margin:6px 0 4px 10px;padding-left:10px;border-left:2px solid #e6c55a}
+#favs .hint,#later .hint{color:var(--mut);font-size:13px;margin:0}
+.lat{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.lat.on{opacity:1;color:#2f6f8f;border-color:#2f6f8f}
+#later{background:var(--card);border:1px solid #9cc3d6;border-left:5px solid #2f6f8f;border-radius:12px;padding:12px 16px;margin:0 0 14px}
+#later h2{font-size:1.05rem;margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#later .fbtn{font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:2px 8px;cursor:pointer}
+#later .fi{border-top:1px dashed var(--line);padding:6px 0}
+#later .fi .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#later .fi a.t{color:var(--acc2);text-decoration:none;font-weight:600;flex:1;min-width:0}
+#later .fi .body{margin:6px 0 4px 10px;padding-left:10px;border-left:2px solid #9cc3d6}
+#toc a.lat-on::after{content:" 🔖"}
+#qacol{float:right;border:1px solid var(--noteline);background:var(--card);color:var(--fg);border-radius:6px;padding:1px 8px;font-size:12px;cursor:pointer;letter-spacing:0;text-transform:none;font-weight:400}
+#qaopen{display:none;position:fixed;right:0;top:38%;z-index:30;writing-mode:vertical-rl;background:var(--note);color:var(--fg);border:1px solid var(--noteline);border-right:none;border-radius:8px 0 0 8px;padding:12px 6px;font-size:13px;cursor:pointer;box-shadow:-2px 2px 8px rgba(0,0,0,.08)}
+body.qa-hide #qa{display:none}
+body.qa-hide #qaopen{display:block}
+body.qa-hide #main{max-width:1000px;margin:0 auto}
+@media(max-width:900px){#qacol,#qaopen{display:none!important}}
+@media(max-width:1100px){#qa{width:280px;flex-basis:280px}}
+#tocbtn,#qabtn{display:none}
+@media(max-width:900px){#wrap{flex-direction:column}#main{padding:16px 16px 90px;min-width:0}#main pre,#main table{max-width:100%;overflow-x:auto;display:block}
+#toc{display:none;position:fixed;inset:0 0 0 0;width:auto;height:100%;max-height:none;z-index:50;border:none;padding:calc(14px + env(safe-area-inset-top,0px)) 14px 90px}
+body.toc-open #toc{display:block}body.toc-open{overflow:hidden}
+#qa{display:none;width:auto;flex:none;height:auto;position:static;border:none;border-top:1px solid var(--line)}
+body.qa-open #qa{display:block}
+#tocbtn,#qabtn{display:block;position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:60;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#tocbtn{right:16px;background:var(--acc);color:#fff}
+#qabtn{right:110px;background:var(--card);color:var(--fg);border:1px solid var(--line)}
+#top{left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px))}}
+h1{font-size:1.7rem;border-bottom:2px solid var(--acc);padding-bottom:8px;margin-top:2.4em;text-wrap:balance}
+h2{font-size:1.3rem;margin-top:2em;text-wrap:balance}
+h3{font-size:1.1rem;margin-top:1.6em}
+table{border-collapse:collapse;width:100%;display:block;overflow-x:auto;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--code)}
+blockquote{border-left:3px solid var(--acc);margin:1em 0;padding:.2em 1em;background:var(--card);color:var(--mut)}
+code{background:var(--code);padding:2px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:14px;border-radius:10px;overflow-x:auto}
+pre code{background:none;padding:0}
+hr{border:none;border-top:1px solid var(--line);margin:2.4em 0}
+img{max-width:100%}
+.gl{border-bottom:1px dotted var(--acc2);cursor:help}
+.en{display:block;color:var(--acc2);font-size:.96em;line-height:1.6;margin:3px 0 2px}
+td .en{font-size:.92em}
+blockquote .en{color:var(--acc2)}
+.zh{color:var(--acc2);font-size:.95em}
+.ans{background:var(--card);border:1px dashed var(--noteline);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:13px;white-space:pre-wrap;line-height:1.6}
+.ans.think{color:var(--mut);font-style:italic}
+#qa .btns2{display:flex;gap:6px;margin-top:6px}
+#tip{position:fixed;z-index:20;max-width:360px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;pointer-events:none}
+#tip b{color:var(--acc2)}
+
+/* ---- 生动化:标注块 ---- */
+blockquote.co{border-left-width:4px;border-radius:10px;padding:12px 16px;position:relative}
+blockquote.co::before{content:attr(data-l);display:inline-block;font-size:11px;letter-spacing:.08em;font-weight:700;border-radius:999px;padding:1px 9px;margin-bottom:6px;color:#fff}
+blockquote.co-basic{background:#eef7ee;border-color:#4e8a4a;color:var(--fg)}blockquote.co-basic::before{background:#4e8a4a}
+blockquote.co-warn{background:#fff6e5;border-color:#d08a1a;color:var(--fg)}blockquote.co-warn::before{background:#d08a1a}
+blockquote.co-ok{background:#eef6f9;border-color:#2f6f8f;color:var(--fg)}blockquote.co-ok::before{background:#2f6f8f}
+blockquote.co-hot{background:#fdeeee;border-color:#c0392b;color:var(--fg)}blockquote.co-hot::before{background:#c0392b}
+blockquote.co-tip{background:#f3eefc;border-color:#7b52c1;color:var(--fg)}blockquote.co-tip::before{background:#7b52c1}
+blockquote.co-say{background:var(--card);border-color:var(--acc);color:var(--fg)}blockquote.co-say::before{background:var(--acc)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) blockquote.co-basic{background:#17261a}:root:not([data-theme="light"]) blockquote.co-warn{background:#2b2214}:root:not([data-theme="light"]) blockquote.co-ok{background:#152128}:root:not([data-theme="light"]) blockquote.co-hot{background:#2c1816}:root:not([data-theme="light"]) blockquote.co-tip{background:#221a2e}}
+:root[data-theme="dark"] blockquote.co-basic{background:#17261a}:root[data-theme="dark"] blockquote.co-warn{background:#2b2214}:root[data-theme="dark"] blockquote.co-ok{background:#152128}:root[data-theme="dark"] blockquote.co-hot{background:#2c1816}:root[data-theme="dark"] blockquote.co-tip{background:#221a2e}
+h1.ch{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--acc);border-bottom:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-top:3em}
+h1.ch small{display:block;font-size:12.5px;color:var(--mut);font-weight:400;margin-top:4px}
+h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h2 .num{font-size:12px;color:var(--acc);background:var(--code);border:1px solid var(--line);border-radius:6px;padding:0 7px;font-weight:600;letter-spacing:.04em}
+h3{color:var(--acc2)}
+#chbar{position:sticky;top:0;z-index:8;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin:0 0 14px;font-size:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+#chbar b{color:var(--acc)}
+#chbar .left{color:var(--mut)}
+#chbar .bar{flex:1;min-width:120px;height:6px;margin:0}
+#chbar .bar i{background:var(--acc)}
+.chnav{display:flex;justify-content:space-between;gap:10px;margin:2.2em 0 0;padding-top:14px;border-top:1px dashed var(--line)}
+.chnav a{font-size:13px;text-decoration:none;color:var(--acc2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--card)}
+.chnav a:hover{border-color:var(--acc2)}
+#toc a .rt{float:right;font-size:11px;color:var(--mut);font-weight:400}
+
+/* ---- calm reading mode (10-06): fewer colors, quieter widgets ---- */
+blockquote.co{background:transparent!important;border-left:3px solid var(--line)!important;border-radius:0!important;padding:4px 14px!important;color:var(--fg)!important}
+blockquote.co::before{display:none!important}
+blockquote.co-hot{border-left-color:var(--acc)!important}
+blockquote.co-say{border-left-color:var(--acc2)!important}
+blockquote{color:var(--fg)}
+.en{color:var(--mut)!important;font-size:.93em!important}
+td .en{font-size:.9em!important}
+.zh{color:var(--mut)!important}
+.chk,.ask,.fav,.lat{opacity:.0!important;transition:opacity .15s}
+h1:hover .chk,h1:hover .ask,h1:hover .fav,h1:hover .lat,h2:hover .chk,h2:hover .ask,h2:hover .fav,h2:hover .lat,h3:hover .chk,h3:hover .ask,h3:hover .fav,h3:hover .lat{opacity:.75!important}
+.chk.on,.fav.on,.lat.on{opacity:.8!important}
+@media(hover:none){.chk,.ask,.fav,.lat{opacity:.35!important;font-size:11px!important}}
+p.legend{color:var(--mut);font-size:.88em;margin:.3em 0}
+h3{color:var(--fg)!important}
+h1.ch{border-left-width:3px!important;background:transparent!important}
+#top{position:fixed;left:18px;bottom:18px;background:var(--acc);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer}
+</style></head><body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./"><b>Byte Veda 终面手册</b></a><a href="../alpaca/">Alpaca</a><a href="../">返回 rv-7k3q</a></div>
+<div id="rp"></div>
+<div id="wrap">
+<nav id="toc"><h2>目录</h2><input id="q" placeholder="搜章节 / 题目…"><div id="allprog"></div><div id="tl"></div></nav>
+<main id="main"><div id="later"></div><div id="favs"></div><div id="quick"></div><div id="chbar"><span class="left">本章</span><b id="chname">—</b><span class="left" id="chleft">≈ — 分钟</span><div class="bar"><i id="chprog"></i></div><span class="left" id="chpct">0%</span></div><div id="body"></div></main>
+<aside id="qa">
+  <h2>📝 我的 Q&A <button id="qacol" title="收起右栏">收起 ›</button></h2>
+  <div class="sec" id="cursec">当前章节:—</div>
+  <textarea id="qtext" placeholder="看到不懂的,直接写在这里。会自动记上你当前在看的章节。"></textarea>
+  <div class="btns">
+    <button class="primary" id="save">记下来</button>
+    <button id="copy">复制全部为 Markdown</button>
+    <button id="clear">清空全部</button>
+  </div>
+  <div id="notes"></div>
+  <p style="font-size:12px;color:var(--mut)">记下的问题存在浏览器里。每条问题下有「生成解答」:在 claude.ai 上打开的版本会用 Claude 结合你正在看的章节直接写出解答(第一次会弹一次授权);本地文件版没有这个能力,点「复制全部为 Markdown」发给我。标题右边的 ☐ 是"这节我掌握了",勾了目录里会算进度。</p>
+</aside>
+</div>
+<button id="top">↑ 顶部</button>
+<button id="qaopen" title="展开我的 Q&A">‹ 📝 Q&A</button><script>(function(){var b=document.body,K='manual-qa-hide';function set(h){b.classList.toggle('qa-hide',h);try{localStorage.setItem(K,h?'1':'0')}catch(e){}}var v=null;try{v=localStorage.getItem(K)}catch(e){}set(v!=='0');document.getElementById('qacol').addEventListener('click',function(){set(true)});document.getElementById('qaopen').addEventListener('click',function(){set(false)});})();</script><button id="tocbtn">☰ 目录</button><button id="qabtn">笔记</button>
+<script>(function(){var b=document.body,tb=document.getElementById('tocbtn'),qb=document.getElementById('qabtn'),toc=document.getElementById('toc');
+function narrow(){return window.matchMedia('(max-width:900px)').matches}
+tb.addEventListener('click',function(){b.classList.toggle('toc-open');tb.textContent=b.classList.contains('toc-open')?'✕ 关闭':'☰ 目录'});
+qb.addEventListener('click',function(){b.classList.toggle('qa-open');if(b.classList.contains('qa-open')){document.getElementById('qa').scrollIntoView({behavior:'smooth'})}});
+toc.addEventListener('click',function(e){if(narrow()&&e.target.closest('a')){setTimeout(function(){b.classList.remove('toc-open');tb.textContent='☰ 目录'},50)}});})();</script>
+<script type="text/markdown" id="src"># 篇一 · 这场面试
+> 先看这一篇:时间、Peter 是谁、之前问过什么、怎么分配复习时间
+
+## 时间、地点、形式
+| 项目 | 内容 |
+|---|---|
+| 时间 | 11/5 周四 13:00–13:45(美东),45 分钟 |
+| 地点 | Byte Veda 办公室 130 W 37th St, New York(和 10/26 现场面同一个地方,4 楼按铃) |
+| 面试官 | Helen 邮件原话:"our lead CV engineer, Peter",没写姓 |
+| 主题 | Helen 10/27:"focus specifically on computer vision";10/16 原安排里 Peter 那轮写的是「3D 建模、图像处理、计算机视觉」 |
+| 当天别的安排 | 已清空:SharpSports 改到 11/10 周二 14:00,Temu 改到 11/11 周三 16:00 |
+
+## Peter 到底是谁:三种可能
+1. **A. 就是 Peter Tong(Shengbang Tong)**:NYU 博士生,导师 Saining Xie,做多模态大模型里的「视觉」。你 10/31 说「就是他,可能」。→ 押题 B 用得上,他的论文要能聊。
+2. **B. Byte Veda 自己的 CV 负责人,做无人机实时感知**:LinkedIn 查不到这个人。Helen 10/16 给他那轮定的主题是 3D 建模 + 图像处理。→ 押题 A(相机、几何、点云、图像处理)是主战场。
+3. **C. 两者都沾**:研究背景很强,但在公司做落地。→ 先答扎实的基础,再往多模态和边缘部署上接。
+
+不管是谁,**押题 A 都要会**:它是 Helen 写在日程里的主题,也是 10/8 初筛真题的方向。押题 B 是加分项。
+<span class="en">Whoever he is, Part A is required: it's the topic Helen put on the schedule and matches the screening questions. Part B is a bonus if he's the multimodal researcher.</span>
+
+别一上来说「我查过你」。他提到研究背景时再顺着聊,比如「我读过 Eyes Wide Shut,很喜欢 CLIP-blind pairs 这个思路」。
+
+## 之前几轮问过什么(真题)
+- **10/8 Helen 初筛(8 题)**:CNN 原理、CNN 优缺点、3D 数据结构、判断两条线平行、cross-attention 和 self-attention 区别、SVD(用中文讲)、RGB 和 HSV、Ax = b 近似解。
+- **10/26 现场面(Peter 没来)**:Ryota 考 SVD、Ax=b、链式法则代数字、条件概率(误报);Khasim 考交叉熵、为什么要深、**手写一维卷积**(核中心对准 x[0],输出长度 m);Helen 考体系结构;Abhishek 考 Python LeetCode。
+- 规律:**白板上要带具体数字算到底**,不只是讲概念。几何题(投影、双目、对极)要能代数字。
+
+## 周二到周四怎么用这份
+| 什么时候 | 做什么 | 大约 |
+|---|---|---|
+| 周二晚(Alpaca 回来) | 篇二:看 Saining Xie 讲座 + Eyes Wide Shut 讲解两个视频 | 1.5 小时 |
+| 周三上午 | 篇四:押题 A 的 A1–A19,能白板讲 + 代数字 | 3 小时 |
+| 周三下午 | 篇四点云 8 题 + 篇五押题 B 的 12 题 | 2.5 小时 |
+| 周三晚 | 篇六:自我介绍念 3 遍,RCRI 和 CLIP 两个故事讲顺 | 1 小时 |
+| 周四上午 | 篇七一页纸 + 收藏过的题 | 1 小时 |
+
+# 篇二 · Peter 的工作和视频
+> 他做什么、每篇论文一句话、哪些视频值得看(链接都核对过标题)
+
+## 他的研究一句话
+大模型很会「说」,但不一定会「看」。他一直研究「看」这一半:看图的模块哪里不行、怎么改、怎么让模型理解三维空间、怎么用同一套表示既看图又画图。
+<span class="en">LLMs are great at talking but not necessarily at seeing, and he studies the seeing half.</span>
+
+## 他的论文(按重要性)
+| 论文 | 他的角色 | 一句话 | 链接 |
+|---|---|---|---|
+| Eyes Wide Shut? | 一作 | 多模态模型答错简单视觉题,根子在 CLIP 这只「眼睛」;提出 MMVP 基准和 Mixture of Features | arxiv.org/abs/2401.06209 |
+| Cambrian-1 | 一作 | 用大模型当考官评 20 多种视觉编码器;CV-Bench;空间感知连接器 SVA | arxiv.org/abs/2406.16860 |
+| Seeing from Another Perspective | 作者 | All-Angles Bench:多视角理解,模型弱在遮挡下的跨视角对应和相机位姿 | arxiv.org/abs/2504.15280 |
+| Cambrian-S | 作者 | 视频里的空间「超感知」,用「惊讶度」决定记住什么 | arxiv.org/abs/2511.04670 |
+| Web-SSL | 作者 | 同样数据下,不用文字的自监督视觉也能扩到 CLIP 水平 | arxiv.org/abs/2504.01017 |
+| RAE | 第 3 作者 | 扩散模型的 VAE 换成冻结的表示编码器 + 训练的解码器 | arxiv.org/abs/2510.11690 |
+| RAE 文生图 | 一作 | RAE 扩到文生图,0.5B–9.8B 都比 FLUX VAE 好 | arxiv.org/abs/2601.16208 |
+| MetaMorph | 一作 | 大模型同时预测文字和视觉 token,生成是理解的副产品 | arxiv.org/abs/2412.14164 |
+
+## 视频(先看前两个)
+| 顺序 | 内容 | 讲的人 | 时长 | 链接 |
+|---|---|---|---|---|
+| 1 | Saining Xie 讲为什么视觉表示仍然重要(他导师,方向总览) | TUM AI Lecture | ~1h | https://www.youtube.com/watch?v=hnu-mRLebhc |
+| 2 | Eyes Wide Shut 论文讲解 | Voxel51 | 短 | https://www.youtube.com/watch?v=Iy9xClK65Bs |
+| 3 | Eyes Wide Shut 课堂讲解 | UCF CRCV | ~1h | https://www.youtube.com/watch?v=DgR_OsWl8Og |
+| 4 | Introducing Cambrian-S(实验室官方) | VISIONx@NYU | 短 | https://www.youtube.com/watch?v=denldZGVyzM |
+| 5 | Cambrian-S 论文讲解 | AI Research Roundup | 短 | https://www.youtube.com/watch?v=LF8QO52wzJg |
+| 6 | RAE 论文讲解 | Ribbit Ribbit | 短 | https://www.youtube.com/watch?v=-SpYsfLxWP4 |
+| 7 | ViT 论文逐段精读(中文,打底) | 跟李沐学AI | 1h11 | https://www.youtube.com/watch?v=FRFt3x0bO94 |
+| 8 | CLIP 论文逐段精读(中文,打底) | 跟李沐学AI | 1h38 | https://www.youtube.com/watch?v=OZF1t_Hieq8 |
+| 9 | CS231n 2025 L15 3D Vision(押题 A 的底子) | Stanford | ~1h20 | https://www.youtube.com/watch?v=7lxrKDKtykM |
+| 10 | NUS 3D CV L5 相机模型与标定(押题 A 的底子) | NUS CVRP Lab | ~1h | https://www.youtube.com/watch?v=sae97GVUXcg |
+
+时间不够:只看 1 和 2,再把篇四、篇五的题过一遍。
+
+# 篇三 · 知识点:他那几篇论文讲的东西
+> 从零讲:视觉编码器、MLLM 怎么接图、多视角空间、扩散和 RAE
+
+## 视觉编码器:CLIP、ViT、自监督
+
+### 1.1 视觉编码器(vision encoder)是干什么的
+
+比方:大模型是一个只会读字的人。视觉编码器是它的「眼睛 + 翻译」:把一张图翻译成一串大模型能读的向量。
+
+编码器翻得好不好,决定了大模型能不能看清细节。翻译漏掉的东西,大模型再聪明也找不回来。
+<span class="en">The vision encoder is the eyes and the translator: it turns an image into vectors the LLM can read. Whatever it drops, the LLM can never recover.</span>
+
+### 1.2 ViT(Vision Transformer)怎么工作
+
+- 把图切成小方块(patch),比如 224×224 的图切成 16×16 的块,一共 14×14 = 196 块。
+
+- 每块拉平,用一个线性层变成一个向量,叫 patch embedding。
+
+- 加上位置编码(positional embedding),告诉模型每块在哪。
+
+- 送进 Transformer,每块通过自注意力(self-attention)看所有其他块。
+
+- 输出每块一个向量(patch tokens),有的模型还多一个 CLS 向量代表整张图。
+
+和 CNN 的区别:CNN 从小窗口慢慢扩大视野(局部到全局)。ViT 第一层就能让任意两块互相看(一开始就是全局)。ViT 缺少 CNN 自带的「局部性」先验,所以要更多数据才训得好。
+<span class="en">ViT splits the image into patches, embeds each patch, adds positions, and runs a Transformer so every patch can attend to every other patch from the first layer. It lacks the CNN's locality prior, so it needs more data.</span>
+
+### 1.3 CLIP 是怎么训练的
+
+比方:给你 4 亿张图和它们的配文,让你玩「连连看」:每张图要找到自己的那句话,不能连到别人的。
+
+- 两个塔:图像编码器(ViT)和文本编码器(Transformer)。
+
+- 一个 batch 里 N 张图、N 句话,算出 N×N 的相似度矩阵。
+
+- 对角线是正确配对,要变大;其余是错配,要变小。这叫对比学习(contrastive learning),损失是 InfoNCE(两个方向的交叉熵)。
+
+- 训完以后,图和文字在同一个空间里,所以能零样本分类(zero-shot):把类别名写成 "a photo of a dog",看图离哪句话最近。
+
+SigLIP:把 softmax 换成每一对单独做 sigmoid 二分类。不用全 batch 归一化,省显存,大 batch 更好训。现在很多多模态模型用 SigLIP 当眼睛。
+<span class="en">CLIP trains an image tower and a text tower so matching image-caption pairs are close and mismatched pairs are far, using a symmetric cross-entropy over the N×N similarity matrix. SigLIP replaces the softmax with a per-pair sigmoid, which scales to larger batches.</span>
+
+### 1.4 CLIP 的弱点:《Eyes Wide Shut?》(他的一作)
+
+核心发现:多模态大模型答错很简单的视觉题,根源常常在 CLIP 这只「眼睛」上,不在大模型。
+
+为什么 CLIP 会看不清:
+
+- 训练目标只要求「图和配文对得上」。配文很少写朝向、数量、细小部件,所以 CLIP 没动力去记这些。
+
+- 它学的是「实例级」(instance-level)的整体语义:这是一只狗、在草地上。狗头朝左还是朝右,不影响配对,就被丢了。
+
+他们怎么找证据:CLIP-blind pairs(CLIP 盲对)
+
+- 找两张图:CLIP 觉得几乎一样(CLIP 向量很近)。
+
+- 但纯视觉自监督模型 DINOv2 觉得它们不一样(DINOv2 向量很远)。
+
+- 这种对子就是 CLIP 看不出的差别。人来看,差别很明显。
+
+用这些对子做了 MMVP 基准(Multimodal Visual Patterns):对每对图问同一个简单问题,两张图答案不同。GPT-4V 在内的模型都答得很差,还会编出错误解释(幻觉)。
+
+九类视觉模式(9 visual patterns),记住几个就行:朝向和方向、某个特征有没有、状态、数量、位置和相对关系、颜色和外观、结构和物理特性、文字、视角。
+
+他们的修法:Mixture of Features(MoF),把 CLIP 特征和 DINOv2 这类自监督特征混在一起喂给大模型。
+
+- Additive MoF:两种特征按比例加权相加。DINOv2 比例越高,看得越准,但听指令的能力变差。
+
+- Interleaved MoF:两种特征的 token 交错排列,一起送进去。看得更准,而且不丢听指令的能力。
+
+<span class="en">Eyes Wide Shut finds CLIP-blind pairs, images CLIP sees as nearly identical but DINOv2 separates, builds the MMVP benchmark from them, shows MLLMs fail on nine simple visual patterns, and proposes Mixture of Features: interleaving CLIP and self-supervised tokens improves grounding without hurting instruction following.</span>
+
+### 1.5 自监督(self-supervised)视觉:DINO、MAE
+
+- DINO / DINOv2:学生和老师两个网络看同一张图的不同裁剪,学生要输出和老师一样的东西。老师是学生参数的滑动平均(EMA)。不需要任何文字。学到的特征对形状、部件、对应关系很敏感。
+
+- MAE(Masked Autoencoder):遮住 75% 的块,让模型补回像素。像做完形填空。
+
+- 和 CLIP 的对比:CLIP 懂语义(这是什么),自监督懂结构(长什么样、在哪)。
+
+他的另一篇:《Scaling Language-Free Visual Representation Learning》(Web-SSL)
+
+- 问题:自监督在 VQA 上比 CLIP 差,是因为没有文字监督,还是因为训练数据不一样?
+
+- 做法:用同一份数据(MetaCLIP 的图)分别训自监督和 CLIP。
+
+- 结论:同样数据下,自监督随数据和模型变大涨得更好,做到 7B 参数还没饱和,在很多 VQA 和经典视觉任务上达到 CLIP 的水平。
+
+- 一句话:不用文字也能学到够用的视觉表示,以前差在数据,不在语言。
+
+<span class="en">Web-SSL trains self-supervised models and CLIP on the same MetaCLIP data and finds visual SSL scales better with data and model size, reaching CLIP-level VQA performance at up to 7B parameters. The earlier gap came from data, not from missing language supervision.</span>
+
+## 图像怎么接进大模型(MLLM 架构)
+
+### 2.1 标准三件套(LLaVA 式)
+
+图片 ──► 视觉编码器(CLIP/SigLIP ViT,通常冻结)
+│  输出 N 个 patch 向量(例如 576 个)
+▼
+连接器 / 投影层(projector,通常 2 层 MLP)
+│  把每个向量变成大模型词向量的维度
+▼
+[视觉 token × N] + [文字 token] ──► 大语言模型(LLM) ──► 回答
+
+比方:编码器是摄像头,投影层是「转接头」,把摄像头的插口转成大模型能插的口。
+
+两阶段训练:
+
+- 对齐预训练(alignment pretraining):只训投影层,用图片配文,让视觉 token 落到大模型能懂的位置。
+
+- 视觉指令微调(visual instruction tuning):训投影层和大模型,用问答对话数据,让模型学会按指令回答关于图的问题。
+
+<span class="en">The standard recipe is encoder, projector, LLM. Stage one trains only the projector on captions to align spaces. Stage two tunes projector and LLM on visual instruction data.</span>
+
+### 2.2 关键取舍:token 数量 vs 分辨率
+
+- 分辨率高,细节多,但 token 数按面积涨。336×336、patch 14 就是 576 个 token;放大一倍就是 4 倍。
+
+- 大模型注意力的计算量随 token 数平方增长,上下文也有限。
+
+- 常见办法:
+
+- 切图(tiling / AnyRes):高清图切成几块分别编码,再加一张缩略图。
+
+- 压缩 token:Q-Former、Perceiver Resampler,用一小组可学习的查询向量(learnable queries)通过交叉注意力去「问」图像特征,只留几十个 token。
+
+- 池化:相邻 token 合并。
+
+### 2.3 Cambrian-1(他的一作):以视觉为中心的 MLLM
+
+出发点:大家改进多模态模型时,主要靠换更强的大模型。视觉这一边很少被认真研究。Cambrian-1 反过来,用大模型当「考官」,去评测各种视觉编码器。
+
+- 评测 20 多种视觉编码器:语言监督的(CLIP、SigLIP)、自监督的(DINOv2、MAE)、其他强监督的,以及它们的组合。
+
+- 重新审视基准:发现很多所谓多模态基准,不看图光靠大模型也能答对不少。所以做了视觉为中心的 CV-Bench,把经典视觉任务(数数、相对位置、深度先后、相对距离)改成问答题。
+
+- Spatial Vision Aggregator(SVA):一种新连接器。
+
+- 用一组可学习的查询向量,通过交叉注意力去聚合多个编码器的特征。
+
+- 「空间感知」:每个查询只看图上对应的那一块区域,保留空间位置。
+
+- 能接高分辨率特征,同时减少 token 数。
+
+- 在大模型的多层里反复聚合,不只在输入时接一次。
+
+- 数据:整理公开的指令微调数据(Cambrian-10M,精选出 7M),强调各数据源的配比要平衡,比单纯堆数据量重要。
+
+- 全部开源:权重、代码、数据、评测方法。
+
+<span class="en">Cambrian-1 uses the LLM as an interface to evaluate over 20 vision encoders, introduces the vision-centric CV-Bench, proposes the Spatial Vision Aggregator, a spatially aware connector with learnable queries that fuses high-resolution features from multiple encoders while cutting tokens, and stresses data source balancing.</span>
+
+### 2.4 理解和生成用一个模型:MetaMorph(他的一作)
+
+- Visual-Predictive Instruction Tuning(VPiT):在视觉指令微调上加一点:让大模型不仅输出文字 token,也输出连续的视觉 token(视觉编码器空间里的向量),再用扩散模型把这些向量画成图。
+
+- 发现 1:生成能力是理解能力的副产品。理解变好了,只要很少的生成数据就能解锁画图。
+
+- 发现 2:理解数据对两种能力都更有用,生成数据的帮助小一些。
+
+- 结论:大模型本身可能就有很强的视觉「先验」。
+
+<span class="en">MetaMorph's VPiT teaches an LLM to predict continuous visual tokens as well as text. Generation emerges as a by-product of better understanding, and understanding data helps both abilities more than generation data does.</span>
+
+## 多视角和空间理解
+
+### 3.1 为什么大模型不懂空间
+
+比方:大模型像看了一辈子照片说明的人,知道「沙发旁边有台灯」这种话,但没在房间里走过。给它从三个角度拍的同一个房间,它很难对上「这是同一张沙发」。
+
+- 训练数据大多是单张图 + 文字,很少要求跨图对应。
+
+- 视觉 token 里的位置信息只是图像平面上的 2D 位置,没有深度,没有相机位姿。
+
+### 3.2 《Seeing from Another Perspective》:All-Angles Bench
+
+- 90 个真实场景,2100 多道人工标注的多视角问答。
+
+- 六类任务:数数、属性识别、相对距离、相对方向、物体操作、相机位姿估计。
+
+- 测了 27 个模型(含 Gemini-2.0-Flash、Claude-3.7-Sonnet、GPT-4o),和人差很远。
+
+- 两个最弱点:
+
+- 部分遮挡时的跨视角对应(cross-view correspondence):一个视角里被挡住一半,就认不出是同一个东西。
+
+- 粗略相机位姿(coarse camera pose):说不出两张图的相机大概怎么转的。
+
+这是你的强项接口:这两个弱点,正好是传统几何视觉解决的问题。跨视角对应 = 特征匹配(SIFT + RANSAC);相机位姿 = 本质矩阵分解、PnP。面试可以主动说:多模态模型可以借传统几何的结构,比如把对应点或估出来的位姿当额外输入,或者用这些几何约束做训练监督。
+<span class="en">All-Angles Bench has over 2,100 human-annotated multi-view questions in 90 scenes across six tasks. MLLMs fall far behind humans, especially on cross-view correspondence under occlusion and coarse camera pose, which are exactly what classical feature matching and pose estimation solve.</span>
+
+### 3.3 Cambrian-S:视频里的「空间超感知」(spatial supersensing)
+
+他们把「看懂」分成四级,越往后越难:
+
+- 语义感知(semantic perception):说出看到了什么。
+
+- 流式事件认知(streaming event cognition):连续的视频里记住发生过什么。
+
+- 隐式 3D 空间认知(implicit 3D spatial cognition):从像素推出背后的三维世界。
+
+- 预测式世界建模(predictive world modeling):在脑子里建一个世界模型,用它来筛选和整理信息。
+
+- VSI-SUPER 基准:两部分。VSR 是长视频里的空间回忆(东西放在哪);VSC 是连续空间计数(一路走来总共见过几把椅子)。视频可以任意长,靠无限加长上下文解决不了。
+
+- VSI-590K 数据 + Cambrian-S 模型:在 VSI-Bench 上绝对提升 30%,通用能力不掉。但在 VSI-SUPER 上还是不行,说明光靠堆数据不够。
+
+- 预测式感知(predictive sensing):训练一个自监督的「预测下一帧隐向量」的模块。预测错得越多(surprise,惊讶度越高),说明发生了新事情,就用来决定记住什么、在哪切分事件。在 VSI-SUPER 上明显超过商业模型。
+
+比方:你走进熟悉的房间,不会每秒钟重新看一遍所有东西。只有出现意料之外的东西(惊讶),你才会注意并记下来。
+<span class="en">Cambrian-S frames spatial supersensing in four stages, builds VSI-SUPER for arbitrarily long videos, scales data with VSI-590K for a 30-point gain on VSI-Bench, and shows that scale alone is not enough. Its predictive sensing module predicts the next latent frame and uses surprise to drive memory and event segmentation.</span>
+
+### 3.4 如果他问「你怎么让模型更懂 3D」
+
+- 输入层:加深度图或 3D 位置编码。比如把每个 patch 反投影到 3D 坐标,用 3D 坐标做位置编码。
+
+- 编码器层:用多视角一致的特征,比如在多视角数据上训练,或加对应点一致性损失。
+
+- 数据层:从 3D 扫描数据集(ScanNet 这类)自动生成空间问答:距离、方向、计数,答案由 3D 标注算出来,不靠人写。
+
+- 系统层:让模型调用工具,比如先跑 SfM 或深度估计,再基于结果回答。
+
+- 评测层:按任务类型拆开看,别只看总分。
+
+## 扩散生成和 RAE
+
+### 4.1 扩散模型(diffusion)从零讲
+
+比方:往一杯清水里一点一点滴墨水,最后全黑。扩散模型学的是倒放:从全黑的墨水一步步变回清水。
+
+- 前向加噪:真图 x₀ 逐步加高斯噪声,第 t 步是 x_t = √ᾱ_t·x₀ + √(1−ᾱ_t)·ε,最后接近纯噪声。
+
+- 训练:随机取一个 t,给图加噪,让网络预测加进去的噪声 ε(或预测 v、或预测速度)。损失就是均方误差。
+
+- 生成:从纯噪声出发,一步步用网络去掉噪声。
+
+- Classifier-free guidance(CFG):同一步算两次,一次带条件(文字),一次不带,把差值放大。条件越听话,但多样性下降。
+
+<span class="en">Diffusion adds Gaussian noise step by step and trains a network to predict that noise at a random step. Sampling runs the process in reverse. Classifier-free guidance amplifies the difference between conditional and unconditional predictions.</span>
+
+### 4.2 隐空间扩散(latent diffusion)和 DiT
+
+- 直接在像素上扩散太贵。先用自编码器(VAE)把图压成小的隐向量(比如 256×256×3 压成 32×32×4),在隐空间里扩散,最后再解码回像素。
+
+- DiT(Diffusion Transformer):把去噪网络从 U-Net 换成 Transformer。隐向量切块成 token,时间步和类别通过 adaLN(自适应层归一化)注入。DiT 的作者之一就是 Saining Xie。
+
+### 4.3 RAE:Representation Autoencoders(他参与,第 3 作者)
+
+一句话:把扩散模型用的 VAE 换成「预训练视觉编码器(冻结)+ 新训的解码器」。
+
+老 VAE 的三个问题:
+
+- 骨干网络过时,和 Transformer 体系不统一。
+
+- 隐空间维度低(每个位置 4 个或 16 个通道),信息容量小。
+
+- 只靠重建训练,隐向量没有语义,限制了生成质量。
+
+RAE 的做法:编码器用 DINOv2、SigLIP、MAE 这类现成的视觉编码器,冻结不动;只训一个解码器,把编码器的特征还原成像素。这样隐空间既能重建得好,又语义丰富。
+
+难点:这些特征维度很高(比如每个 token 768 维),扩散 Transformer 在高维空间里不好训。他们分析了原因,给了三个办法:
+
+- DiT 的宽度要至少和 token 维度一样大,否则学不会。
+
+- 噪声日程要按维度调整(dimension-dependent noise schedule shift):维度高,同样的噪声强度破坏得少,所以要加更多噪声。
+
+- 训练解码器时给输入加噪(noise-augmented decoding),让它能容忍扩散生成出来的不完美隐向量。
+
+- 再加一个轻量但很宽的 DDT 头。
+
+结果:ImageNet 256×256 不用 guidance 时 FID 1.51;用 guidance 时 256 和 512 分辨率都是 1.13。收敛更快,而且不需要额外的表示对齐损失(REPA 那类)。
+
+FID 是什么:用一个预训练网络分别提取真图和生成图的特征,各自拟合一个高斯分布,算两个分布的距离。越低越好。
+<span class="en">RAE replaces the VAE with a frozen pretrained representation encoder plus a trained decoder, giving semantically rich, high-dimensional latents. To make diffusion work there, the DiT width must match the token dimension, the noise schedule is shifted by dimension, and the decoder is trained with noise augmentation. It reaches 1.51 FID without guidance and 1.13 with guidance on ImageNet.</span>
+
+### 4.4 RAE 扩到文生图(他一作)
+
+- 编码器用冻结的 SigLIP-2,解码器在网络图、合成图、文字渲染数据上训。文字类要专门配数据。
+
+- 规模变大后,框架反而可以简化:按维度调噪声仍然关键,但宽头和加噪解码的收益变得可以忽略。
+
+- 和最强的 FLUX VAE 对比,模型从 0.5B 到 9.8B,RAE 预训练阶段全部更好。
+
+- 在高质量数据上微调:VAE 版 64 个 epoch 后严重过拟合;RAE 版到 256 个 epoch 还稳定。
+
+- 意义:理解和生成能在同一个表示空间里做,模型可以直接对自己生成的隐向量做推理,这为统一模型铺路。
+
+# 篇四 · 押题 A:3D 建模 + 图像处理(主战场)
+> Helen 写在 Peter 那轮日程上的主题,也是初筛真题的方向。每题都要能白板讲、能代数字
+
+## A1 直线检测:Canny + Hough · Line detection with Canny and Hough 【预测,由初筛真题延伸】
+
+> 提纲:先 Canny 拿边缘 → 每个边缘点对所有可能的线投票 → ρ = x cosθ + y sinθ → 票数峰值就是直线 → 概率 Hough 出线段 → LSD 不用调参
+
+比方:每个边缘点都在喊「我可能在这些线上」,大家一起往投票箱里投,票最多的那条线就是真的。
+<span class="en">Analogy: every edge pixel shouts "I could be on these lines," and the line with the most votes wins.</span>
+为什么用 ρ、θ 而不用 y = kx + b:竖线的斜率是无穷大,没法投票;ρ 是原点到直线的距离,θ 是垂线的角度,两个都有界。
+<span class="en">Why ρ and θ instead of slope and intercept: vertical lines have infinite slope; ρ and θ are bounded.</span>
+
+```
+图像空间                      参数空间 (θ 横轴, ρ 纵轴)
+   y                          ρ
+   │   ● ● ● ●  ← 一条线上的点   │  ~~~ 每个点变成一条正弦曲线
+   │                           │   \ / \ /
+   └──────── x                 │    ╳  ← 很多曲线交在同一点 (ρ*, θ*) = 那条线
+```
+> 🔤 ●= 边缘点;θ = 原点到直线垂线的角度;ρ = 原点到直线的距离;╳ = 投票峰值
+
+小例子:点 (3, 4)。θ = 0° → ρ = 3;θ = 90° → ρ = 4;θ = 45° → ρ = (3 + 4)/√2 ≈ 4.95。同一条线上的所有点,会在同一个 (ρ, θ) 上投票。
+<span class="en">Example: point (3, 4) votes ρ = 3 at 0°, 4 at 90°, about 4.95 at 45°; all points on one line vote for the same (ρ, θ).</span>
+
+> First I get edges with <u>Canny</u>. Then each edge pixel votes for every line that could pass through it, parameterized as <u>ρ = x cos θ + y sin θ</u>, where θ is the angle of the normal and ρ the distance from the origin; this handles vertical lines, unlike slope-intercept. Votes go into a 2D accumulator, and <u>peaks</u> are lines, after non-maximum suppression. <u>Probabilistic Hough</u> votes with a random subset of points and returns segments with a minimum length and maximum gap, which is faster and gives endpoints. <u>LSD</u> grows regions of pixels with similar gradient direction and validates them statistically, so it needs almost no tuning.
+
+这段在说什么:前处理 → 投票的参数化和原因 → 峰值 → 两个工程上更常用的变体。
+<span class="en">What this does: preprocessing, the voting parameterization and why, peaks, and two practical variants.</span>
+
+```python
+import numpy as np
+
+def hough_lines(edges, n_theta=180, top_k=2):
+    # edges: 二值边缘图 (H, W),1 = 边缘点
+    H, W = edges.shape
+    diag = int(np.ceil(np.hypot(H, W)))          # ρ 的最大绝对值 = 对角线长
+    thetas = np.deg2rad(np.arange(n_theta))      # θ 取 0..179 度,步长 1 度
+    rhos = np.arange(-diag, diag + 1)            # ρ 步长 1 像素
+    acc = np.zeros((len(rhos), n_theta), int)    # 累加器:行 = ρ,列 = θ
+    ys, xs = np.nonzero(edges)                   # 所有边缘点坐标
+    cos_t, sin_t = np.cos(thetas), np.sin(thetas)
+    for x, y in zip(xs, ys):
+        # 每个点对每个 θ 算 ρ = x cosθ + y sinθ,在 (ρ, θ) 格子里投一票
+        r = np.round(x * cos_t + y * sin_t).astype(int) + diag
+        acc[r, np.arange(n_theta)] += 1
+    # 票数最多的格子 = 最多点共线的那条线(真实实现还要做局部极大值抑制)
+    flat = np.argsort(acc.ravel())[::-1][:top_k]
+    r_idx, t_idx = np.unravel_index(flat, acc.shape)
+    return [(int(rhos[r]), int(np.rad2deg(thetas[t])), int(acc[r, t])) for r, t in zip(r_idx, t_idx)]
+
+if __name__ == "__main__":
+    import cv2
+    img = np.zeros((50, 50), np.uint8)
+    img[:, 10] = 1                                   # 竖线 x = 10 → θ = 0°, ρ = 10
+    for i in range(50): img[i, i] = 1                # 对角线 y = x → θ = 135°, ρ = 0
+    print("mine  (rho, theta_deg, votes):", hough_lines(img))
+    cv = cv2.HoughLines(img * 255, 1, np.pi / 180, 30)
+    print("opencv (rho, theta_deg):", [(float(r), round(float(np.rad2deg(t)))) for r, t in cv[:2, 0]])
+```
+
+已实跑(python3,2026-10-20),输出:
+<span class="en">Run on this machine; output:</span>
+
+```text
+mine  (rho, theta_deg, votes): [(0, 135, 50), (10, 0, 50)]
+opencv (rho, theta_deg): [(10.0, 0), (0.0, 135)]
+```
+
+结果:竖线 x = 10 得到 (ρ = 10, θ = 0°),对角线 y = x 得到 (ρ = 0, θ = 135°),每条 50 票;和 OpenCV 的 cv2.HoughLines 结果一致。
+<span class="en">Result: the vertical line gives (10, 0°) and the diagonal (0, 135°) with 50 votes each, matching OpenCV.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 复杂度和分辨率 <span class="en">Cost and resolution?</span> | O(边缘点数 × θ 个数);θ 分得细定位准,但票会分散到相邻格子;一般 1 度、1 像素,再在峰值附近细化。<span class="en">O(edge points × θ bins); finer bins localize better but split votes; 1 degree and 1 pixel is typical, refined near peaks.</span> |
+| 噪声多怎么办 <span class="en">Noisy edges?</span> | 先高斯平滑再 Canny;用梯度方向限制每个点只在附近几个 θ 投票,票更集中、更快;或者用 RANSAC 拟合(4.19)。<span class="en">Smooth first, restrict each point's votes to θ near its gradient direction, or fit with RANSAC.</span> |
+| 圆怎么检测 <span class="en">Circles?</span> | 同样的投票思路,参数是 (a, b, r) 三维;OpenCV 用梯度方向把它降到二维(Hough gradient)。<span class="en">Same voting with (a, b, r); OpenCV uses gradient direction to reduce it to 2D.</span> |
+
+## A2 判断两条线平行 · Are two lines parallel? 【真题 10-08】
+
+> 提纲:先问线是什么形式 → 2D 叉积加角度容差 → 齐次坐标:交点在无穷远 → 3D 方向叉积、异面 → 图像里三维平行线交于消失点
+
+比方:铁轨在地上是平行的,但照片里两条铁轨在远处会合;会合的那个点就是消失点。
+<span class="en">Analogy: rails are parallel on the ground but meet in a photo; where they meet is the vanishing point.</span>
+
+```
+  2D:  d1 × d2 = |d1||d2| sinθ  ≈ 0 → 平行
+  齐次:l = p1 × p2;  交点 x = l1 × l2 = (x, y, w);  w ≈ 0 → 交在无穷远 → 平行
+  图像: ╲   ╱   两条 3D 平行线 → 交于消失点 v,方向 d ∝ K⁻¹ v
+         ╲ ╱
+          v
+```
+> 🔤 d = 方向向量;l = 直线的齐次表示 (a, b, c),对应 ax + by + c = 0;w = 齐次坐标第三维;K = 相机内参
+
+小例子(4.2 代码已实跑):线 1 过 (0,0)、(4,2),线 2 过 (0,3)、(2,4),斜率都是 1/2;齐次交点 = (−24, −12, 0),第三维是 0,所以平行。把线 2 改成过 (2,5),交点 (−24, −12, 4) → (−6, −3),不平行。
+<span class="en">Example: two lines of slope 1/2 meet at (−24, −12, 0), at infinity; change one and they meet at (−6, −3).</span>
+
+> It depends on the representation. With direction vectors, the 2D cross product is |d1||d2| sin θ, so I normalize and compare <u>|sin θ| to a tolerance</u>, never to exact zero. In <u>homogeneous coordinates</u>, the line through two points is their cross product, and two lines meet at the cross product of the lines; if the <u>third coordinate is near zero</u>, they meet at infinity, so they're parallel. In 3D, parallel means the direction cross product is zero; lines that don't meet and aren't parallel are <u>skew</u>. The catch in images: lines parallel in 3D <u>meet at a vanishing point</u>, so to test 3D parallelism from a photo I check whether they share a vanishing point, or rectify the plane with a homography first.
+
+这段在说什么:最直接的方法 → 最漂亮的方法 → 3D → 图像里的陷阱。陷阱那一段最能体现你懂视觉。
+<span class="en">What this does: the direct method, the elegant one, 3D, then the image trap, which shows real vision understanding.</span>
+
+```python
+import numpy as np
+
+def parallel_2d(p1, p2, q1, q2, tol_deg=1.0):
+    # 方向向量 + 叉积:|d1 × d2| = |d1||d2| sinθ
+    d1 = np.subtract(p2, p1); d2 = np.subtract(q2, q1)
+    cross = d1[0] * d2[1] - d1[1] * d2[0]
+    sin_t = abs(cross) / (np.linalg.norm(d1) * np.linalg.norm(d2))   # 归一化成 sinθ
+    return sin_t < np.sin(np.deg2rad(tol_deg))                       # 和容差比,不和 0 硬比
+
+def parallel_homog(p1, p2, q1, q2, tol=1e-6):
+    # 齐次坐标:过两点的直线 l = p1 × p2;两条线的交点 x = l1 × l2
+    h = lambda p: np.array([p[0], p[1], 1.0])
+    l1 = np.cross(h(p1), h(p2)); l2 = np.cross(h(q1), h(q2))
+    x = np.cross(l1, l2)
+    # 第三个分量 ≈ 0 → 交点在无穷远 → 平行(先归一化,避免受数值大小影响)
+    return bool(abs(x[2]) / np.linalg.norm(x) < tol), x
+
+def parallel_3d(d1, d2, tol=1e-6):
+    c = np.cross(d1, d2)                       # 3D 方向叉积为零向量 → 平行
+    return bool(np.linalg.norm(c) / (np.linalg.norm(d1) * np.linalg.norm(d2)) < tol)
+
+print(parallel_2d((0, 0), (4, 2), (0, 3), (2, 4)))      # 斜率都是 1/2 → True
+print(parallel_2d((0, 0), (4, 2), (0, 3), (2, 5)))      # 斜率 1/2 和 1 → False
+print(parallel_homog((0, 0), (4, 2), (0, 3), (2, 4)))   # 交点 (…, …, 0)
+print(parallel_homog((0, 0), (4, 2), (0, 3), (2, 5)))   # 有限交点
+print(parallel_3d([1, 2, 3], [2, 4, 6]), parallel_3d([1, 0, 0], [0, 1, 0]))
+```
+
+已实跑(python3,2026-10-20),输出:
+<span class="en">Run on this machine; output:</span>
+
+```text
+True
+False
+(True, array([-24., -12.,   0.]))
+(False, array([-24., -12.,   4.]))
+True False
+```
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 消失点有什么用 <span class="en">What are vanishing points for?</span> | K⁻¹v 给出 3D 方向;两个互相垂直方向的消失点满足 (v1 − c)·(v2 − c) = −f²(c 是主点),可以估焦距;也能估相机相对地面或墙面的旋转。<span class="en">K⁻¹v gives the 3D direction; two orthogonal vanishing points satisfy (v1 − c)·(v2 − c) = −f², which yields the focal length, and they give the camera's rotation relative to a floor or wall.</span> |
+| 一堆线段怎么分组找平行族 <span class="en">Grouping many segments into parallel families?</span> | 在图像里按 Hough 的 θ 聚类只适合正对拍摄;透视下要对两两线段求交点,用 RANSAC 找被最多线段支持的消失点。<span class="en">Clustering by θ only works fronto-parallel; under perspective, intersect segment pairs and RANSAC for the vanishing point supported by the most segments.</span> |
+| 容差怎么定 <span class="en">How to set the tolerance?</span> | 按检测噪声定:线段越短,角度误差越大;常用 1 度左右,或者用线段长度加权。<span class="en">From detector noise: shorter segments have larger angle error; about one degree, or weight by length.</span> |
+
+## A3 RGB 和 HSV · RGB versus HSV 【真题 10-08】
+
+> 提纲:RGB 是三种光的强度,颜色和亮度搅在一起 → HSV 分开色相、饱和度、亮度 → 光照变了主要动 V → 按颜色分割用 HSV → 两个坑
+
+比方:RGB 像用红绿蓝三种颜料的量描述颜色;HSV 像说「什么颜色、多鲜艳、多亮」。
+<span class="en">Analogy: RGB says how much of three paints; HSV says which color, how vivid, how bright.</span>
+小例子:红色 (200, 0, 0) 变暗一半是 (100, 0, 0):RGB 里 R 掉了一半;HSV 里 H = 0°、S = 100% 都不变,只有 V 从 78% 降到 39%。
+<span class="en">Example: dimming (200, 0, 0) to (100, 0, 0) halves R, but in HSV only V changes, from 78% to 39%.</span>
+
+> RGB stores red, green and blue intensities, matching sensors and displays, but <u>color and brightness are entangled</u>: dim the light and all three change. HSV separates <u>hue</u>, which color, as an angle; <u>saturation</u>, how pure; and <u>value</u>, how bright. Lighting changes mostly move V, so thresholding on H and S is more robust; in RCRI, routes are grouped by hold color in HSV for exactly this reason. Two pitfalls: <u>red wraps around zero</u>, so it needs two hue ranges, and <u>hue is unstable at low saturation</u>, since gray has no hue.
+
+这段在说什么:RGB 的问题 → HSV 怎么解决 → RCRI 实例 → 两个坑。HSV 识别那部分是队友写的,被追问时说清。
+<span class="en">What this does: RGB's problem, HSV's fix, the RCRI example, two pitfalls; the HSV module was your teammate's, so say so if asked.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| OpenCV 的 H 范围 <span class="en">OpenCV's hue range?</span> | 8 位图里 H 是 0–179(角度除以 2),S、V 是 0–255;红色要取 0 附近和 179 附近两段。<span class="en">H is 0 to 179, degrees halved; S and V are 0 to 255; red needs two ranges.</span> |
+| 还有哪些颜色空间 <span class="en">Other color spaces?</span> | LAB:欧氏距离接近人眼感知差异,做颜色比较;YUV/YCbCr:亮度和色度分开,视频压缩用,色度可以降采样。<span class="en">LAB for perceptual distances; YUV for video, where chroma can be subsampled.</span> |
+| 相机里的颜色从哪来 <span class="en">Where does camera color come from?</span> | 每个像素只有一种颜色滤光片(Bayer 排列),去马赛克插值出 RGB,再做白平衡、色彩矩阵和 gamma。<span class="en">A Bayer filter gives one color per pixel; demosaicing, white balance, a color matrix and gamma produce RGB.</span> |
+
+## A4 3D 数据结构 · 3D data structures 【真题 10-08】
+
+> 提纲:按传感器原始输出分 → 深度图 → 点云 + KD 树 → 体素 / 八叉树 / 哈希 → TSDF 和网格 → 各自代价
+
+| 结构 <span class="en">Structure</span> | 是什么 <span class="en">What it is</span> | 好处 <span class="en">Strength</span> | 代价 <span class="en">Cost</span> |
+|---|---|---|---|
+| 深度图 <span class="en">Depth map</span> | H×W 每个像素一个距离 <span class="en">One distance per pixel</span> | 有组织,能直接用 2D 卷积 <span class="en">Organized, works with 2D convs</span> | 只有一个视角 <span class="en">One viewpoint only</span> |
+| 点云 <span class="en">Point cloud</span> | 无序的 N 个 xyz <span class="en">Unordered N×3 points</span> | 精确、省空间 <span class="en">Exact and compact</span> | 没有邻接关系,要建索引 <span class="en">No neighbors without an index</span> |
+| KD 树 <span class="en">k-d tree</span> | 每层沿一个轴切一刀 <span class="en">Splits one axis per level</span> | 最近邻平均 O(log N) <span class="en">Nearest neighbor in about log N</span> | 动态插入麻烦 <span class="en">Awkward to update</span> |
+| 体素 <span class="en">Voxels</span> | 3D 规则格子 <span class="en">A regular 3D grid</span> | O(1) 查找,能用 3D 卷积 <span class="en">O(1) lookup, 3D convs</span> | 内存是分辨率的立方 <span class="en">Memory grows cubically</span> |
+| 八叉树 <span class="en">Octree</span> | 每个格子按需分 8 份 <span class="en">Split cells into 8 as needed</span> | 空的地方不细分,多分辨率 <span class="en">Coarse where empty, multi-resolution</span> | 访问要走树 <span class="en">Tree traversal per lookup</span> |
+| 网格 <span class="en">Mesh</span> | 顶点 + 三角形下标 <span class="en">Vertices plus triangle indices</span> | 有表面和法向,能渲染 <span class="en">Surfaces, normals, renderable</span> | 拓扑难改,从数据生成要重建 <span class="en">Hard to edit topology, needs reconstruction</span> |
+
+小例子:1 立方米空间用 1 cm 体素 = 100³ = 一百万个格子;用 1 mm 就是十亿个,所以大场景用稀疏哈希体素或八叉树。
+<span class="en">Example: one cubic meter at 1 cm is a million voxels, at 1 mm a billion, which is why large scenes use sparse hashing or octrees.</span>
+
+> Sensors give me <u>depth maps</u> or <u>point clouds</u>; back-projecting a depth map with the intrinsics gives a point cloud. To search a point cloud I build a <u>k-d tree</u>, so nearest-neighbor queries are about log N, which ICP, normals and clustering all need. For regular structure I use <u>voxels</u>, with O(1) lookup but cubic memory, so in practice <u>sparse voxel hashing or an octree</u>. For reconstruction, a <u>TSDF</u> volume fuses many depth frames and Marching Cubes extracts a <u>mesh</u>.
+
+这段在说什么:从传感器给什么 → 怎么查 → 怎么规整 → 怎么重建,每种结构一句它解决什么问题。
+<span class="en">What this does: from raw sensor data to search, regular grids and reconstruction, each with the problem it solves.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| KD 树怎么找最近邻 <span class="en">k-d tree nearest neighbor?</span> | 先走到查询点所在的叶子,记当前最近距离 r;回溯时只有查询点到切分面的距离小于 r 才进另一边。维度高了会退化。<span class="en">Descend to the leaf, record the best distance r, and only cross a split plane closer than r when backtracking; it degrades in high dimensions.</span> |
+| 神经网络怎么吃点云 <span class="en">How do networks consume point clouds?</span> | PointNet:每个点共享 MLP,再对所有点做最大池化,结果和点的顺序无关;或者先体素化用稀疏 3D 卷积。<span class="en">PointNet applies a shared MLP per point and max-pools across points, order-invariant; or voxelize and use sparse 3D convs.</span> |
+
+## A5 卷积滤波:高斯、均值、中值、Sobel · Filters: Gaussian, mean, median, Sobel 【预测】
+
+> 提纲:线性滤波 = 卷积 → 均值和高斯去噪 → 中值去椒盐 → Sobel 求梯度
+
+| 滤波 <span class="en">Filter</span> | 核或做法 <span class="en">Kernel or method</span> | 用途 <span class="en">Use</span> |
+|---|---|---|
+| 均值 <span class="en">Mean</span> | 3×3 全是 1/9 <span class="en">All 1/9</span> | 去噪,但边缘糊、有方块感 <span class="en">Denoise, blurs edges</span> |
+| 高斯 <span class="en">Gaussian</span> | [[1,2,1],[2,4,2],[1,2,1]]/16 <span class="en">The same, binomial</span> | 去噪,更平滑,可分离成两个一维核 <span class="en">Smoother, separable into two 1D passes</span> |
+| 中值 <span class="en">Median</span> | 窗口里取中位数(非线性)<span class="en">Window median, nonlinear</span> | 去椒盐噪声,保边缘 <span class="en">Salt-and-pepper noise, keeps edges</span> |
+| Sobel <span class="en">Sobel</span> | Gx = [[−1,0,1],[−2,0,2],[−1,0,1]] <span class="en">Horizontal gradient kernel</span> | 求梯度,边缘方向和强度 <span class="en">Gradient magnitude and direction</span> |
+
+小例子:一行像素 [10, 10, 255, 10, 10],中间是一个白噪点。3 点均值把它变成 (10 + 255 + 10)/3 = 91.7,噪点被抹开;中值取 [10, 255, 10] 的中位数 = 10,噪点直接消失。
+<span class="en">Example: for [10, 10, 255, 10, 10], a 3-point mean gives 91.7 and smears the spike; the median gives 10 and removes it.</span>
+
+> Linear filters are convolutions. A <u>mean</u> filter averages a window; a <u>Gaussian</u> weights the center more, gives smoother results and is <u>separable</u>, so a k×k blur costs 2k instead of k² per pixel. A <u>median</u> filter is nonlinear: it removes salt-and-pepper noise while keeping edges sharp. <u>Sobel</u> combines smoothing in one direction with a derivative in the other, giving Gx and Gy; magnitude √(Gx² + Gy²) and direction atan2(Gy, Gx).
+
+这段在说什么:四种滤波各一句,加一个能说明中值为什么特别的小例子。
+<span class="en">What this does: one line per filter, with an example showing why the median is special.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 怎么既去噪又保边 <span class="en">Denoise but keep edges?</span> | 双边滤波:权重同时看空间距离和颜色差,颜色差大的邻居权重小,所以不跨边平均;代价是慢,不是线性卷积。<span class="en">Bilateral filtering weights by both distance and intensity difference, so it doesn't average across edges; it's slower and nonlinear.</span> |
+| 大核怎么快 <span class="en">Fast large kernels?</span> | 可分离核拆成两个一维;均值用积分图,任意大小 O(1);很大的核用 FFT。<span class="en">Separable kernels, integral images for box filters, FFT for very large kernels.</span> |
+
+## A6 Canny 四步 · The four steps of Canny 【预测】
+
+> 提纲:高斯平滑 → Sobel 求梯度大小和方向 → 非极大值抑制把边变细 → 双阈值 + 滞后连接
+
+```
+原图 ─▶ ① 高斯去噪 ─▶ ② 梯度 (大小, 方向) ─▶ ③ 沿梯度方向只留局部最大(边变成 1 像素宽)
+     ─▶ ④ 强边 > 高阈值:留;弱边在两阈值之间:和强边相连才留;< 低阈值:丢
+```
+> 🔤 高阈值、低阈值常取 2:1 或 3:1
+
+小例子:高阈值 100、低阈值 50。一段梯度为 70 的弱边如果连着一段 120 的强边就保留,孤零零一段 70 的就丢掉,这样断断续续的真边能连起来,孤立噪点被去掉。
+<span class="en">Example: with thresholds 100 and 50, a weak 70 segment survives if connected to a strong 120 edge; an isolated 70 is dropped.</span>
+
+> Canny has four steps: <u>Gaussian smoothing</u> to suppress noise; <u>Sobel gradients</u> for magnitude and direction; <u>non-maximum suppression</u> along the gradient direction so edges are one pixel wide; and <u>hysteresis thresholding</u>: strong edges are kept, weak edges are kept only if connected to strong ones. The Gaussian σ trades noise against detail, and the two thresholds trade broken edges against false ones.
+
+这段在说什么:四步每步一个目的,最后两个参数各自的取舍。
+<span class="en">What this does: one purpose per step, and the trade-off for each parameter.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 为什么要双阈值 <span class="en">Why two thresholds?</span> | 单阈值高了边断开,低了噪声多;双阈值让弱边「借」强边的可信度。<span class="en">One high threshold breaks edges and one low threshold admits noise; two let weak edges borrow confidence from strong ones.</span> |
+| 阈值怎么自动定 <span class="en">Automatic thresholds?</span> | 常见做法是按梯度幅值的中位数取上下比例,或 Otsu 阈值作为高阈值。<span class="en">Set them from the median gradient magnitude, or use Otsu's threshold as the high one.</span> |
+
+## A7 直方图均衡 · Histogram equalization 【预测】
+
+> 提纲:用累计分布把灰度拉开 → s = round(255 × CDF(r)) → 全局版会放大噪声 → CLAHE 分块 + 限制对比度
+
+比方:一张照片所有像素都挤在 50 到 100 的灰度里,看起来灰蒙蒙;均衡就是把它们摊到 0 到 255。
+<span class="en">Analogy: pixels crammed into 50 to 100 look flat; equalization spreads them over 0 to 255.</span>
+小例子:4 个像素 {50, 50, 100, 200},累计分布 50 → 0.5、100 → 0.75、200 → 1.0,映射成 50 → 128(127.5 四舍五入)、100 → 191、200 → 255。
+<span class="en">Example: values 50, 50, 100, 200 have CDF 0.5, 0.75, 1.0, so they map to about 128, 191 and 255.</span>
+
+> Histogram equalization maps each intensity through the <u>cumulative distribution</u>, s = 255 × CDF(r), so the output histogram is roughly flat and contrast is stretched. Globally it can over-amplify noise and wash out regions, so <u>CLAHE</u> equalizes small tiles, <u>clips the histogram</u> to limit contrast gain, and blends tiles with interpolation. For color images I'd apply it to the luminance channel only, like V or L, to avoid color shifts.
+
+这段在说什么:公式和算例,全局版的问题,CLAHE 怎么修,彩色图怎么处理。
+<span class="en">What this does: formula and example, the global version's problem, CLAHE's fix, and color handling.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 为什么不直接对 RGB 三个通道做 <span class="en">Why not each RGB channel?</span> | 三个通道映射不同,颜色会偏;转到 LAB 或 HSV 只处理亮度。<span class="en">Different mappings per channel shift hues; equalize only lightness in LAB or HSV.</span> |
+
+## A8 形态学:腐蚀、膨胀、开、闭 · Morphology: erode, dilate, open, close 【预测】
+
+> 提纲:二值图上用一个结构元素扫 → 腐蚀变瘦、膨胀变胖 → 开 = 先腐蚀后膨胀,去小白点 → 闭 = 先膨胀后腐蚀,补小黑洞
+
+```
+原图    ·██·        腐蚀(3×3)→ 只有周围全是白的才留  → 变瘦,小点消失
+        ████        膨胀(3×3)→ 周围有一个白的就变白  → 变胖,小洞填上
+        ·██· ●     开 = 腐蚀再膨胀:● 这种孤立小点被去掉,大块形状基本不变
+```
+> 🔤 █ = 前景(白);· = 背景;● = 噪点
+
+> Morphology probes a binary mask with a structuring element. <u>Erosion</u> keeps a pixel only if the whole neighborhood is foreground, shrinking shapes and removing specks; <u>dilation</u> sets it if any neighbor is foreground, growing shapes and filling gaps. <u>Opening</u>, erode then dilate, removes small noise while keeping large shapes; <u>closing</u>, dilate then erode, fills small holes. I'd use them to clean a color-threshold mask, for example after HSV segmentation.
+
+这段在说什么:两个基本操作,两个组合操作,一个真实用法(清理 HSV 分割的掩码)。
+<span class="en">What this does: two primitives, two combinations, and a real use cleaning an HSV mask.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 形态学梯度 <span class="en">Morphological gradient?</span> | 膨胀 − 腐蚀,得到物体轮廓。<span class="en">Dilation minus erosion gives the outline.</span> |
+| 灰度图能做吗 <span class="en">Grayscale?</span> | 能:腐蚀 = 窗口最小值,膨胀 = 窗口最大值。<span class="en">Yes: erosion is a window minimum, dilation a window maximum.</span> |
+
+## A9 SIFT 和 ORB · SIFT and ORB 【预测】
+
+> 提纲:找关键点 + 描述子 + 匹配 → SIFT:尺度空间、128 维浮点,准但慢 → ORB:FAST + 旋转 BRIEF,二进制、汉明距离,快 → 比值测试 + RANSAC
+
+| 项目 <span class="en">Aspect</span> | SIFT <span class="en">SIFT</span> | ORB <span class="en">ORB</span> |
+|---|---|---|
+| 关键点 <span class="en">Keypoints</span> | 高斯差分(DoG)尺度空间的极值 <span class="en">DoG scale-space extrema</span> | FAST 角点 + 图像金字塔 <span class="en">FAST corners on a pyramid</span> |
+| 方向 <span class="en">Orientation</span> | 梯度方向直方图的主方向 <span class="en">Dominant gradient orientation</span> | 灰度质心方向 <span class="en">Intensity centroid</span> |
+| 描述子 <span class="en">Descriptor</span> | 4×4 格 × 8 方向 = 128 维浮点 <span class="en">4×4 cells × 8 bins = 128 floats</span> | 256 位二进制(旋转 BRIEF)<span class="en">256-bit binary, rotated BRIEF</span> |
+| 匹配 <span class="en">Matching</span> | 欧氏距离 <span class="en">Euclidean distance</span> | 汉明距离,一条 XOR + popcount <span class="en">Hamming distance, XOR and popcount</span> |
+| 取舍 <span class="en">Trade-off</span> | 准,对尺度旋转光照稳,慢 <span class="en">Accurate and robust, slow</span> | 快很多,适合实时和嵌入式 <span class="en">Much faster, suits real-time and embedded</span> |
+
+> Feature matching has three parts: detect keypoints, describe them, match. <u>SIFT</u> finds extrema in a difference-of-Gaussians scale space, assigns a dominant orientation, and builds a <u>128-dimensional</u> gradient histogram descriptor, so it's scale- and rotation-invariant but slow. <u>ORB</u> uses FAST corners on an image pyramid and a <u>256-bit binary</u> descriptor matched by Hamming distance, much faster for real time on edge devices. Either way I filter matches with <u>Lowe's ratio test</u>, best over second-best below about 0.75 to 0.8, then <u>RANSAC</u> on a homography or fundamental matrix.
+
+这段在说什么:三步框架,两个方法对比,最后是过滤错误匹配的两道关。
+<span class="en">What this does: the three-step frame, the two methods compared, then two filters for bad matches.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 比值测试为什么有效 <span class="en">Why does the ratio test work?</span> | 正确匹配的最近邻明显比第二近的近;如果两个差不多,说明是重复纹理,模棱两可,丢掉。<span class="en">A true match is clearly closer than the runner-up; if they're close, it's ambiguous repeated texture, so drop it.</span> |
+| 学习的特征 <span class="en">Learned features?</span> | SuperPoint 检测加描述,SuperGlue 或 LightGlue 用注意力做匹配,弱纹理和大视角下更稳,但要 GPU。<span class="en">SuperPoint plus SuperGlue or LightGlue are more robust in low texture and wide baselines but need a GPU.</span> |
+
+## A10 针孔相机:内参、外参和投影算例 · The pinhole camera: intrinsics, extrinsics, projection 【预测】
+
+> 提纲:世界点 → 外参 [R | t] 转到相机坐标 → 除以 Z → 内参 K 变成像素 → 算一个例子
+
+比方:外参回答「相机站在哪、朝哪看」;内参回答「镜头放大多少、画面中心在哪」。
+<span class="en">Analogy: extrinsics say where the camera stands and looks; intrinsics say how much the lens magnifies and where the center is.</span>
+
+```
+s·[u, v, 1]ᵀ = K [R | t] [X, Y, Z, 1]ᵀ
+
+K = | fx  0  cx |
+    |  0 fy  cy |
+    |  0  0   1 |
+```
+> 🔤 fx、fy = 焦距(像素);cx、cy = 主点;R、t = 世界到相机的旋转和平移;s = 深度 Z
+
+算例:fx = fy = 500,cx = 320,cy = 240;相机坐标下的点 (0.4, −0.2, 2.0) 米 → u = 500 × 0.4/2 + 320 = 420,v = 500 × (−0.2)/2 + 240 = 190(已用 python 核对)。
+<span class="en">Example: with f = 500 and center (320, 240), the point (0.4, −0.2, 2.0) projects to (420, 190).</span>
+
+> A world point is first moved into the camera frame by the <u>extrinsics</u>, rotation R and translation t. Then it's projected by <u>dividing by depth Z</u>, and the <u>intrinsic matrix K</u>, with focal lengths in pixels and the principal point, maps it to pixel coordinates. For example, with f = 500 and center (320, 240), a point 2 meters ahead, 0.4 right and 0.2 up lands at <u>(420, 190)</u>. The division by Z is why one image loses depth.
+
+这段在说什么:三步(外参 → 除深度 → 内参),一个算例,最后一句点出单目为什么测不了深度。
+<span class="en">What this does: three steps, one example, and why a single image loses depth.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 畸变 <span class="en">Distortion?</span> | 径向畸变 x' = x(1 + k1r² + k2r⁴ + …),桶形或枕形;切向畸变来自镜头没装正。去畸变在归一化坐标上做。<span class="en">Radial distortion scales by 1 + k1r² + k2r⁴, barrel or pincushion; tangential comes from lens misalignment; undistort in normalized coordinates.</span> |
+| 反投影 <span class="en">Back-projection?</span> | 已知像素和深度:X = (u − cx)·Z/fx,Y = (v − cy)·Z/fy;深度图就是这样变成点云的。<span class="en">With depth: X = (u − cx)Z/fx, Y = (v − cy)Z/fy, which is how a depth map becomes a point cloud.</span> |
+
+## A11 相机标定 · Camera calibration 【预测】
+
+> 提纲:拍棋盘格多个姿态 → 每张图求一个单应 → 闭式解出 K → 再用 LM 优化所有参数含畸变 → 看重投影误差
+
+比方:拿一把尺子(棋盘格,格子大小已知)从各个角度拍,反推出镜头的放大倍数和变形。
+<span class="en">Analogy: photograph a ruler of known size from many angles and infer the lens's magnification and distortion.</span>
+
+> I'd use <u>Zhang's method</u>: photograph a checkerboard with known square size in about 15 to 20 poses covering the whole frame and different tilts. Each image gives a homography from the board plane to the image; these constrain K, giving a <u>closed-form initial estimate</u>. Then <u>Levenberg–Marquardt</u> refines intrinsics, distortion and every pose by minimizing <u>reprojection error</u>. I'd accept it if the RMS error is well under a pixel, roughly below 0.5, and check that residuals have no pattern across the image.
+
+这段在说什么:数据怎么采、怎么初始化、怎么精修、怎么判断好坏。
+<span class="en">What this does: data collection, initialization, refinement, and how to judge quality.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 为什么要多角度 <span class="en">Why many tilts?</span> | 只拍正对的姿态,焦距和距离分不开(退化);倾斜的姿态才能约束 K。<span class="en">Fronto-parallel views can't separate focal length from distance; tilted views constrain K.</span> |
+| 双目还要标什么 <span class="en">Stereo extras?</span> | 两个相机之间的 R、t(外参),然后做立体校正,让对应点在同一行。<span class="en">The R and t between cameras, then rectification so matches lie on the same row.</span> |
+
+## A12 对极几何:E 和 F · Epipolar geometry, E and F 【预测】
+
+> 提纲:一个像素在另一张图里只能落在一条线上 → x₂ᵀ F x₁ = 0 → E = [t]× R(归一化坐标)→ F = K₂⁻ᵀ E K₁⁻¹ → 自由度和求法
+
+比方:左相机看到一个点,只知道它在一条射线上;这条射线在右相机里看是一条线,对应点一定在这条线上,搜索从二维变成一维。
+<span class="en">Analogy: the left camera only knows the point is on a ray; that ray appears as a line in the right image, so the search drops from 2D to 1D.</span>
+
+```
+    C1 ●───────────────● C2      ← 基线
+        ╲     X       ╱
+         ╲   ●       ╱
+          x1        x2 落在对极线 l2 = F x1 上
+```
+> 🔤 C1、C2 = 两个相机中心;X = 3D 点;x1、x2 = 两张图里的像;l2 = 对极线
+
+> The epipolar constraint says the match of x₁ must lie on the line <u>l₂ = F x₁</u>, so <u>x₂ᵀ F x₁ = 0</u>. With calibrated, normalized coordinates the same relation uses the <u>essential matrix E = [t]× R</u>, and <u>F = K₂⁻ᵀ E K₁⁻¹</u>. F has 7 degrees of freedom and rank 2; E has 5. I'd estimate F with the <u>normalized eight-point algorithm</u> inside RANSAC, or E with the five-point algorithm, then decompose E into R and t up to scale.
+
+这段在说什么:约束是什么、E 和 F 的关系、自由度、怎么求。
+<span class="en">What this does: the constraint, how E and F relate, their degrees of freedom, and how to estimate them.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 为什么八点法要归一化 <span class="en">Why normalize in the eight-point method?</span> | 像素坐标几百、齐次坐标 1,矩阵病态;先平移到均值 0、缩放到平均距离 √2,解完再变回来。<span class="en">Pixel values in the hundreds next to a 1 make it ill-conditioned; center and scale to mean distance √2 first.</span> |
+| 平移的尺度 <span class="en">Scale of translation?</span> | 单目两视图只能恢复 t 的方向,不知道多长;要靠已知尺寸、双目基线或 IMU。<span class="en">Two monocular views give t only up to scale; a known size, a stereo baseline or an IMU fixes it.</span> |
+
+## A13 单应矩阵 · Homography 【预测】
+
+> 提纲:平面到平面的 3×3 映射 → 8 个自由度,4 对点 → 什么时候成立:场景是平面,或相机纯旋转 → 用途
+
+比方:斜着拍一张海报,单应矩阵能把它「拉正」成正对着拍的样子。
+<span class="en">Analogy: a homography can straighten a poster photographed at an angle.</span>
+小例子:把一个 2 × 1 的长方形映射成透视下的梯形,只要 4 个角点对应就能解出 H。
+<span class="en">Example: four corner correspondences between a rectangle and its perspective trapezoid determine H.</span>
+
+> A homography is a 3×3 matrix, defined up to scale, so <u>8 degrees of freedom</u>; each point pair gives two equations, so <u>four points</u> suffice. I'd solve it with DLT, stacking the equations and taking the <u>SVD null vector</u>, inside RANSAC. It's exact when the scene is a <u>plane</u> or the camera <u>only rotates</u>; for general 3D scenes with translation, you need F instead. Uses: panorama stitching, rectifying a plane, and augmented-reality overlays.
+
+这段在说什么:定义、最少点数、怎么解(又用到 SVD)、什么时候成立、用途。
+<span class="en">What this does: definition, minimum points, how to solve it with SVD again, when it holds, and uses.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| H 和 F 怎么选 <span class="en">H or F?</span> | 场景近似平面或基线很小时 F 退化,用 H;SLAM 初始化常两个都算,比较哪个误差小。<span class="en">If the scene is near-planar or the baseline tiny, F degenerates, so use H; SLAM initialization often fits both and compares.</span> |
+
+## A14 双目测深 Z = fB/d · Stereo depth 【预测】
+
+> 提纲:两只眼看同一个点,位置差(视差)越大越近 → Z = fB/d → 算例 → 误差随距离平方增长
+
+比方:手指放在眼前,左右眼轮流闭,手指跳得很厉害;看远处的楼几乎不动。
+<span class="en">Analogy: a finger close to your face jumps when you alternate eyes; a distant building barely moves.</span>
+
+```
+  左相机 ●────── B ──────● 右相机
+          ╲              ╱
+           ╲   Z        ╱
+            ╲          ╱
+               ● 点
+  视差 d = x_left − x_right
+```
+> 🔤 B = 基线(两相机距离);f = 焦距(像素);d = 视差(像素);Z = 深度
+
+算例:f = 700 像素,B = 0.12 米,d = 21 像素 → Z = 700 × 0.12 / 21 = 4.0 米;视差差 1 像素(d = 20)→ 4.2 米,误差 20 厘米。误差公式 δZ ≈ Z²/(fB) × δd = 16/84 ≈ 0.19 米。
+<span class="en">Example: f = 700, B = 0.12 m, d = 21 px gives 4.0 m; one pixel less gives 4.2 m, about 20 cm error, matching Z²/(fB).</span>
+
+> After rectification, a point's match is on the same row, and its horizontal shift is the <u>disparity d</u>. Similar triangles give <u>Z = fB/d</u>. With f = 700 pixels and a 12 cm baseline, 21 pixels of disparity is 4 meters, and a one-pixel error moves it to 4.2. Depth error grows with the <u>square of distance</u>, δZ ≈ Z²/(fB)·δd, so for long range you need a wider baseline, a longer focal length or sub-pixel matching.
+
+这段在说什么:直觉 → 公式 → 算例 → 误差规律和怎么改善。
+<span class="en">What this does: intuition, formula, example, and how error scales and improves.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 双目在哪里会失败 <span class="en">Where does stereo fail?</span> | 无纹理(白墙)、重复纹理、反光、遮挡区域匹配不上;结构光主动投图案能解决无纹理。<span class="en">Textureless walls, repeated patterns, reflections and occlusions; structured light projects texture to fix the first.</span> |
+| 视差怎么算 <span class="en">How is disparity computed?</span> | 沿同一行用块匹配(SAD 或 NCC)找代价最小的位置;SGM 加平滑约束;深度学习方法用代价体积 + 3D 卷积。<span class="en">Block matching along the row with SAD or NCC; SGM adds smoothness; learned methods build a cost volume.</span> |
+
+## A15 PnP · Perspective-n-Point 【预测】
+
+> 提纲:已知 3D 点和它们在图里的像素,求相机位姿 → 最少 3 点(P3P,最多 4 个解,第 4 点消歧)→ EPnP + RANSAC → 再用重投影误差精修
+
+比方:你认识房间里几个家具的位置,看一眼照片就能推出自己站在哪、朝哪看。
+<span class="en">Analogy: knowing where some furniture is, you can tell from one photo where you stand and face.</span>
+
+> PnP estimates the camera's <u>rotation and translation</u> from known 3D points and their 2D projections, given the intrinsics. <u>P3P</u> needs three points and gives up to four solutions, so a fourth disambiguates. In practice I'd run <u>EPnP</u>, which is linear in n, inside <u>RANSAC</u> to reject bad matches, then refine by minimizing reprojection error with Levenberg–Marquardt. It's used for AR, robot grasping and relocalizing in a known map.
+
+这段在说什么:输入输出、最少点数、实际流程、用途。
+<span class="en">What this does: inputs and outputs, minimum points, the practical pipeline, and uses.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 点都在一个平面上呢 <span class="en">All points coplanar?</span> | 可以用单应分解或专门的平面 PnP(IPPE);要注意平面情况下可能有两个相近的解。<span class="en">Use homography decomposition or planar PnP like IPPE, watching for two similar solutions.</span> |
+
+## A16 ICP 和点云配准 · ICP and point-cloud registration 【预测】
+
+> 提纲:两片点云对齐 → 找最近点当对应 → SVD 一步求最优 R、t(Kabsch)→ 迭代 → 要好的初值;粗配准用特征
+
+比方:两张描在透明纸上的地图,先大概叠上,再一点点挪、转,直到线条最重合。
+<span class="en">Analogy: two maps on tracing paper, roughly overlaid, then nudged and rotated until the lines match best.</span>
+
+```
+重复:
+  ① 对源点云每个点,用 KD 树找目标里最近的点
+  ② 去掉质心:H = Σ (p − p̄)(q − q̄)ᵀ
+  ③ SVD: H = U Σ Vᵀ → R = V Uᵀ(det < 0 时把 V 最后一列取反),t = q̄ − R p̄
+  ④ 变换源点云,误差不再下降就停
+```
+> 🔤 p = 源点;q = 对应的目标点;p̄、q̄ = 质心;R、t = 旋转和平移
+
+> ICP alternates two steps: <u>match</u> each source point to its nearest target point with a k-d tree, then <u>solve the best rigid transform</u> for those matches in closed form with the <u>Kabsch</u> method: subtract centroids, take the SVD of the cross-covariance, R = VUᵀ with a determinant fix, and t from the centroids. Repeat until the error stops dropping. It converges only <u>locally</u>, so it needs a good initial guess, from odometry or from <u>global registration</u> with features like FPFH plus RANSAC. <u>Point-to-plane</u> ICP converges faster on smooth surfaces.
+
+这段在说什么:两步交替、闭式解怎么来(又是 SVD)、局限和补救。
+<span class="en">What this does: the two alternating steps, the closed form via SVD, the limitation and the remedy.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 为什么要检查行列式 <span class="en">Why the determinant check?</span> | SVD 可能给出反射(det = −1),不是合法旋转;把 V 最后一列取反修正。<span class="en">SVD may return a reflection with determinant −1; flip V's last column to get a rotation.</span> |
+| 外点和部分重叠 <span class="en">Outliers and partial overlap?</span> | 距离太远的对应直接丢,或用鲁棒核(Huber)降权;要有足够重叠,否则会收敛到错的位置。<span class="en">Reject far correspondences or use a robust kernel; without enough overlap it converges wrongly.</span> |
+
+## A17 网格和法向量 · Meshes and normals 【预测】
+
+> 提纲:网格 = 顶点 + 三角形 → 面法向 = 两条边叉积 → 顶点法向 = 周围面法向加权平均 → 绕序决定朝向 → 点云法向用 PCA
+
+小例子:三角形 v0 = (0,0,0)、v1 = (1,0,0)、v2 = (0,1,0),(v1 − v0) × (v2 − v0) = (0, 0, 1),朝 +z;把 v1、v2 顺序换掉法向就变成 (0, 0, −1)。
+<span class="en">Example: for v0 at the origin, v1 on x and v2 on y, the cross product is (0, 0, 1); swapping v1 and v2 flips it.</span>
+
+> A mesh stores a <u>vertex array</u> and <u>triangle indices</u>. A face normal is the normalized <u>cross product of two edges</u>, and the <u>winding order</u>, counter-clockwise by convention, decides which side is outside. A vertex normal is the <u>area-weighted average</u> of adjacent face normals, used for smooth shading. For point clouds without faces, the normal is the <u>smallest-eigenvalue eigenvector</u> of the local neighborhood's covariance, oriented toward the sensor. Meshes come from point clouds by Poisson reconstruction or TSDF plus Marching Cubes.
+
+这段在说什么:存储、面法向、朝向、顶点法向、点云法向、怎么从点云得到网格。
+<span class="en">What this does: storage, face normals, orientation, vertex normals, point-cloud normals, and how meshes are built.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 网格怎么简化 <span class="en">Mesh simplification?</span> | 边折叠 + 二次误差度量(QEM):每次折叠误差最小的边,保形状、减面数,做 LOD。<span class="en">Edge collapse with quadric error metrics removes the cheapest edges first, for levels of detail.</span> |
+| 半边结构 <span class="en">Half-edge structure?</span> | 每条边拆成两条有向半边,存「下一条、对边、所属面」,查邻接是 O(1)。<span class="en">Each edge splits into two directed half-edges storing next, twin and face, for O(1) adjacency.</span> |
+
+## A18 NeRF 和 3D Gaussian Splatting · NeRF and 3D Gaussian Splatting 【预测】
+
+> 提纲:都是从多张带位姿的照片学一个能渲染新视角的 3D 场景 → NeRF:MLP + 体渲染,慢 → 3DGS:一堆 3D 高斯直接光栅化,实时
+
+> <u>NeRF</u> trains an MLP that maps a 3D position and view direction to <u>color and density</u>, and renders each pixel by <u>volume rendering</u> along its ray, so it's high quality but slow because each pixel queries the network many times. <u>3D Gaussian Splatting</u> represents the scene as millions of <u>explicit 3D Gaussians</u> with position, covariance, opacity and color, and <u>rasterizes</u> them by projecting and blending, so it renders in <u>real time</u> and trains much faster. Both need camera poses, usually from structure-from-motion like COLMAP.
+
+这段在说什么:一句共同目标,各一句怎么表示、怎么渲染、快慢。
+<span class="en">What this does: one shared goal, then each method's representation, rendering and speed.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 无人机上能用吗 <span class="en">On a drone?</span> | 采集和重建可以离线做数字孪生或巡检建图;机上实时感知还是靠深度、点云和 SLAM。<span class="en">Offline for digital twins and inspection maps; onboard real-time perception still relies on depth, point clouds and SLAM.</span> |
+
+## A19 RANSAC 拟合直线 · RANSAC line fitting 【预测】
+
+> 提纲:随机取最少点(直线 2 个)→ 拟合 → 数内点 → 重复留最好的 → 用全部内点精修 → 迭代次数公式
+
+比方:一堆点里混了乱点,每次随便抽两个人问「你们觉得线在哪」,看有多少人同意,最后信同意人数最多的那一组。
+<span class="en">Analogy: repeatedly ask two random people where the line is and count how many agree; trust the most-agreed answer.</span>
+迭代次数:N = log(1 − p) / log(1 − wˢ)。p = 0.99,内点比例 w = 0.7,s = 2 → N ≈ 6.8,7 次就够(已实跑)。
+<span class="en">Iterations: with 99% confidence, 70% inliers and 2-point samples, about 7.</span>
+
+```python
+import numpy as np
+rng = np.random.default_rng(0)
+# 直线 y = 2x + 1 上 70 个带噪声的点 + 30 个乱点
+x = rng.uniform(0, 10, 70); y = 2 * x + 1 + rng.normal(0, 0.2, 70)
+pts = np.vstack([np.c_[x, y], rng.uniform([0, 0], [10, 25], (30, 2))])
+
+best_in = None
+for _ in range(100):                                  # 外点 30% 时 99% 把握只需约 7 次,这里多给
+    i, j = rng.choice(len(pts), 2, replace=False)     # 最少 2 个点定一条线
+    (x1, y1), (x2, y2) = pts[i], pts[j]
+    if x1 == x2: continue
+    a = (y2 - y1) / (x2 - x1); b = y1 - a * x1
+    # 点到直线 ax - y + b = 0 的距离
+    dist = np.abs(a * pts[:, 0] - pts[:, 1] + b) / np.hypot(a, 1)
+    inl = dist < 0.5
+    if best_in is None or inl.sum() > best_in.sum():
+        best_in = inl
+# 最后用全部内点做一次最小二乘精修
+A = np.c_[pts[best_in, 0], np.ones(best_in.sum())]
+a, b = np.linalg.lstsq(A, pts[best_in, 1], rcond=None)[0]
+print(f"inliers {best_in.sum()}  a={a:.3f} b={b:.3f}")
+A_all = np.c_[pts[:, 0], np.ones(len(pts))]
+print("plain lstsq on all points:", np.round(np.linalg.lstsq(A_all, pts[:, 1], rcond=None)[0], 3))
+print("iterations needed (p=0.99, w=0.7, s=2):", np.log(1 - 0.99) / np.log(1 - 0.7 ** 2))
+```
+
+已实跑(python3,2026-10-20),输出:
+<span class="en">Run on this machine; output:</span>
+
+```text
+inliers 73  a=1.991 b=1.027
+plain lstsq on all points: [1.434 4.077]
+iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
+```
+
+结果:RANSAC 找到 73 个内点,a = 1.991、b = 1.027,接近真值 2 和 1;直接对全部点最小二乘被乱点拉到 a = 1.434、b = 4.077。
+<span class="en">Result: RANSAC recovers a = 1.991 and b = 1.027, close to 2 and 1; plain least squares on all points is dragged to 1.434 and 4.077.</span>
+
+> RANSAC repeatedly samples the <u>minimal set</u>, two points for a line, fits a model, and counts <u>inliers</u> within a distance threshold; it keeps the model with the most inliers and finally <u>refits with least squares</u> on all of them. The number of iterations is <u>log(1 − p)/log(1 − wˢ)</u>, so with 70% inliers, about 7 iterations give 99% confidence. On my test, plain least squares was dragged to a slope of 1.43, while RANSAC recovered 1.99.
+
+这段在说什么:四步做法、迭代次数怎么算、用实跑结果对比普通最小二乘。
+<span class="en">What this does: the four steps, the iteration count, and a run comparing it to plain least squares.</span>
+
+| 追问 <span class="en">Follow-up</span> | 答法 <span class="en">Answer</span> |
+|---|---|
+| 阈值怎么定 <span class="en">How to set the threshold?</span> | 按噪声定,常取噪声标准差的 2 到 3 倍;太大会把外点算进来,太小真内点被拒。<span class="en">From noise, about 2 to 3 standard deviations; too large admits outliers, too small rejects inliers.</span> |
+| 外点超过一半 <span class="en">More than half outliers?</span> | 迭代次数指数上升(w = 0.3 时约 49 次);用 PROSAC 按匹配质量优先抽样,或先用比值测试过滤。<span class="en">Iterations grow fast, about 49 at 30% inliers; PROSAC samples good matches first, or prefilter with the ratio test.</span> |
+
+## 无人机最可能问的 8 道点云题
+## P1. What is a point cloud, and how is it different from an image? · 点云是什么,和图像有什么不一样
+
+> A point cloud is an <u>N by 3 array</u> of 3D points, sometimes with color or intensity. Unlike an image, it's <u>unordered, irregular and sparse</u>, so there are no free neighbors and I need a k-d tree or voxel grid. Its advantage is <u>true metric scale</u>, which is what you need for distances to obstacles. A depth camera gives an organized cloud, H by W by 3; a LiDAR gives an unorganized one.
+
+这段在说什么:定义、三个特点和后果、好处、两种来源(9.1)。
+<span class="en">What this does: definition, properties and consequence, benefit, two kinds.</span>
+
+## P2. How do you turn a depth image into a point cloud? · 深度图怎么变成点云
+
+> I invert the pinhole projection: for pixel (u, v) with depth Z, <u>X = (u − cx)·Z/fx</u> and <u>Y = (v − cy)·Z/fy</u>. With f = 500 and center (320, 240), pixel (420, 190) at 2 meters is (0.4, −0.2, 2.0). I convert depth units to meters first, drop zero depth, and vectorize over the whole image. To combine frames, I then transform it into the world frame with the pose.
+
+这段在说什么:公式、一个能心算的例子、两个工程细节、下一步(9.2、9.3)。
+<span class="en">What this does: formula, a mental-math example, two details, the next step.</span>
+
+## P3. How do you estimate surface normals? · 法向量怎么估计
+
+> For each point I take its <u>k nearest neighbors</u>, compute their <u>covariance</u>, and take the eigenvector with the <u>smallest eigenvalue</u>, the direction of least spread. The sign is ambiguous, so I <u>orient it toward the sensor</u>. The smallest eigenvalue over the sum gives a curvature, near zero on planes. The choice of k trades noise robustness against smoothing across edges.
+
+这段在说什么:做法、为什么取最小、正负号、曲率、k 的权衡(9.6)。
+<span class="en">What this does: method, why smallest, the sign, curvature, the trade-off in k.</span>
+
+## P4. How would you find the ground plane robustly? · 怎么稳健地找出地面
+
+> I'd use <u>RANSAC</u>: sample three points, get the normal by a <u>cross product</u>, count inliers within a few centimeters, keep the best, then refit with PCA. The iteration count is <u>log(1 − p)/log(1 − w³)</u>, about 11 for 70% inliers at 99% confidence. On a drone I'd constrain the normal near vertical so walls aren't chosen, and fit per region on uneven ground. Ground comes first because otherwise it links every obstacle into one cluster.
+
+这段在说什么:四步、迭代次数、两个约束、为什么它是第一步(9.7)。
+<span class="en">What this does: steps, iterations, two constraints, why first.</span>
+
+## P5. Explain ICP. When does it fail? · 讲一下 ICP,什么时候会失败
+
+> ICP alternates <u>nearest-neighbor correspondences</u> and a <u>closed-form rigid fit</u>: subtract centroids, SVD of H = Σ p′q′ᵀ, R = VUᵀ with a determinant check, t = q̄ − Rp̄. It only reaches a <u>local minimum</u>, so it fails with a <u>bad initial guess</u>, symmetric objects, low overlap, or degenerate scenes like a single plane or a long corridor. In a small test it recovered a 60-degree offset on a box but fell into the 180-degree symmetric solution from 120. The fixes are an <u>IMU or odometry prior</u>, <u>FPFH plus RANSAC</u> global registration, outlier rejection, and point-to-plane.
+
+这段在说什么:两步、闭式解、四种失败、一个实跑例子、补救(9.9)。
+<span class="en">What this does: two steps, closed form, failure modes, a measured example, remedies.</span>
+
+## P6. How would you detect obstacles from a depth camera or LiDAR on a drone? · 无人机上怎么检测障碍物
+
+> Transform the cloud to the <u>world frame</u> with the pose, then crop, <u>voxel-downsample</u> and remove outliers. Remove the <u>ground with RANSAC</u>, then <u>cluster</u> the rest with Euclidean clustering or DBSCAN and fit bounding boxes, tracked across frames. In parallel, insert the points as rays into an <u>occupancy map</u> like OctoMap, which separates occupied, free and unknown space for the planner. Everything has to fit the frame budget, about 33 milliseconds at 30 frames per second, so downsampling comes first.
+
+这段在说什么:流水线一句一步,最后落到实时预算(9.13)。
+<span class="en">What this does: the pipeline in order, ending on the real-time budget.</span>
+
+## P7. Why is PointNet permutation invariant? · PointNet 为什么和点的顺序无关
+
+> Because points are unordered, the output must not depend on their order. <u>PointNet</u> applies a <u>shared MLP</u> to every point independently and then takes a <u>max over points</u> per channel; max is symmetric, so any permutation gives the same global feature. <u>PointNet++</u> adds local context by grouping neighbors and applying PointNet hierarchically. Other options are <u>sparse 3D convolution</u> on voxels, or <u>projecting to range or bird's-eye images</u> for a 2D CNN, which is fastest.
+
+这段在说什么:约束是什么、PointNet 怎么满足、局限和补法、另外两条路(9.12)。
+<span class="en">What this does: the constraint, how PointNet meets it, its limit, two other routes.</span>
+
+## P8. Have you worked with point clouds before? · 你做过点云吗(诚实回答,不编)
+
+> Not in a project yet, and I want to be upfront about that. My closest work is <u>RCRI</u>, a two-person project detecting climbing holds in 2D images: we trained <u>YOLOv8 on GCP</u> and deployed it with <u>TensorRT on a Jetson Nano</u>, at 12 FPS for the first stage and 5 FPS for the full three-stage pipeline, so I know what an edge compute budget feels like. For 3D, I understand the standard pipeline, back-projection, world-frame transforms, downsampling, RANSAC ground removal, clustering, ICP and occupancy mapping, and I can derive the math, like normals from PCA and the SVD step in ICP. If I extended RCRI to 3D, I'd add a depth camera and <u>lift each 2D detection to 3D</u> with the median depth inside the box.
+
+这段在说什么:先诚实说没做过 → 讲真实的相邻经验(RCRI,数字照实)→ 证明懂流程和数学 → 给一个具体的延伸思路,有底气但不夸大。
+<span class="en">What this does: honest first, then the real adjacent experience with exact numbers, then proof of understanding, then a concrete extension; confident without overclaiming.</span>
+
+# 篇五 · 押题 B:多模态视觉(如果是 Peter Tong)
+> 每题先提纲(中文 + English),再给一段能直接说的英文(🗣)
+
+### B1. CLIP 是怎么训练的?为什么能零样本分类?
+
+- 双塔编码,图和文进同一空间 · two towers map images and text into one space
+
+- N×N 相似度矩阵,对角线是正样本,双向交叉熵 · symmetric cross-entropy over the similarity matrix
+
+- 零样本:类别名写成句子,选最近的 · prompt class names and pick the nearest
+
+> 🗣 CLIP trains an image encoder and a text encoder together. In each batch of N image-caption pairs, it computes an N-by-N similarity matrix and applies cross-entropy in both directions, so each image matches its own caption and not the others. Because images and text end up in one embedding space, I can classify zero-shot by turning class names into prompts like "a photo of a dog" and picking the closest one. I used exactly this on a Jetson, with the text embeddings cached.
+
+### B2. CLIP 有什么弱点?为什么?
+
+- 看不清细节:朝向、数量、小部件、相对位置 · misses orientation, counts, small parts, relations
+
+- 原因:配文很少写这些,目标是整体对齐 · captions rarely mention them, objective is global alignment
+
+- 证据:CLIP-blind pairs、MMVP · evidence from CLIP-blind pairs and MMVP
+
+- 修法:混入 DINOv2 这类自监督特征、提高分辨率 · mix in self-supervised features, higher resolution
+
+> 🗣 CLIP learns what matters for matching an image to its caption, and captions rarely mention orientation, counts, or small parts. So two images that differ in those ways can get almost the same embedding. The Eyes Wide Shut paper found these CLIP-blind pairs by looking for images CLIP thinks are similar but DINOv2 separates, and multimodal LLMs built on CLIP fail the same questions. Interleaving self-supervised features with CLIP features helps grounding without losing instruction following.
+
+### B3. ViT 和 CNN 的区别?各自什么时候用?
+
+- CNN:局部感受野、平移等变,数据少也能训 · locality and translation equivariance, data-efficient
+
+- ViT:一开始就全局注意力,数据多时上限更高 · global attention from layer one, scales better
+
+- 代价:注意力随 token 数平方增长 · attention is quadratic in tokens
+
+- 边缘部署:CNN 或混合结构更省 · on the edge, CNNs or hybrids are cheaper
+
+> 🗣 A CNN builds in locality and translation equivariance, so it learns well from less data and runs efficiently, which is why I used YOLOv8 on the edge. A ViT lets every patch attend to every other from the first layer, so it has weaker priors but scales better with data, and it is the default encoder for multimodal models. The cost is attention that grows quadratically with the number of tokens, which matters at high resolution.
+
+### B4. 多模态大模型是怎么把图像接进大模型的?
+
+- 编码器 → 投影层 → 视觉 token 拼在文字前 · encoder, projector, visual tokens prepended
+
+- 两阶段:先训投影层对齐,再指令微调 · align the projector, then instruction-tune
+
+- 取舍:分辨率 vs token 数;切图、重采样器 · resolution vs token count; tiling, resamplers
+
+> 🗣 The common design is a vision encoder, usually a frozen CLIP or SigLIP ViT, a small projector, often a two-layer MLP, and the LLM. The projector maps each patch feature into the LLM's embedding space, and those visual tokens sit next to the text tokens. Training usually has two stages: first only the projector on image-caption pairs, then the projector and LLM on visual instruction data. The main tradeoff is resolution versus token count, handled with tiling or with learned-query resamplers like Q-Former, or Cambrian's Spatial Vision Aggregator.
+
+### B5. 如果模型数不清图里有几个东西,你怎么改?
+
+- 先定位问题在眼睛还是大脑:探针测编码器特征 · probe whether the encoder or the LLM is the bottleneck
+
+- 眼睛:高分辨率、加自监督特征、保留空间结构的连接器 · higher res, SSL features, spatially aware connector
+
+- 数据:合成可控的计数数据 · synthetic counting data with exact labels
+
+- 系统:先跑检测器再数 · call a detector as a tool
+
+> 🗣 First I would find where it breaks. I would train a simple linear probe on the encoder features to predict counts. If the probe fails, the information is lost in the encoder, so I would raise resolution, add self-supervised features, or use a connector that keeps spatial layout instead of pooling it away. If the probe works but the model still fails, the problem is in alignment or data, so I would add synthetic counting data where labels are exact. For a production drone system I would also consider calling a detector and counting its boxes.
+
+### B6. 自监督视觉和 CLIP,哪个更好?
+
+- CLIP 语义强,自监督结构和细节强 · CLIP is semantic, SSL is structural
+
+- Web-SSL:同数据下自监督扩展性更好,7B 不饱和 · with the same data SSL scales better
+
+- 实践:组合使用 · combine them
+
+> 🗣 They capture different things. CLIP is strong at semantics because language tells it what matters, and self-supervised models like DINOv2 are strong at structure and correspondence. The Web-SSL study trained both on the same data and found self-supervised models scale better and reach CLIP-level VQA performance at billions of parameters, so the earlier gap was mostly data. In practice I would combine them, the way Cambrian evaluates many encoders and aggregates them.
+
+### B7. 多模态模型为什么不懂多视角?怎么改?
+
+- 训练数据多是单图;位置编码只有 2D · single-image data, 2D positions only
+
+- 弱在遮挡下的跨视角对应和相机位姿 · weak at cross-view correspondence and pose
+
+- 改法:3D 位置编码、几何约束、3D 数据自动出题、调用 SfM · 3D positional encodings, geometric supervision, auto-generated spatial QA, tools
+
+> 🗣 Most training data is a single image with a caption, and the positional information is only 2D, so the model never learns that two views show the same object. Benchmarks like All-Angles show the weakest points are cross-view correspondence under occlusion and estimating rough camera pose. Classical vision already solves those with feature matching, RANSAC, and essential-matrix decomposition. I would bring that structure in: 3D-aware positional encodings from depth, a correspondence consistency loss, spatial questions generated automatically from 3D scans, or letting the model call SfM as a tool.
+
+### B8. 扩散模型怎么工作?DiT 和 U-Net 区别?
+
+- 加噪、学去噪、从噪声采样 · add noise, learn to denoise, sample from noise
+
+- 隐空间做,省算力 · work in a latent space to save compute
+
+- DiT 用 Transformer,adaLN 注入条件,扩展性好 · Transformer backbone, adaLN conditioning, scales well
+
+- CFG 提高听话程度,降多样性 · CFG trades diversity for adherence
+
+> 🗣 A diffusion model gradually adds Gaussian noise to data and trains a network to predict the noise at a random step, with a simple mean-squared error. To generate, it starts from noise and denoises step by step. Latent diffusion does this in an autoencoder's latent space to save compute. DiT replaces the U-Net with a Transformer over latent patches, injecting the timestep and class through adaptive layer norm, and it scales more predictably. Classifier-free guidance mixes conditional and unconditional predictions to follow the prompt more closely at the cost of diversity.
+
+### B9. 为什么要把 VAE 换成表示编码器(RAE)?难在哪?
+
+- VAE 隐空间维度低、没语义 · low-dimensional, purely reconstructive latents
+
+- RAE:冻结的 DINOv2/SigLIP + 训练的解码器 · frozen encoder plus trained decoder
+
+- 难点:高维;宽度要够、按维度调噪声、解码器加噪训练 · width, dimension-aware noise, noise-augmented decoder
+
+- 结果:收敛更快,FID 1.51 / 1.13 · faster convergence, strong FID
+
+> 🗣 The standard VAE latent is low-dimensional and learned only for reconstruction, so it carries little semantic structure. RAE keeps a pretrained encoder like DINOv2 or SigLIP frozen and trains only a decoder, so the latent space is both reconstructable and semantic. The hard part is that these latents are high-dimensional. The fixes are making the transformer at least as wide as the token dimension, shifting the noise schedule according to dimension, and training the decoder on noisy latents so it tolerates imperfect samples. It converges faster and reached about 1.5 FID without guidance on ImageNet.
+
+### B10. 理解和生成能用一个模型吗?
+
+- MetaMorph:大模型同时预测文字和连续视觉 token · predict text and continuous visual tokens
+
+- 生成是理解的副产品,理解数据更有用 · generation emerges from understanding
+
+- RAE 让理解和生成共用表示空间 · shared representation space
+
+> 🗣 Recent work suggests yes. MetaMorph extends visual instruction tuning so the LLM also predicts continuous visual tokens, which a diffusion decoder turns into images, and generation appears as a by-product of better understanding with only a little generation data. Using a representation encoder like in RAE for both directions means the model can reason directly over what it generates.
+
+### B11. 怎么判断一个多模态基准是不是在测视觉?
+
+- 把图拿掉,看大模型还能答对多少 · blind test without the image
+
+- 成对设计:同一问题,两张图答案不同 · paired questions with different answers
+
+- 按能力拆分报告 · report per capability
+
+> 🗣 I would first run the model without the image. If accuracy stays high, the benchmark is testing language priors, not vision, which is what Cambrian found for several popular benchmarks. Then I would prefer paired designs like MMVP, where the same question has different answers for two images, so guessing does not work. I did similar work on agent evaluation: I validated metrics against human judgments before trusting them, and reported results by category instead of a single score.
+
+### B12. 这些研究对无人机实时感知有什么用?
+
+- 大模型太慢,做高层理解和标注,不放在实时环 · use MLLMs offline or at low rate
+
+- 实时环:CNN/小 ViT + TensorRT · real-time loop stays on efficient models
+
+- 蒸馏:大模型教小模型 · distill into small models
+
+- 空间理解和惊讶度思路可用于事件检测 · surprise-driven event detection
+
+> 🗣 On a drone the real-time loop has a hard latency budget, so detection and tracking should stay on efficient models like a CNN or a small ViT optimized with TensorRT, which is what I did in my RCRI project. Multimodal models fit at a lower rate: describing scenes, answering operator questions, or labeling data offline. They are also good teachers for distilling into smaller models. The surprise idea from Cambrian-S maps well to drones too: only spend compute or memory when the scene changes unexpectedly.
+
+# 篇六 · 自我介绍、项目、反问
+> 开场 1 分钟、每个项目怎么接、RCRI 的双 sigmoid 故事、最后问他什么
+
+## 一分钟自我介绍(偏 CV / 3D)· One-minute introduction, CV and 3D flavor
+
+> 提纲:哥大 CE 硕士 12 月毕业 → 主线:让视觉模型在真实硬件上实时跑 → RCRI → Jetson 上 CUDA/TensorRT 12× → 爱奇艺图像生成 → TikTok Alice 评测 → 想往 3D 和多传感器走
+> <span class="en">Outline: Columbia CE, December → real-time vision on real hardware → RCRI → CUDA and TensorRT 12× on a Jetson → iQIYI image generation → TikTok Alice evaluation → moving into 3D and multi-sensor perception</span>
+
+> [Who] Hi, I'm Christina. I'm finishing my Master's in Computer Engineering at Columbia this December. My work is about <u>getting vision models to run in real time on real hardware</u>.
+>
+> [RCRI] My main project is <u>RCRI</u>, a climbing-route recognizer my teammate and I built. I trained the YOLOv8 detectors on GCP, and the hold detector reached <u>mAP50 0.825</u>. Then I deployed it through ONNX to a <u>TensorRT FP16 engine on a Jetson Nano</u>: the detection stage runs at <u>12 FPS</u>, and the full three-stage pipeline at 5.
+>
+> [GPU] On the same board I wrote the CUDA host layer for a small CNN, and profiled YOLOv4-Tiny: TensorRT made inference about <u>12× faster</u>, and nvprof showed why, fused FP16 kernels and far fewer launches per frame.
+>
+> [Industry] Before Columbia, at <u>iQIYI</u>, I productionized a PyTorch <u>image-generation pipeline</u>, cutting latency about 30%, and it was reused by three commercial projects. At <u>TikTok</u> this summer I worked on Alice, few-shot safety classifiers on CLIP embeddings, where <u>I owned evaluation</u>.
+>
+> [Close] So my strength is the path from a trained model to something fast and reliable on a device, and I'd like to grow into <u>3D and multi-sensor perception</u>, which is what this role is about.
+
+这段在说什么:第一句定主线;RCRI 说出两个真实帧率,不夸大;GPU 那段证明你懂「为什么快」;爱奇艺和 TikTok 各一句证明工业经验;收尾接到 3D。
+<span class="en">What this does: the first line sets the theme; RCRI gives both real frame rates; the GPU part shows you know why it got faster; iQIYI and TikTok add industry experience; the close points to 3D.</span>
+时间顺序:爱奇艺 2025 年 2–7 月,在哥大之前;TikTok 2026 年 6–8 月。
+<span class="en">Timeline: iQIYI was February to July 2025, before Columbia; TikTok was June to August 2026.</span>
+
+## 每轮开头被要求「讲一个项目」讲哪个 · Which project to tell in each round
+
+| 轮次 <span class="en">Round</span> | 讲哪个 <span class="en">Project</span> | 为什么 <span class="en">Why</span> | 重点句 <span class="en">Key line</span> |
+|---|---|---|---|
+| Ryota 深度学习/数学 <span class="en">Ryota, DL and math</span> | TaskMap 论文 <span class="en">TaskMap paper</span> | 线性代数味最重,接得上 SVD 和 Transformer <span class="en">Most linear-algebra heavy, links to SVD and Transformers</span> | 每个任务的 FFN 改动表示成共享固定正交基上的系数;冻结的 BF16 Qwen2.5-1.5B;20 个没见过的任务上最坏负迁移 −7.9,共享 LoRA 是 −26.7;二作、在审 <span class="en">Task adaptations as coefficients in shared fixed orthogonal bases on a frozen BF16 Qwen2.5-1.5B; worst-case negative transfer −7.9 versus −26.7 for shared LoRA on 20 unseen tasks; second author, under review</span> |
+| Helen 体系结构 <span class="en">Helen, architecture</span> | E6792 CUDA host 层 + TensorRT 实验 <span class="en">E6792 CUDA host layer and TensorRT lab</span> | 讲的是显存、warp、kernel 启动和 Amdahl <span class="en">It's about memory, warps, launches and Amdahl</span> | kernel 课程给、host 端我写;推理 12×、端到端 7.45×,差距用 Amdahl 解释 <span class="en">Kernels provided, host side mine; 12× inference versus 7.45× end to end, explained by Amdahl</span> |
+| Khasim Python/CNN <span class="en">Khasim, Python and CNNs</span> | RCRI <span class="en">RCRI</span> | YOLOv8、模型选择、双 sigmoid bug <span class="en">YOLOv8, model choice, the double-sigmoid bug</span> | s@416 52 ms 对 n@320 14 ms,选 s 因为 n 漏远处小 hold;双 sigmoid 把分数压到 0.5,修好后每图从约 10 个到 40 多个 <span class="en">s@416 at 52 ms over n@320 at 14 ms because n missed small holds; the double sigmoid fix took detections from about 10 to 40-plus</span> |
+| Peter 3D/图像处理 <span class="en">Peter, 3D and image processing</span> | RCRI 的视觉管线(三阶段 + IoU 合并 + HSV 分路线),再补 CLIP 零样本 <span class="en">RCRI's vision pipeline, then zero-shot CLIP</span> | 有检测、颜色空间、几何合并;3D 部分用「如果把 RCRI 做成 3D」接 <span class="en">Detection, color spaces and geometric merging; bridge to 3D with "taking RCRI into 3D"</span> | 三阶段用 IoU ≥ 0.3 合并;HSV 分组是队友写的;3D 延伸:双目或深度相机 + 反投影 + 墙面平面 RANSAC <span class="en">Stages merged at IoU 0.3; HSV grouping was my teammate's; the 3D extension adds depth, back-projection and a RANSAC wall plane</span> |
+
+## RCRI 的「双 sigmoid」bug(被问调试经历时讲)
+- 发生了什么:后处理里,模型输出已经是 0–1 的概率 p,代码又过了一次 sigmoid。
+- 为什么出事:sigmoid(p) 在 p∈[0,1] 时只能落在 0.5–0.73。大部分框原始概率很小,全被挤到 0.5 附近,置信度阈值失效。
+- 现象:每张图只检出约 10 个 hold;修掉多余的 sigmoid 后,恢复到 40 多个。
+- 同类坑:PyTorch 的 CrossEntropyLoss 自带 log_softmax,不能先手动 softmax。
+<span class="en">In RCRI's post-processing the scores were already probabilities, and a second sigmoid squashed everything into 0.5 to 0.73, so the threshold stopped working and we only kept about 10 holds per image. Removing it brought detections back to 40-plus. Same class of bug as applying softmax before CrossEntropyLoss.</span>
+
+## 接到你自己的经历
+
+最强的一条:你做过 CLIP。E6792 课上你在 Jetson 上做过 CLIP 零样本推理:缓存文本塔的嵌入、双塔向量归一化、接实时摄像头、分析 FP16 和 TensorRT 优化。这让你可以从「部署」角度聊 CLIP,这是研究生很少有的视角。
+
+可以说:我把文本塔的类别嵌入提前算好缓存起来,运行时只跑图像塔,所以零样本分类的实时开销只有一个 ViT 前向。我也体会到 CLIP 对细节不敏感,这和 Eyes Wide Shut 的结论一致。
+<span class="en">I ran CLIP zero-shot on a Jetson: I precomputed and cached the text-tower embeddings, so at runtime only the image tower runs, and I profiled FP16 and TensorRT. In practice I saw CLIP miss fine details, which matches the Eyes Wide Shut finding.</span>
+
+- RCRI(YOLOv8 + TensorRT,12 倍加速):对应「视觉模型上边缘设备」。Byte Veda 做无人机实时感知,这条最贴业务。训练在云上做,部署在边缘(别说成纯边缘)。
+
+- TaskMap(论文二作,评审中):大模型的任务条件适配。可以接 MLLM 两阶段训练和高效微调的话题。只能说 under review。
+
+- Walmart 资助的 agent 评测研究:你设计过评测指标和基线。对应他做 MMVP、CV-Bench、All-Angles Bench 这些基准的思路:先怀疑基准本身(不看图能不能答对),再设计能真正测出能力的题。
+
+- TikTok 评测平台:评测是一道「门」,模型过了才上线。也能接「怎么评一个多模态模型」。
+
+别吹:E6792 的 kernels.cu 是课程发的,只能说你写了 host 端执行层。CLIP 那部分说「零样本推理和部署优化」,不说训练过 CLIP。
+
+## 反问
+1. 无人机上的感知现在用哪些传感器(双目、深度、激光雷达、射频),算力在机上还是地面站?
+   <span class="en">What sensors does the drone perception stack use today, stereo, depth, LiDAR or RF, and does compute run onboard or on a ground station?</span>
+   为什么问:直接对上你的 Jetson 实时部署经验,也能听出这个岗位 3D 的比重。
+   <span class="en">Why: it maps to your Jetson deployment work and tells you how much of the role is 3D.</span>
+2. 这个岗位前三个月最想解决的感知问题是什么?
+   <span class="en">What perception problem would you most want this role to solve in the first three months?</span>
+   为什么问:听到具体问题,你可以当场接一句相关的经验。
+   <span class="en">Why: a concrete answer lets you connect one of your experiences on the spot.</span>
+3. 视觉、射频通信和网络安全三条线之间怎么协作,比如感知数据怎么安全地传回来?
+   <span class="en">How do the vision, RF communications and cybersecurity teams work together, for example in moving perception data back securely?</span>
+   为什么问:适合问 Helen,接得上你愿意加面安全岗。
+   <span class="en">Why: a good one for Helen, and it fits your interest in the security role.</span>
+4. 主要客户是哪类?有没有需要 U.S. person 身份的项目?
+   <span class="en">Who are the main customers, and are there projects that require U.S.-person status?</span>
+   为什么问:你是 F-1,毕业后用 OPT,之后需要 H-1B;这类产品线有时涉及出口管制,问清楚对双方都好。
+   <span class="en">Why: you're on F-1 with OPT and later H-1B, and some products in this space involve export controls.</span>
+
+---
+
+# 第 8 章 FPCV 课程精华 · Nayar, First Principles of Computer Vision
+
+# 篇七 · 考前一页纸
+> 周四上午只看这页
+
+## 一页纸
+- **开场主线**:让视觉模型在真实硬件上实时跑 → RCRI(mAP50 0.825,Jetson TensorRT FP16)→ E6792(CUDA host 层,TensorRT 12×,CLIP 零样本)→ 想往 3D 和多传感器走。
+- **相机**:u = fx·X/Z + cx;K 是内参,[R|t] 是外参;标定用棋盘格 + 张正友法。
+- **双目**:Z = f·B/d,视差越小越远、误差越大(误差 ∝ Z²)。
+- **对极**:x'ᵀ F x = 0;E = [t]ₓR,F = K'⁻ᵀ E K⁻¹;8 点法 + RANSAC。
+- **单应**:平面或纯旋转,H 是 3×3、8 自由度,4 对点。
+- **PnP**:已知 3D 点和像素,求位姿;至少 3 点(P3P)+ RANSAC。
+- **ICP**:找最近点 → SVD 求 R,t → 迭代;要好的初值,怕局部最优。
+- **图像处理**:高斯/中值/Sobel;Canny 四步;Hough 用 ρ = x cosθ + y sinθ;HSV 把颜色和亮度分开。
+- **点云**:无序、稀疏;深度图反投影 X = (u−cx)Z/fx;法向 = 邻域协方差最小特征向量;RANSAC 找地面。
+- **多模态**:CLIP 对比学习、弱在细节(Eyes Wide Shut);MLLM = 编码器 + 投影 + LLM;多视角弱在跨视角对应和位姿,传统几何正好能补。
+- **诚实边界**:kernels.cu 是课程发的,说「写了 host 端执行层」;RCRI 训练在云上;CLIP 是零样本推理和部署,没训练过。
+</script>
+<script type="application/json" id="gloss">{}</script>
+<div id="tip"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+const md=document.getElementById('src').textContent;
+const main=document.getElementById('body');
+main.innerHTML=marked.parse(md,{mangle:false,headerIds:false});
+main.querySelectorAll('p,li,td').forEach(el=>{el.innerHTML=el.innerHTML.replace(/🈶([^<）]*)/g,'<span class="zh">🈶$1</span>');});
+const DKEY='byteveda_peter_done_v1';const FKEY='byteveda_peter_fav_v1';const LKEY='byteveda_peter_later_v1';
+function ld(k,d){try{return JSON.parse(localStorage.getItem(k)||d)}catch(e){return JSON.parse(d)}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let done=ld(DKEY,'{}');
+function hkey(t){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))>>>0;return 'h'+h.toString(36)}
+
+/* 篇 banners + TOC groups */
+const tl=document.getElementById('tl');const heads=[];let n=0;
+let group=null,gwrap=null,lastL2=null,l2count=0;
+const groups=[];
+main.querySelectorAll('h1,h2,h3').forEach(h=>{
+  const raw=h.textContent.trim();
+  const id='s'+(n++);h.id=id;heads.push(h);
+  if(h.tagName==='H1'&&raw.startsWith('篇')){
+    const desc=h.nextElementSibling&&h.nextElementSibling.tagName==='BLOCKQUOTE'?h.nextElementSibling:null;
+    const d=document.createElement('div');d.className='part';d.id=id;
+    d.innerHTML='<div class="k">PART</div><h1></h1>'+(desc?'<p>'+desc.textContent+'</p>':'');
+    d.querySelector('h1').textContent=raw;h.replaceWith(d);if(desc)desc.remove();
+    group=document.createElement('details');group.open=true;
+    group.innerHTML='<summary>'+raw+'<span class="pp"></span></summary>';
+    gwrap=document.createElement('div');group.appendChild(gwrap);tl.appendChild(group);
+    groups.push({el:group,items:[]});
+    return;
+  }
+  const key=hkey(raw);h.dataset.k=key;
+  const a=document.createElement('a');a.href='#'+id;a.textContent=raw;
+  a.className=h.tagName==='H1'?'l1':h.tagName==='H2'?'l2':'l3';
+  if(h.tagName==='H3'){if(lastL2)a.classList.add('of-'+lastL2);}
+  if(h.tagName==='H2'){lastL2=key;a.dataset.k=key;}
+  if(done[key])a.classList.add('done');
+  a.dataset.hk=key;
+  (gwrap||tl).appendChild(a);
+  if(h.tagName!=='H1'&&groups.length)groups[groups.length-1].items.push(key);
+  if(h.tagName==='H2'){a.addEventListener('click',()=>{a.classList.toggle('open');});}
+  /* heading widgets */
+  const chk=document.createElement('span');chk.className='chk'+(done[key]?' on':'');chk.textContent=done[key]?'✓ 掌握':'☐ 掌握';chk.title='勾上=这节我掌握了';
+  chk.onclick=()=>{done[key]=!done[key];if(!done[key])delete done[key];sv(DKEY,done);chk.className='chk'+(done[key]?' on':'');chk.textContent=done[key]?'✓ 掌握':'☐ 掌握';a.classList.toggle('done',!!done[key]);prog();};
+  h.appendChild(chk);
+  {const fv=ld(FKEY,'{}');const st=document.createElement('span');st.className='fav'+(fv[key]?' on':'');st.textContent=fv[key]?'★ 已收藏':'☆ 收藏';st.title='收藏这一节,集中显示在页面最上面';
+   st.onclick=()=>{const f=ld(FKEY,'{}');if(f[key])delete f[key];else f[key]={t:raw.slice(0,80),ts:Date.now()};sv(FKEY,f);st.className='fav'+(f[key]?' on':'');st.textContent=f[key]?'★ 已收藏':'☆ 收藏';renderFavs();};
+   h.appendChild(st);}
+  {const lv=ld(LKEY,'{}');const lt=document.createElement('span');lt.className='lat'+(lv[key]?' on':'');lt.textContent=lv[key]?'🔖 待看':'🔖 稍后';lt.title='标记稍后再看';if(lv[key])a.classList.add('lat-on');
+   lt.onclick=()=>{const f=ld(LKEY,'{}');if(f[key])delete f[key];else f[key]={t:raw.slice(0,80),ts:Date.now()};sv(LKEY,f);lt.className='lat'+(f[key]?' on':'');lt.textContent=f[key]?'🔖 待看':'🔖 稍后';a.classList.toggle('lat-on',!!f[key]);renderLater();};
+   h.appendChild(lt);}
+  const ask=document.createElement('a');ask.className='ask';ask.textContent='＋问';ask.title='对这一节提问';
+  ask.onclick=()=>{setSec(h);document.getElementById('qtext').focus();};
+  h.appendChild(ask);
+});
+function prog(){
+  let T=0,D=0;
+  groups.forEach(g=>{const t=g.items.length,d=g.items.filter(k=>done[k]).length;T+=t;D+=d;g.el.querySelector('.pp').textContent=d+'/'+t;});
+  document.getElementById('allprog').innerHTML='已掌握 '+D+' / '+T+' 节<div class="bar"><i style="width:'+(T?100*D/T:0)+'%"></i></div>';
+}
+prog();
+function secNodes(h){const out=[];const lvl=+h.tagName[1];let e=h.nextElementSibling;while(e){if(/^H[1-3]$/.test(e.tagName)&&(+e.tagName[1])<=lvl)break;if(!e.classList.contains('chnav'))out.push(e);e=e.nextElementSibling;}return out;}
+function renderFavs(){const box=document.getElementById('favs');const f=ld(FKEY,'{}');const ks=Object.keys(f).sort((a,b)=>f[a].ts-f[b].ts);
+  box.innerHTML='';const h2=document.createElement('h2');h2.textContent='⭐ 我的收藏 ('+ks.length+')';box.appendChild(h2);
+  if(!ks.length){const p=document.createElement('p');p.className='hint';p.textContent='点任意标题旁的「☆ 收藏」,那一节会集中出现在这里;可以一键全部展开,面试前只看这一块。收藏存在这台设备的浏览器里。';box.appendChild(p);return;}
+  const all=document.createElement('button');all.className='fbtn';all.textContent='全部展开';let open=false;
+  all.onclick=()=>{open=!open;all.textContent=open?'全部收起':'全部展开';box.querySelectorAll('.fi').forEach(fi=>fi._set(open));};h2.appendChild(all);
+  const cp=document.createElement('button');cp.className='fbtn';cp.textContent='复制收藏清单';cp.onclick=()=>{const txt=ks.map((k,i)=>(i+1)+'. '+f[k].t).join('\n');try{navigator.clipboard.writeText(txt).then(()=>{cp.textContent='已复制';setTimeout(()=>cp.textContent='复制收藏清单',1500);},()=>{prompt&&0;});}catch(e){}};h2.appendChild(cp);
+  ks.forEach(k=>{const h=heads.find(x=>x.dataset.k===k);const fi=document.createElement('div');fi.className='fi';const row=document.createElement('div');row.className='row';
+    const a=document.createElement('a');a.className='t';a.textContent=f[k].t;if(h)a.href='#'+h.id;row.appendChild(a);
+    const tg=document.createElement('button');tg.className='fbtn';tg.textContent='展开';row.appendChild(tg);
+    const rm=document.createElement('button');rm.className='fbtn';rm.textContent='✕';rm.title='取消收藏';rm.onclick=()=>{const g=ld(FKEY,'{}');delete g[k];sv(FKEY,g);if(h){const st=h.querySelector('.fav');if(st){st.className='fav';st.textContent='☆ 收藏';}}renderFavs();};row.appendChild(rm);
+    fi.appendChild(row);const body=document.createElement('div');body.className='body';body.hidden=true;fi.appendChild(body);
+    fi._set=(on)=>{if(on&&!body.childNodes.length&&h){secNodes(h).forEach(n=>{const c=n.cloneNode(true);c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));c.removeAttribute&&c.removeAttribute('id');body.appendChild(c);});}body.hidden=!on;tg.textContent=on?'收起':'展开';};
+    tg.onclick=()=>fi._set(body.hidden);box.appendChild(fi);});
+}
+renderFavs();
+function renderLater(){const box=document.getElementById('later');const f=ld(LKEY,'{}');const ks=Object.keys(f).sort((a,b)=>f[a].ts-f[b].ts);
+  box.innerHTML='';if(!ks.length){box.hidden=true;return;}box.hidden=false;
+  const h2=document.createElement('h2');h2.textContent='🔖 稍后再看 ('+ks.length+')';box.appendChild(h2);
+  ks.forEach(k=>{const h=heads.find(x=>x.dataset.k===k);const fi=document.createElement('div');fi.className='fi';const row=document.createElement('div');row.className='row';
+    const a=document.createElement('a');a.className='t';a.textContent=f[k].t;if(h)a.href='#'+h.id;row.appendChild(a);
+    const tg=document.createElement('button');tg.className='fbtn';tg.textContent='展开';row.appendChild(tg);
+    const ok=document.createElement('button');ok.className='fbtn';ok.textContent='看完了';ok.title='从稍后再看里移除';
+    ok.onclick=()=>{const g=ld(LKEY,'{}');delete g[k];sv(LKEY,g);if(h){const lt=h.querySelector('.lat');if(lt){lt.className='lat';lt.textContent='🔖 稍后';}const ta=tl.querySelector('a[data-hk="'+k+'"]');if(ta)ta.classList.remove('lat-on');}renderLater();};row.appendChild(ok);
+    fi.appendChild(row);const body=document.createElement('div');body.className='body';body.hidden=true;fi.appendChild(body);
+    tg.onclick=()=>{const on=body.hidden;if(on&&!body.childNodes.length&&h){secNodes(h).forEach(n=>{const c=n.cloneNode(true);c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));body.appendChild(c);});}body.hidden=!on;tg.textContent=on?'收起':'展开';};
+    box.appendChild(fi);});
+}
+renderLater();
+/* quick links */
+const Q=[["速览", "第 0 章"], ["公司", "第 1 章"], ["开场项目", "第 2 章"], ["动机安排", "A 部分"], ["本地大模型", "B 部分"], ["押题 32", "C 部分"], ["反问", "第 4 章"], ["请你确认", "附录 D"]];
+const quick=document.getElementById('quick');
+(function(){try{const last=JSON.parse(localStorage.getItem('byteveda_peter_last_v1')||'null');if(last&&last.k){const h=heads.find(x=>x.dataset.k===last.k);if(h){const a=document.createElement('a');a.href='#'+h.id;a.textContent='↩ 上次看到:'+last.title.slice(0,18);a.style.borderColor='var(--acc)';a.style.color='var(--acc)';quick.appendChild(a);}}}catch(e){}})();
+Q.forEach(([label,pre])=>{const h=heads.find(x=>x.textContent.trim().startsWith(pre)||x.textContent.trim().includes(pre));if(!h)return;const a=document.createElement('a');a.href='#'+h.id;a.textContent=label;quick.appendChild(a);});
+/* search: match H1/H2/H3, show matched H3 */
+document.getElementById('q').addEventListener('input',e=>{const v=e.target.value.toLowerCase().trim();
+  tl.querySelectorAll('a').forEach(a=>{const hit=!v||a.textContent.toLowerCase().includes(v);a.hidden=!hit;if(a.classList.contains('l3'))a.style.display=(v&&hit)?'block':'';});
+  tl.querySelectorAll('details').forEach(d=>{d.open=true;});
+});
+main.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b)}catch(e){}});
+
+/* ---- 生动化:给标注块上色 ---- */
+main.querySelectorAll('blockquote').forEach(q=>{
+  const t=q.textContent.trim();
+  main.querySelectorAll('blockquote').forEach(bq=>{const t=bq.textContent.trim();if(t.startsWith('🔤')){const p=document.createElement('p');p.className='legend';p.innerHTML=bq.innerHTML.replace(/<\/?p>/g,' ').replace('🔤','');bq.replaceWith(p);}});
+  const map=[['🔰','co-basic','零基础版'],['⚠️','co-warn','注意'],['🔴','co-hot','重要'],['✅','co-ok','已核实'],['💡','co-tip','提示'],['📍','co-hot','阅读位置'],['🈶','co-say','中文']];
+  for(const [e,c,l] of map){if(t.startsWith(e)||t.startsWith('**'+e)){q.classList.add('co',c);q.dataset.l=l;return;}}
+  if(/^["“*]/.test(t)||/^[A-Z][a-z]/.test(t)){q.classList.add('co','co-say');q.dataset.l='面试原话';}
+});
+/* ---- 章标题:编号徽章 + 预计阅读时间 + 上一章/下一章 ---- */
+const CPM=420; /* 中文阅读速度:字/分钟 */
+const chapters=[];
+(function(){
+  const h1s=[...main.querySelectorAll('h1')].filter(h=>!h.closest('.part'));
+  h1s.forEach((h,i)=>{
+    let len=0;let e=h.nextElementSibling;const nodes=[];
+    while(e&&!(e.tagName==='H1')&&!e.classList.contains('part')){len+=e.innerText.length;nodes.push(e);e=e.nextElementSibling;}
+    const mins=Math.max(1,Math.round(len/CPM));
+    h.classList.add('ch');const sm=document.createElement('small');sm.textContent='预计阅读 ≈ '+mins+' 分钟 · '+nodes.filter(n=>n.tagName==='H2').length+' 节';h.appendChild(sm);
+    chapters.push({h,nodes,len,mins,last:nodes[nodes.length-1]||h});
+    const a=tl.querySelector('a[href="#'+h.id+'"]');if(a){const r=document.createElement('span');r.className='rt';r.textContent=mins+'′';a.appendChild(r);}
+  });
+  chapters.forEach((c,i)=>{
+    const nav=document.createElement('div');nav.className='chnav';
+    const prev=chapters[i-1],next=chapters[i+1];
+    nav.innerHTML=(prev?'<a href="#'+prev.h.id+'">← 上一章:'+prev.h.firstChild.textContent.trim().slice(0,22)+'</a>':'<span></span>')+(next?'<a href="#'+next.h.id+'">下一章:'+next.h.firstChild.textContent.trim().slice(0,22)+' →</a>':'<span></span>');
+    c.last.after(nav);
+  });
+  main.querySelectorAll('h2').forEach(h=>{const m=h.firstChild&&h.firstChild.textContent.match(/^\s*(§?\d+(?:\.\d+)*|附录 [A-C]|[一二三四五六七八九十]+、)/);if(m){const n=document.createElement('span');n.className='num';n.textContent=m[1].trim();h.firstChild.textContent=h.firstChild.textContent.replace(m[0],'').replace(/^[·\s]+/,'');h.prepend(n);}});
+})();
+function chapterStatus(){
+  const y=window.scrollY+140;let cur=null;
+  for(const c of chapters){if(c.h.offsetTop<=y)cur=c;else break;}
+  if(!cur)return;
+  const start=cur.h.offsetTop,end=cur.last.offsetTop+cur.last.offsetHeight;
+  const pct=Math.min(100,Math.max(0,Math.round(100*(y-start)/Math.max(1,end-start))));
+  document.getElementById('chname').textContent=cur.h.firstChild.textContent.trim().slice(0,40);
+  document.getElementById('chleft').textContent='还剩 ≈ '+Math.max(0,Math.round(cur.mins*(100-pct)/100))+' 分钟';
+  document.getElementById('chprog').style.width=pct+'%';document.getElementById('chpct').textContent=pct+'%';
+}
+window.addEventListener('scroll',()=>{clearTimeout(window.__c);window.__c=setTimeout(chapterStatus,60);});chapterStatus();
+
+/* ---- 名词悬停解释(来自附录 C) ---- */
+(function(){
+  const G=JSON.parse(document.getElementById('gloss').textContent||'{}');
+  const terms=Object.keys(G).sort((a,b)=>b.length-a.length);if(!terms.length)return;
+  const esc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re=new RegExp('('+terms.map(esc).join('|')+')','gi');
+  const lower={};terms.forEach(t=>lower[t.toLowerCase()]=t);
+  const appC=heads.find(h=>h.textContent.trim().startsWith('附录 C'));
+  const skip=n=>{for(let e=n.parentElement;e;e=e.parentElement){const tg=e.tagName;if(tg==='PRE'||tg==='CODE'||tg==='A'||tg==='H1'||tg==='H2'||tg==='H3'||tg==='SCRIPT'||e.classList.contains('gl')||e.classList.contains('part'))return true;}return false;};
+  let inC=false;
+  const blocks=main.querySelectorAll('p,li,td,th,blockquote');
+  blocks.forEach(bl=>{
+    if(appC&&bl.compareDocumentPosition(appC)&Node.DOCUMENT_POSITION_PRECEDING)return; /* skip glossary itself */
+    const seen=new Set();
+    const walker=document.createTreeWalker(bl,NodeFilter.SHOW_TEXT,{acceptNode:n=>skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+    const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(nd=>{
+      const txt=nd.nodeValue;if(!re.test(txt)){re.lastIndex=0;return;}re.lastIndex=0;
+      const frag=document.createDocumentFragment();let last=0,m,changed=false;
+      while((m=re.exec(txt))){const key=lower[m[1].toLowerCase()];if(!key||seen.has(key)){continue;}
+        /* latin terms must be whole words */
+        if(/^[A-Za-z0-9+.\- ]+$/.test(key)){const b=txt[m.index-1]||' ',a=txt[m.index+m[0].length]||' ';if(/[A-Za-z0-9_]/.test(b)||/[A-Za-z0-9_]/.test(a))continue;}
+        seen.add(key);frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+        const sp=document.createElement('span');sp.className='gl';sp.textContent=m[0];sp.dataset.d=G[key];frag.appendChild(sp);last=m.index+m[0].length;changed=true;}
+      if(changed){frag.appendChild(document.createTextNode(txt.slice(last)));nd.replaceWith(frag);}
+    });
+  });
+  const tip=document.getElementById('tip');
+  main.addEventListener('mouseover',e=>{const t=e.target.closest('.gl');if(!t)return;const d=t.dataset.d;const i=d.indexOf(':');tip.innerHTML='<b></b> ';tip.querySelector('b').textContent=d.slice(0,i);tip.appendChild(document.createTextNode(d.slice(i+1)));tip.style.display='block';
+    const r=t.getBoundingClientRect();let x=r.left,y=r.bottom+8;if(x+370>innerWidth)x=innerWidth-380;if(y+140>innerHeight)y=r.top-8-tip.offsetHeight;tip.style.left=x+'px';tip.style.top=y+'px';});
+  main.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('.gl'))tip.style.display='none';});
+})();
+document.getElementById('top').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+/* reading progress + current highlight */
+const rp=document.getElementById('rp');
+function savePos(){try{let best=null;for(const h of heads){if(!h.isConnected)continue;if(h.getBoundingClientRect().top<=120)best=h;else break;}if(best&&best.dataset.k){localStorage.setItem('byteveda_peter_pos_v1',JSON.stringify({k:best.dataset.k,off:Math.round(window.scrollY-(best.getBoundingClientRect().top+window.scrollY)),when:Date.now()}));}}catch(e){}}
+function onscroll(){const h=document.documentElement;rp.style.width=(100*h.scrollTop/(h.scrollHeight-h.clientHeight))+'%';clearTimeout(window.__t);window.__t=setTimeout(()=>{nearest();savePos();},80);}
+window.addEventListener('scroll',onscroll);
+setInterval(savePos,1000);window.addEventListener('pagehide',savePos);window.addEventListener('beforeunload',savePos);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')savePos();});
+
+/* ---- 右侧 Q&A:用 Claude 生成解答(只在 claude.ai 里打开的版本可用) ---- */
+let SAMPLE=null;const sampleReady=(async()=>{await new Promise(r=>setTimeout(r,0));try{if(window.claude&&window.claude.use){SAMPLE=await window.claude.use('sample');}}catch(e){SAMPLE=null;}try{render();}catch(e){}})();
+function secText(id){const h=document.getElementById(id);if(!h)return '';let t=[];let e=h.nextElementSibling;const lvl=+h.tagName[1];while(e){if(/^H[1-3]$/.test(e.tagName)&&(+e.tagName[1])<=lvl)break;if(!e.classList.contains('part'))t.push(e.innerText);e=e.nextElementSibling;}return t.join('\n').slice(0,6000);}
+async function answer(it,box,btn){
+  if(!SAMPLE){box.textContent='这个功能只在 claude.ai 上打开的版本可用。本地版请点「复制全部为 Markdown」发给我。';return;}
+  const ctx=secText(it.id);btn.disabled=true;box.className='ans think';box.textContent='Claude 在想…(5–60 秒)';
+  const prompt='你是在帮一位 2026 年 12 月毕业的哥大计算机工程硕士准备 Byte Veda(纽约,无人机实时感知 + 射频 + 网络安全)Computer Vision / 3D Perception Engineer 终面(11/5 周四 13:00,45 分钟现场,面试官是 lead CV engineer Peter,主题是 3D 建模、图像处理、计算机视觉;Peter 可能是做多模态视觉的 Peter Tong)。她正在读一份冲刺手册,看到下面这一节时提了一个问题。请用中文、零基础也能懂的口吻回答:先一句人话给结论,再展开解释,必要时给面试里可以直接说的一句英文原话。不要编造她的项目细节;涉及她的项目只引用手册原文。控制在 300 字以内。\n\n【她正在看的章节】'+(it.title||'')+'\n'+ctx+'\n\n【她的问题】'+it.text;
+  try{const {text}=await SAMPLE(prompt,{onText:({text})=>{box.className='ans';box.textContent=text;}});
+    const all=load();const i=all.findIndex(x=>x.k===it.k);if(i>=0){all[i].answer=text;store(all);}box.className='ans';box.textContent=text;}
+  catch(e){box.className='ans';box.textContent=e&&e.text?e.text:(e&&e.code==='not_granted'?'你没有允许这个页面使用 Claude,所以生成不了。':'生成失败('+(e&&e.code||'unknown')+'),稍后再试或发给我。');}
+  finally{btn.disabled=false;}
+}
+/* ---- 右侧 Q&A ---- */
+const KEY='byteveda_peter_qa_v1';
+let cur={id:'',title:'(未定位)'};
+function setSec(h){cur={id:h.id,title:h.textContent.replace('＋问','').replace(/[☐✓] 掌握/,'').replace(/[☆★] (已)?收藏/,'').replace(/🔖 (稍后|待看)/,'').trim()};try{if(h.dataset.k)localStorage.setItem('byteveda_peter_last_v1',JSON.stringify({k:h.dataset.k,title:cur.title,when:Date.now()}));}catch(e){}document.getElementById('cursec').textContent='当前章节:'+cur.title;
+  tl.querySelectorAll('a.cur').forEach(a=>a.classList.remove('cur'));const a=tl.querySelector('a[href="#'+h.id+'"]');if(a)a.classList.add('cur');}
+function nearest(){let best=null;for(const h of heads){if(!h.isConnected)continue;const r=h.getBoundingClientRect();if(r.top<=120)best=h;else break;}if(best)setSec(best);}
+nearest();
+(function(){try{const LAND="第 0 章";let _sv=null;try{_sv=JSON.parse(localStorage.getItem('byteveda_peter_pos_v1')||'null')||JSON.parse(localStorage.getItem('byteveda_peter_last_v1')||'null')}catch(e){}if(LAND&&!(_sv&&_sv.k)){const h=heads.find(x=>x.textContent.indexOf(LAND)>=0);if(h){const go=()=>{window.scrollTo({top:Math.max(0,h.getBoundingClientRect().top+window.scrollY-10),behavior:'auto'});try{h.scrollIntoView({block:'start',behavior:'auto'})}catch(e){}};go();setTimeout(go,300);setTimeout(go,1200);setTimeout(go,2500);return;}}let p=JSON.parse(localStorage.getItem('byteveda_peter_pos_v1')||'null');if(location.hash&&!(p&&p.k))return;if(!p||!p.k){const l=JSON.parse(localStorage.getItem('byteveda_peter_last_v1')||'null');if(l&&l.k)p={k:l.k,off:0};}if(!p||!p.k)return;const h=heads.find(x=>x.dataset.k===p.k);if(!h)return;const go=()=>{const y=h.getBoundingClientRect().top+window.scrollY+(p.off||0);window.scrollTo({top:Math.max(0,y),behavior:'auto'});};go();setTimeout(go,300);setTimeout(go,1200);}catch(e){}})();
+function load(){return ld(KEY,'[]')}
+function store(list){sv(KEY,list)}
+function render(){
+  const list=load();const box=document.getElementById('notes');box.innerHTML='';
+  if(!list.length){box.innerHTML='<div style="color:var(--mut);font-size:13px">还没有问题。</div>';return;}
+  list.slice().reverse().forEach(it=>{
+    const d=document.createElement('div');d.className='note'+(it.done?' answered':'');
+    d.innerHTML='<div class="t"><span>'+(it.title||'')+' · '+it.when+'</span><span><a data-a="jump">跳转</a> <a data-a="done">'+(it.done?'未答':'已答')+'</a> <a data-a="del">删</a></span></div><div class="b"></div>';
+    d.querySelector('.b').textContent=it.text;
+    const ab=document.createElement('div');ab.className='ans';ab.hidden=!it.answer;ab.textContent=it.answer||'';d.appendChild(ab);
+    const bb=document.createElement('div');bb.className='btns2';const gen=document.createElement('button');gen.textContent=it.answer?'重新生成解答':'生成解答';gen.title=SAMPLE?'用 Claude 生成这一题的解答':'只在 claude.ai 上打开的版本可用';gen.onclick=()=>{ab.hidden=false;answer(it,ab,gen);};bb.appendChild(gen);d.appendChild(bb);
+    d.querySelectorAll('.t a').forEach(a=>a.onclick=()=>{
+      const all=load();const i=all.findIndex(x=>x.k===it.k);if(i<0)return;
+      if(a.dataset.a==='del')all.splice(i,1);
+      if(a.dataset.a==='done')all[i].done=!all[i].done;
+      if(a.dataset.a==='jump'&&it.id){location.hash='#'+it.id;return;}
+      store(all);render();
+    });
+    box.appendChild(d);
+  });
+}
+document.getElementById('save').onclick=()=>{
+  const ta=document.getElementById('qtext');const text=ta.value.trim();if(!text)return;
+  const list=load();const now=new Date();const when=now.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  list.push({k:Date.now()+Math.random(),id:cur.id,title:cur.title,text,when,done:false});
+  store(list);ta.value='';render();
+};
+document.getElementById('clear').onclick=()=>{const b=document.getElementById('clear');if(load().length&&b.dataset.arm){store([]);render();delete b.dataset.arm;b.textContent='清空全部';}else{b.dataset.arm='1';b.textContent='再点一次确认清空';setTimeout(()=>{delete b.dataset.arm;b.textContent='清空全部';},3000);}};
+document.getElementById('copy').onclick=async()=>{
+  const list=load().filter(x=>!x.done);
+  const out=['## ❓ 待答(从 HTML 复制,'+new Date().toLocaleDateString('zh-CN')+')',''].concat(list.map(x=>'- **['+x.title+']** '+x.text.replace(/\n/g,' '))).join('\n');
+  const b=document.getElementById('copy');
+  try{await navigator.clipboard.writeText(out);b.textContent='已复制 '+list.length+' 条';}
+  catch(e){const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');b.textContent='已复制 '+list.length+' 条';}catch(_){b.textContent='复制失败,手动选中';}ta.remove();}
+  setTimeout(()=>b.textContent='复制全部为 Markdown',2000);
+};
+render();
+</script></body></html>
