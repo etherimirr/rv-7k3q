@@ -538,6 +538,20 @@ FID 是什么:用一个预训练网络分别提取真图和生成图的特征,�
 
 - 意义:理解和生成能在同一个表示空间里做,模型可以直接对自己生成的隐向量做推理,这为统一模型铺路。
 
+## VLA:VLM 往机器人上再走一步(了解即可)
+结论:周四不用专门学,能一分钟讲清就够。被问「多模态模型怎么用到机器人/无人机上」时用得上。
+
+- **是什么**:VLA = Vision-Language-Action。输入图像 + 一句指令,直接输出机器人动作。 · VLA takes images and an instruction and outputs robot actions directly.
+- **怎么做**:拿训好的 VLM,把动作也变成 token 让它预测。 · Start from a pretrained VLM and teach it to predict actions as tokens.
+  - **RT-2**(Google DeepMind,2023):动作每个维度离散成 256 档,当文字 token 输出,和网上图文数据一起训。
+  - **OpenVLA**(2024,7B,开源):视觉端把 SigLIP 和 DINOv2 的特征拼起来,语言模型是 Llama 2;在 Open X-Embodiment(约 97 万条机器人轨迹)上训。
+  - **π0**(Physical Intelligence,2024):VLM 后面接一个「动作专家」,用 flow matching 一次输出一段连续动作(action chunk),适合灵巧、高频的控制。
+- **难点**:机器人数据少且贵;推理慢,撑不住高频控制;换个环境就容易失败。 · Scarce robot data, latency for high-rate control, weak generalization.
+- **和 Peter 方向的连接**:OpenVLA 混用 SigLIP + DINOv2,正是 Eyes Wide Shut 的结论:光有 CLIP 类的「语义眼睛」不够,要加自监督的「结构眼睛」。机器人抓东西最需要的方向、位置、部件,恰好是 CLIP 看不清的。
+- **和无人机的连接**:实时控制环留给小而快的模型;VLA 适合上层慢速的任务规划,比如「飞到红色屋顶上方」。
+
+> 🗣 A VLA model extends a vision-language model so it outputs robot actions instead of just text. RT-2 discretized actions into tokens and co-trained on web data. OpenVLA is a 7B open model whose vision encoder fuses SigLIP and DINOv2 features, which connects nicely to the Eyes Wide Shut finding that CLIP-style features alone miss spatial detail. π0 adds an action expert trained with flow matching to output continuous action chunks. The main challenges are scarce robot data, latency for high-rate control, and generalization. On a drone, I'd keep the real-time loop on small, fast models and use a VLA-style model for slower, high-level task planning.
+
 # 篇四 · 押题 A:3D 建模 + 图像处理(主战场)
 > Helen 写在 Peter 那轮日程上的主题,也是初筛真题的方向。每题都要能白板讲、能代数字
 
