@@ -2,7 +2,7 @@
 <html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Byte Veda 终面 Peter</title>
-<style>.hljs{color:var(--fg)}.hljs-keyword,.hljs-literal,.hljs-selector-tag{color:#a626a4}.hljs-string,.hljs-attr,.hljs-addition{color:#50a14f}.hljs-number,.hljs-symbol{color:#986801}.hljs-comment,.hljs-quote{color:#8a8a8a;font-style:italic}.hljs-title,.hljs-section{color:#4078f2}.hljs-built_in,.hljs-type{color:#c18401}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hljs-keyword,:root:not([data-theme="light"]) .hljs-literal{color:#c678dd}:root:not([data-theme="light"]) .hljs-string,:root:not([data-theme="light"]) .hljs-attr{color:#98c379}:root:not([data-theme="light"]) .hljs-number{color:#d19a66}:root:not([data-theme="light"]) .hljs-title{color:#61afef}:root:not([data-theme="light"]) .hljs-built_in{color:#e5c07b}}#wrap>*{min-width:0}#main{min-width:0;max-width:100%;width:100%}#body pre{overflow-x:auto;max-width:100%;white-space:pre}#body table{display:block;overflow-x:auto;max-width:100%}</style>
+<style>.hljs{color:var(--fg)}.hljs-keyword,.hljs-literal,.hljs-selector-tag{color:#a626a4}.hljs-string,.hljs-attr,.hljs-addition{color:#50a14f}.hljs-number,.hljs-symbol{color:#986801}.hljs-comment,.hljs-quote{color:#8a8a8a;font-style:italic}.hljs-title,.hljs-section{color:#4078f2}.hljs-built_in,.hljs-type{color:#c18401}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hljs-keyword,:root:not([data-theme="light"]) .hljs-literal{color:#c678dd}:root:not([data-theme="light"]) .hljs-string,:root:not([data-theme="light"]) .hljs-attr{color:#98c379}:root:not([data-theme="light"]) .hljs-number{color:#d19a66}:root:not([data-theme="light"]) .hljs-title{color:#61afef}:root:not([data-theme="light"]) .hljs-built_in{color:#e5c07b}}</style>
 <style>
 :root{--bg:#fbfaf8;--fg:#1b1a18;--mut:#6b6862;--line:#e3e0da;--acc:#b4503a;--acc2:#2f6f8f;--ok:#4e8a4a;--card:#fff;--code:#f4f2ee;--note:#fff8e6;--noteline:#e9d9a8;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16151a;--fg:#e9e7e2;--mut:#9a958c;--line:#2e2c33;--acc:#e08a70;--acc2:#7fb3d0;--ok:#8cc084;--card:#1e1d23;--code:#23222a;--note:#2a2618;--noteline:#5a4e2a;color-scheme:dark}}
@@ -155,7 +155,7 @@ p.legend{color:var(--mut);font-size:.88em;margin:.3em 0}
 h3{color:var(--fg)!important}
 h1.ch{border-left-width:3px!important;background:transparent!important}
 #top{position:fixed;left:18px;bottom:18px;background:var(--acc);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer}
-</style></head><body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./"><b>Byte Veda 终面手册</b></a><a href="../alpaca/">Alpaca</a><a href="../">返回 rv-7k3q</a></div>
+</style><style id="bvfix">#wrap>*{min-width:0}#main{min-width:0!important;width:100%!important;max-width:1000px}#body{overflow-wrap:anywhere}#body pre{overflow-x:auto;max-width:100%;white-space:pre;overflow-wrap:normal}#body table{display:block;overflow-x:auto;max-width:100%}</style></head><body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./"><b>Byte Veda 终面手册</b></a><a href="../alpaca/">Alpaca</a><a href="../">返回 rv-7k3q</a></div>
 <div id="rp"></div>
 <div id="wrap">
 <nav id="toc"><h2>目录</h2><input id="q" placeholder="搜章节 / 题目…"><div id="allprog"></div><div id="tl"></div></nav>
@@ -1148,6 +1148,8 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
 # 篇五 · 押题 B:多模态视觉(如果是 Peter Tong)
 > 每题先提纲(中文 + English),再给一段能直接说的英文(🗣)
 
+## 12 道押题(点开每题看答案)
+
 ### B1. CLIP 是怎么训练的?为什么能零样本分类?
 
 - 双塔编码,图和文进同一空间 · two towers map images and text into one space
@@ -1353,10 +1355,6 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
    <span class="en">Who are the main customers, and are there projects that require U.S.-person status?</span>
    为什么问:你是 F-1,毕业后用 OPT,之后需要 H-1B;这类产品线有时涉及出口管制,问清楚对双方都好。
    <span class="en">Why: you're on F-1 with OPT and later H-1B, and some products in this space involve export controls.</span>
-
----
-
-# 第 8 章 FPCV 课程精华 · Nayar, First Principles of Computer Vision
 
 # 篇七 · 考前一页纸
 > 周四上午只看这页
