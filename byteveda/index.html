@@ -1035,6 +1035,57 @@ K = | fx  0  cx |
 
 ## A18 NeRF 和 3D Gaussian Splatting · NeRF and 3D Gaussian Splatting 【预测】
 
+### 先搞懂:NeRF 是干啥的 · What NeRF actually does
+
+**一句话**:给它几十张从不同角度拍的同一个场景的照片,它学会这个场景,然后能**生成任何新角度的照片**,包括你根本没站过的位置。
+<span class="en">Given a few dozen photos of one scene from different angles, NeRF learns the scene and can render a photo from any new viewpoint.</span>
+
+**为什么需要它**:普通照片只记录了"相机站在那儿看到的样子"。想在 VR 里绕着一个房间走、给房产做 3D 看房、给电影做特效、给机器人做数字孪生,就需要"任意角度都能看"。以前要用激光扫描或手工建模,NeRF 只要手机照片。
+<span class="en">Photos only capture fixed viewpoints. VR walkthroughs, 3D house tours, film effects and digital twins need any viewpoint; NeRF gets there from ordinary photos instead of laser scans or manual modeling.</span>
+
+**比方:一屋子有颜色的烟**。把整个场景想成房间里飘满了烟。每个点都有两样东西:**烟有多浓**(浓 = 这里有东西,比如杯子表面;稀 = 空气)和**烟是什么颜色**。NeRF 就是一个查表的神经网络:你问它"(x, y, z) 这个点、从这个方向看",它答"浓度多少、颜色是啥"。
+<span class="en">Think of the scene as colored fog filling the room. Every point has a density (is something there?) and a color. NeRF is a neural network that answers: at point (x, y, z), seen from this direction, what is the density and the color?</span>
+
+```
+输入 5 个数                     网络 (MLP)            输出 4 个数
+(x, y, z, 看的方向 θ, φ)  ──►  [ 8 层全连接 ]  ──►  (R, G, B, 浓度 σ)
+```
+
+**怎么生成一张照片(体渲染)**:新照片的每个像素,从相机打一条射线穿过这个像素,沿射线**取很多个点**(原论文每条射线约 64 个粗采样 + 128 个细采样),每个点问一次网络,然后**从前往后叠颜色**:前面越浓,后面被挡住得越多。
+<span class="en">To render a pixel, shoot a ray from the camera through it, sample points along the ray, query the network at each, and composite colors front to back, where dense points in front block what's behind. This is volume rendering.</span>
+
+```
+相机 ●───────○──────────■──────────▲────►
+           点1: 空气      点2: 红杯子    点3: 杯子后面的绿墙
+           浓度低         浓度高         (大部分被杯子挡住)
+```
+
+**小例子算一遍**(α = 这个点"挡住光"的比例,T = 光走到这里还剩多少):
+
+| 点 | 颜色 | α | 剩下的光 T | 这个点的贡献 = T × α |
+|---|---|---|---|---|
+| 1 空气 | 蓝 | 0.1 | 1.0 | 0.1 |
+| 2 杯子 | 红 | 0.9 | 1.0 × 0.9 = 0.9 | 0.81 |
+| 3 墙 | 绿 | 0.8 | 0.9 × 0.1 = 0.09 | 0.072 |
+
+像素颜色 ≈ 0.1×蓝 + 0.81×红 + 0.072×绿 → **基本是红色**,和"相机看到杯子"一致。墙虽然浓,但光到它那儿只剩 9%,所以几乎看不见。
+<span class="en">Pixel ≈ 0.1 blue + 0.81 red + 0.072 green, so it comes out red: the cup blocks the wall behind it.</span>
+
+**怎么训练**:拿真实照片里的像素做答案。对每个像素用上面的方法"渲染"出一个颜色,和真照片的颜色比,差多少就反向传播改网络(MSE 损失)。因为每一步都可微,不需要任何 3D 标注,只要照片 + 每张照片的相机位置(一般用 COLMAP 做 SfM 算出来)。
+<span class="en">Training compares each rendered pixel with the real photo pixel (MSE loss) and backpropagates; the whole renderer is differentiable, so it needs only photos plus camera poses, usually from COLMAP structure-from-motion.</span>
+
+**两个关键小技巧**:
+- **位置编码**:把 (x, y, z) 先变成一串不同频率的 sin/cos 再喂给网络,否则网络只学得出模糊的样子,学不出纹理细节。<span class="en">Positional encoding maps coordinates to sines and cosines of many frequencies so the MLP can learn fine detail.</span>
+- **颜色看方向**:浓度只看位置(东西在哪不随你站哪变),颜色还看方向(这样能学出反光、高光)。<span class="en">Density depends only on position; color also depends on view direction, which captures reflections and highlights.</span>
+
+**代价(为什么后来有 3DGS)**:
+- **慢**:一张 800×800 的图有 64 万条射线,每条约 192 个点,就是约 1.2 亿次网络查询,原版渲染一张图要几十秒,训练一个场景要一两天(后来 Instant-NGP 用哈希网格降到几分钟)。<span class="en">Slow: 640K rays × ~192 samples ≈ 123M network queries per 800×800 image; training took a day or more until Instant-NGP's hash grids cut it to minutes.</span>
+- **一个场景一个网络**,换场景要重训;默认只适合**静止场景**;相机位置不准就会糊。<span class="en">One network per scene, static scenes by default, and it blurs if camera poses are wrong.</span>
+- **3DGS 的思路**:不再用网络"隐式"存场景,而是直接摆几百万个带颜色的 3D 高斯小椭球,渲染时像画三角形一样直接投影上屏(光栅化),所以能实时。下面的面试答法就是这两者的对比。<span class="en">3DGS stores the scene explicitly as millions of colored 3D Gaussians and rasterizes them, which makes rendering real-time.</span>
+
+**和你的经历怎么接**:RCRI 和 E6792 都是"从图像出 2D 检测结果";NeRF 是"从图像出 3D 场景"。被问到可以说你理解它是可微渲染 + 逆向求解场景,但没在项目里做过,别说做过。
+<span class="en">If asked: you understand it as differentiable rendering that inverts photos into a scene, but say clearly you haven't built one in a project.</span>
+
 > 提纲:都是从多张带位姿的照片学一个能渲染新视角的 3D 场景 → NeRF:MLP + 体渲染,慢 → 3DGS:一堆 3D 高斯直接光栅化,实时
 
 > <u>NeRF</u> trains an MLP that maps a 3D position and view direction to <u>color and density</u>, and renders each pixel by <u>volume rendering</u> along its ray, so it's high quality but slow because each pixel queries the network many times. <u>3D Gaussian Splatting</u> represents the scene as millions of <u>explicit 3D Gaussians</u> with position, covariance, opacity and color, and <u>rasterizes</u> them by projecting and blending, so it renders in <u>real time</u> and trains much faster. Both need camera poses, usually from structure-from-motion like COLMAP.
