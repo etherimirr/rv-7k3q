@@ -400,6 +400,40 @@ toc.addEventListener('click',function(e){if(narrow()&&e.target.closest('a')){set
 
 > 🗣 A convolution slides a small learned kernel across the image and computes a weighted sum at each location, sharing the same weights everywhere. That gives locality and translation equivariance with very few parameters. Output size is W minus K plus 2P over S, plus one, and a 3 by 3 conv from 64 to 128 channels has about 74 thousand parameters. The weakness is a limited receptive field, which deep stacks, dilation or attention address. Residual connections let gradients flow through the identity path so very deep networks train.
 
+### 问:平移等变性到底是什么?(11-05 她问的) · Translation equivariance
+
+**一句话**:**等变** = 输入怎么挪,输出就跟着怎么挪。猫在图里往右移 10 像素,卷积算出来的"猫特征"也往右移 10 像素。**不变** = 输入挪了,输出完全不变。比如分类结果,猫在哪都还是"猫"。
+<span class="en">Equivariant: shift the input and the output shifts the same way. Invariant: shift the input and the output does not change at all.</span>
+
+**比方**:拿同一个印章在纸上一格一格地盖。图案在纸上往右挪一格,印出来的结果也就往右挪一格,因为每个位置用的是**同一个印章**。
+
+**为什么卷积天生等变**:同一个卷积核(同一组权重)滑过每一个位置,每个位置做的是完全一样的计算。这和 attention 里所有词共用同一组 W_Q、W_K、W_V 是同一种"共用"的想法(F9)。
+
+**一维小例子**(卷积核 [1, 1],把相邻两个数相加):
+- 输入 x = [0, 0, 3, 1, 0, 0, 0] → 输出 y = [0, 3, 4, 1, 0, 0]
+- 把输入往右挪一格 x′ = [0, 0, 0, 3, 1, 0, 0] → 输出 y′ = [0, 0, 3, 4, 1, 0]
+- y′ 正好是 y 往右挪一格 → **等变**。
+- 再对整条取最大值:max(y) = 4,max(y′) = 4,一样 → 这一步是**不变**。
+- 所以:卷积层负责等变,最后的全局池化把它变成不变。
+
+**检测要等变,分类要不变**:
+- **分类**:只问"有没有猫",位置无所谓 → 要不变(CNN 最后接全局池化)。
+- **检测**(YOLO):框必须跟着物体走,物体挪了框也要挪 → 要等变。所以检测头直接接在特征图上,不做全局池化。
+<span class="en">Classification wants invariance; detection wants equivariance, because the box must move with the object.</span>
+
+**实际上不是完美等变**(常被追问):
+- **步长和池化**:步长 2 的下采样,输入挪 1 个像素,输出没法挪"半格",结果就会变,这叫混叠(aliasing)。2019 年有论文专门在下采样前加模糊来缓解。
+- **边界和 padding**:靠近边缘的地方补了 0,网络能从中猜出绝对位置。
+- **只对平移等变**,对旋转、缩放不等变:
+  - 缩放:靠多尺度特征(FPN,F25)和多尺度训练。
+  - 旋转、翻转:靠数据增强"教"给它。
+
+**ViT 呢**:ViT 按 16×16 的固定网格切块,物体挪 8 个像素,每块里的内容就全变了;再加上它的位置编码是绝对位置,所以平移等变性很弱,只能从大量数据里学。这就是"CNN 归纳偏置强、数据少也能训;ViT 偏置弱、更吃数据"(F13)。
+
+**和你的 RCRI 怎么接**:墙上任何位置的岩点,都是同一组卷积核去认,所以 5,341 张图就够训出 mAP50 0.825。翻转这类卷积天生不具备的对称性,要靠数据增强来决定"教不教",而你们最后的配置恰好关掉了水平翻转(见 F25 下面的问答)。
+
+> 🗣 Translation equivariance means that if the input shifts, the output shifts by the same amount. A convolution has it built in because the same kernel weights are applied at every location. Invariance is different: the output doesn't change at all, which you get by adding global pooling at the end, and that's what classification wants. Detection needs equivariance, because the predicted box has to move with the object. In practice it's only approximate: strided downsampling causes aliasing, padding leaks absolute position, and convolutions aren't equivariant to rotation or scale, so we use multi-scale features and data augmentation for those. ViTs have much weaker translation equivariance because of the fixed patch grid and absolute position embeddings, which is one reason they need more data.
+
 ## F9. Attention 背后的原理 · How attention works
 
 **一句话**:attention 让每个 token 自己决定"该看谁、看多少",然后把被看的那些 token 的信息按比例混合进来。
@@ -928,6 +962,40 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
 **和你的经历**:RCRI 是真做过的。你和队友从 COCO 预训练的 YOLOv8 出发,用攀岩点数据微调,训练在 GCP 上跑,导出 ONNX 再转 TensorRT FP16 部署到 Jetson Nano,实时跑到 12 FPS。E6792 里你还对比过 YOLOv4-Tiny 转 TensorRT 后约 12 倍的吞吐提升。
 
 > 🗣 Object detection outputs boxes with class labels and confidences. Two-stage detectors like Faster R-CNN propose regions and then classify them, which is accurate but slow; one-stage detectors like YOLO predict everything in a single forward pass, which is why they're used for real time. YOLOv8 has a CNN backbone, an FPN-PAN neck that fuses multiple scales, and an anchor-free head that predicts at strides 8, 16 and 32, so a 640 input gives 8400 candidate predictions, which non-maximum suppression then deduplicates by IoU. In my climbing-route project we fine-tuned a COCO-pretrained YOLOv8 on GCP and deployed it on a Jetson Nano with TensorRT FP16 at about 12 frames per second. For drones the main challenges are small objects and tight compute, which I'd handle with higher-resolution heads or tiling plus low-precision TensorRT engines.
+
+### 问:RCRI 里 YOLO 是怎么微调的?(11-05 她问的,材料来自项目记录和报告) · How you fine-tuned YOLO in RCRI
+
+**先说结构**:一个模型同时学"在哪"和"是什么类型"太难,而且两个数据集的类别定义对不上,所以拆成两个阶段:
+- **第一阶段:岩点检测器**(只有 1 类 Hold),目标是一个都别漏。两个公开数据集(都来自 Roboflow Universe)合并,所有标注统一成 Hold,共 5,341 张,按 4,272 / 534 / 535 分成训练、验证、测试。
+- **第二阶段:类型分类**(6 类:Crimp、Jug、Pinch、Pocket、Sloper,加 Volume)。只用类别定义一致的数据(训练集 2,708 张)。第一阶段框出来、第二阶段认不出类型的,标成 Unknown。
+- 合并:两个阶段的框按 IoU 配对,再做 NMS。
+- **合并数据是队友 Haohui 做的,你负责三个阶段的训练、ONNX 导出、TensorRT FP16 转换、Jetson 部署和 IoU 合并。** 被问到数据合并的细节,说是队友做的。
+
+**微调设置**(报告第五节):
+- 从 **COCO 预训练权重**出发(迁移学习,F16),不是从零训。
+- 100 个 epoch,优化器 Adam,batch 16,输入 416 × 416。
+- 防过拟合:patience = 20(验证集 20 轮没进步就停),weight_decay = 5e-4,mosaic 增强开着、最后 10 轮关掉(close_mosaic = 10),**不用水平翻转**。
+- 硬件:本地 M4 Max 开发,本地太慢时在 GCP 的 T4 上重新训练。
+- 比了 n、s、m 几个大小:岩点检测器最后用 **YOLOv8s,mAP50 0.825**;6 类合并后整条管线 mAP50 0.71。
+
+**踩过的坑(真实,可以讲)**:
+- **Mac 的 MPS GPU 崩溃**:有的图一张上面有 272 个框,超出 MPS 的索引上限。办法是每张图最多保留 50 个标注。mosaic 把 4 张图拼一起,框数又翻 4 倍,在 MPS 上只能先关掉 mosaic;正式训练放到 GCP 上就能开。
+- **小数据集上大模型反而差**:5 类数据只有 1,040 张,YOLOv8s 过拟合,不如更小的 YOLOv8n。
+- **双 sigmoid bug**:导出 ONNX 后,分数已经是概率,后处理又套了一次 sigmoid,所有分数被压到 0.5 附近,只检测出约 10 个岩点;去掉多余的 sigmoid 后恢复到每张 40 多个(细节见篇七「RCRI 的双 sigmoid bug」那节)。
+- **部署**:导出 ONNX(416,opset 12)→ trtexec 转 TensorRT FP16 → Jetson Nano 上只跑第一阶段 12 FPS,6 类整条管线 5 FPS。
+
+**可能的追问和答法**:
+- **为什么从 COCO 预训练开始?** 底层的边缘、纹理、形状特征是通用的,数据只有几千张,从零训会过拟合、收敛慢。
+- **冻没冻 backbone?** 材料里没写冻结,按默认是全部层一起微调。如果被问,就说"全网络微调,靠预训练初始化加早停和权重衰减防过拟合";别说冻了几层。
+- **为什么不用水平翻转?** ⚠️ 材料里只写了"不用水平翻转",还有一个叫 gcp_retrain_no_flip 的重训脚本,**没写原因**。你自己回忆一下是哪个:
+  - A:试过开翻转,效果反而变差,所以专门去掉翻转重训了一版(脚本名像这种情况)。
+  - B:墙面照片的光照和阴影有固定方向,翻转会造出现实里不存在的样子。
+  - C:类型和路线标注对左右方向敏感。
+  - 想不起来就说:"We turned horizontal flip off in the final run; the flipped version didn't help on our validation set." 只有在你确定是 A 的时候才这么说;不确定就说"我们比较过,最后没用",不展开。
+- **类别不平衡怎么办?** 训练集里 Volume 有 9,012 个框,Pocket 只有 567 个,差约 16 倍。Pocket 的效果因此最弱。可以说下一步会补 Pocket 数据或给它加权。
+- **mAP50 0.825 算好吗?** 有一个同类工作 ClimbingCrux 是 0.93,但他们数据更多,而且不在边缘设备上跑;你们的重点是在 Jetson 上实时。
+
+> 🗣 We split the problem into two stages because the public datasets disagreed on class definitions. Stage one is a single-class hold detector trained on about 5,300 merged images so it misses as few holds as possible; stage two classifies hold types like crimp, jug and sloper, and the two are merged by IoU matching and NMS. I fine-tuned from COCO-pretrained YOLOv8 weights for up to 100 epochs with Adam, batch 16 and 416-pixel inputs, using early stopping with patience 20, weight decay and mosaic augmentation that we turned off for the last ten epochs. The best hold detector was YOLOv8s at 0.825 mAP50. Two practical issues were that dense images with hundreds of boxes crashed the Mac's MPS backend, so we capped annotations and moved full training to a GCP T4, and that on the small five-class set the larger model overfit, so the nano model actually did better. Then I exported to ONNX, built a TensorRT FP16 engine and ran it on a Jetson Nano at 12 frames per second for detection alone.
 
 ## F26. World model:在脑子里预演世界 · World models
 
