@@ -498,13 +498,37 @@ Q、K、V 都是同一个输入向量分别乘三个**可学的矩阵** W_Q、W_
 
 > 🗣 The weight matrices aren't designed by hand; they're learned. They're initialized with small random values to break symmetry, then the model is trained on next-token prediction: a forward pass produces a prediction, cross-entropy measures the error, backpropagation computes the gradient of the loss with respect to every weight in every layer, and each weight moves a small step against its gradient. After millions of steps each layer ends up specializing, with lower layers capturing more local and syntactic patterns and higher layers more semantic ones. Once pretraining is done the weights are fixed, and adapting to a new task means fine-tuning them or adding small trainable updates like LoRA, which is also the setting of our TaskMap paper.
 
+**问:多头为什么说"把维度切成几份"?不应该是"复制几份"吗?**(11-04 她问的)
+- **你的直觉是对的:输入是"复制"给每个头的。** 每个头拿到的都是完整的 512 维 x,一个数都不少。
+  <span class="en">Each head sees the full input vector; nothing is cut from the input.</span>
+- **"切"的是输出**:每个头用自己的 W_Q(512 × 64)把完整的 x 投成 64 维的 q;k、v 同理。所以每个头的 q、k、v 是 64 维。
+- **为什么大家说"切"**:实现时不会真的放 8 个小矩阵,而是把它们并排拼成一个 512 × 512 的大矩阵,一次乘完得到 512 个数,再按顺序切成 8 段、每段 64 个,第 1 段给头 1,第 2 段给头 2……切的是乘完之后的结果,不是 x。
+  <span class="en">In code, the eight 512-by-64 matrices are stored side by side as one 512-by-512 matrix; the output is then reshaped into eight 64-dim chunks. That's the "split".</span>
+- **小例子**(d_model = 4,2 个头,每头 2 维),x = [1, 2, 3, 4]:
+  - 头 1 的 W_Q = [[1,0],[0,1],[1,0],[0,1]] → q₁ = [1+3, 2+4] = **[4, 6]**
+  - 头 2 的 W_Q = [[1,1],[0,0],[0,1],[1,0]] → q₂ = [1+4, 1+3] = **[5, 4]**
+  - 两个头都用到了 x 的全部 4 个数。
+  - 把两个小矩阵左右拼成 4 × 4 的大矩阵,x 乘它得到 [4, 6, 5, 4],前两个切给头 1,后两个切给头 2,结果一模一样。
+- **为什么每个头只给 64 维,不给满 512 维**:为了总成本不变。
+  - 1 个头 × 512 维:W_Q 有 512 × 512 = 262,144 个数。
+  - 8 个头 × 64 维:8 × 512 × 64 = 262,144 个数,一样多。
+  - 要是 8 个头每个都 512 维:2,097,152 个数,参数和计算都变成 8 倍。
+  <span class="en">Splitting keeps the total cost equal to one full-width head; giving every head 512 dimensions would cost eight times as much.</span>
+- **为什么 8 个小头比 1 个大头好**:一个头的 softmax 只能给出**一种**权重分配,一个词同时想看好几样东西时只能糊成一个平均。8 个头就有 8 种独立的分配。
+  - 例句 "The animal didn't cross the street because **it** was tired":
+  - 头 A 让 it 去看 animal(指代);头 B 去看 was、tired(语法搭配);头 C 去看紧挨着的词(位置)。
+  - 只有一个头的话,这三种关注会被混成一份,哪种都不清楚。
+- **最后一步**:8 个头各输出 64 维,拼回 512 维,再乘一个输出矩阵 W_O(512 × 512),把各个头的发现混合起来。
+
+> 🗣 The input isn't cut; every head sees the full 512-dimensional vector. What's split is the projection: each head has its own 512-by-64 matrices, so its queries, keys and values are 64-dimensional. In code these eight matrices are stored side by side as one 512-by-512 matrix and the output is reshaped into eight chunks, which is why people say "split". Using 64 dimensions per head keeps the total cost the same as one full-width head, and having eight independent softmax distributions lets different heads track different relations, like coreference, syntax or position, instead of averaging them into one. The heads' outputs are concatenated back to 512 and mixed by an output matrix W_O.
+
 **为什么除以 √d_k**:假设 q 和 k 的每一维均值 0、方差 1,点积是 d_k 项相加,方差变成 d_k。维度 64 时点积的标准差约 8,softmax 会被推到几乎 one-hot,梯度接近 0。除以 √d_k 把方差拉回 1。
 <span class="en">With unit-variance entries, a dot product of d_k terms has variance d_k; dividing by root d_k brings it back to one so softmax doesn't saturate.</span>
 
 **几个变体**:
 - **Self-attention**:Q、K、V 来自同一段序列(句子看自己)。
 - **Cross-attention**:Q 来自一边,K、V 来自另一边。例:文字去"查"图像特征,或翻译时译文去查原文。
-- **Multi-head(多头)**:把维度切成几份,各算各的注意力再拼回来。例:d_model = 512、8 个头,每头 64 维。不同的头可以关注不同关系(语法、指代、位置)。
+- **Multi-head(多头)**:同一个输入交给几个头,每个头用自己的小矩阵把它投到一个更小的空间里,各算各的注意力,再拼回来。例:d_model = 512、8 个头,每头的 q、k、v 是 64 维。不同的头可以关注不同关系(语法、指代、位置)。(为什么常说"切"而不是"复制",见本节末尾的问答。)
 - **Causal mask(因果遮罩)**:GPT 生成时,在 softmax 前把"未来位置"的分数设成 −∞,保证第 i 个 token 只能看 1…i。
 
 **代价**:每个 token 都要和每个 token 算一次,序列长 n,注意力矩阵是 n × n,计算 O(n²·d)、显存 O(n²)。长度翻倍,代价约翻 4 倍。这就是为什么图像 token 太多会很贵(F1)。
