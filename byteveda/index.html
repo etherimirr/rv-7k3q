@@ -439,6 +439,24 @@ Q、K、V 都是同一个输入向量分别乘三个**可学的矩阵** W_Q、W_
 
 > 🗣 In the toy example, q equals one-zero is simply the query vector of the token "sat", obtained by multiplying its embedding by W_Q. The numbers are made up so we can compute by hand. What matters is its direction: "cat" has a key pointing the same way, so its dot product is the largest and "sat" attends mostly to "cat", while "The" has an orthogonal key and gets almost no attention.
 
+**问:那 k 和 v 从哪来?**(11-04 她问的)
+- 和 q 一样,都从**同一个** x 出来,只是乘的矩阵不同:q = x · W_Q,k = x · W_K,v = x · W_V。
+  <span class="en">Same input x, three different learned matrices: q = x W_Q, k = x W_K, v = x W_V.</span>
+- 接着上面的数:x = [1, 0.5]。
+  - W_K = [[1, 0], [0, 2]] → k = [1×1 + 0.5×0, 1×0 + 0.5×2] = **[1, 1]**
+  - W_V = [[0.5, 0], [0, 1]] → v = [0.5, 0.5] = **[0.5, 0.5]**
+  - 正好就是例子里 sat 的 k 和 v。
+- **三个矩阵所有词共用**:同一层里,The、cat、sat 都乘同一组 W_Q、W_K、W_V。每个词得到不同的 q、k、v,是因为它们的 x 不同。
+  <span class="en">All tokens in a layer share the same three matrices; they get different q, k, v only because their inputs differ.</span>
+- **矩阵是训练学出来的**:一开始随机,靠反向传播(F5)慢慢调成"什么该问、标签怎么贴、内容存什么"。
+- 实际模型里还有三点:
+  - x 不只是查表的词向量,还加了位置信息(F10);第二层以后的 x 是上一层的输出。
+  - 多头注意力里每个头有自己的一组 W_Q、W_K、W_V(F9 变体)。
+  - Cross-attention 里 q 来自一边(比如文字),k 和 v 来自另一边(比如图像特征),这是它和 self-attention 唯一的区别。
+- 说明:例子里 The、cat 的数是为了好算直接写的,没有用这组矩阵倒推,别拿来对。
+
+> 🗣 Keys and values come from the same input as the query, just through different learned matrices: k equals x times W_K and v equals x times W_V. All tokens in a layer share the same three matrices, so they differ only because their inputs differ. The matrices start random and are learned by backpropagation. In cross-attention the queries come from one sequence and the keys and values from another, for example text queries attending to image features.
+
 **为什么除以 √d_k**:假设 q 和 k 的每一维均值 0、方差 1,点积是 d_k 项相加,方差变成 d_k。维度 64 时点积的标准差约 8,softmax 会被推到几乎 one-hot,梯度接近 0。除以 √d_k 把方差拉回 1。
 <span class="en">With unit-variance entries, a dot product of d_k terms has variance d_k; dividing by root d_k brings it back to one so softmax doesn't saturate.</span>
 
