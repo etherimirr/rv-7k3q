@@ -1041,6 +1041,56 @@ s 在第一行第二列,意思是**像素的 u 坐标会被 y 方向"带偏"一�
 
 > 🗣 The skew term in the intrinsic matrix models a pixel grid whose x and y axes aren't perpendicular. If the angle between them is theta, the geometry gives s equal to minus f-x times cot theta, so it's exactly zero when theta is ninety degrees. Modern sensors are made by lithography, so the grid is essentially square and the skew is negligible: even a one-degree error with a focal length of 500 pixels shifts points by less than a pixel. It can be non-zero in unusual cases, like scanning film or photographing a photograph at an angle. In practice calibration tools such as OpenCV fix the skew at zero, which leaves four intrinsic parameters instead of five.
 
+### 问:"位姿怎么优化,大多还是几何那一套"是什么意思?位姿到底怎么优化?(11-05 她问的) · How camera pose is optimized
+
+**那句话的意思**:深度学习在 SLAM 里主要用在"**看**"的部分:找特征点、做匹配、估深度、判断哪些匹配可信。但最后"**相机到底在哪、朝哪**"这一步,大多不是让网络直接输出,而是用相机模型 x = K[R|t]X 列一个误差,再用数学优化把它解出来。
+<span class="en">Deep learning mostly improves the perception side, features, matching and depth, but the pose itself is still solved by minimizing a geometric error with the camera model, not regressed by a network.</span>
+
+**为什么不让网络直接输出位姿**:
+- 有人试过(PoseNet 这类,输入一张图直接回归位置和朝向),精度明显不如几何方法,更像"认出这是哪张图附近"。
+- 几何模型是物理上精确的,换个场景照样成立,还能做到亚像素精度;网络回归要靠训练数据覆盖。
+- 连 DROID-SLAM 这种"端到端"的,里面也是网络预测光流和置信度,然后交给一个**可微分的 Bundle Adjustment 层**去解位姿。网络负责看,几何负责算。
+
+**位姿怎么优化:四步**
+
+**第 1 步:先猜一个初值**
+- 用上一帧的位姿加"匀速运动"假设往前推,或者用 IMU 积分推。
+- 刚开始没地图时:两帧之间匹配特征点,用本质矩阵 E 解出相对运动(5 点法 + RANSAC 剔除错误匹配)。
+- 已经有 3D 地图点时:用 PnP(已知若干 3D 点和它们在照片上的位置,反推相机位姿),同样配 RANSAC。
+
+**第 2 步:定义误差,叫重投影误差**
+- 把地图里的 3D 点 X,按当前猜的位姿 (R, t) 投到照片上,得到预测像素位置。
+- 和照片上**实际看到**的位置比,差多少像素就是误差。
+- 所有点的误差平方加起来,就是要降到最小的目标。和训练网络时的损失函数是一个意思(F5)。
+- 再套一个鲁棒核(比如 Huber):误差特别大的点多半是匹配错了,让它的影响变小,别把整体拉偏。
+
+**第 3 步:迭代求解(高斯-牛顿 / LM)**
+- 和梯度下降一样是"算出往哪走、走一步、再算",但用的是二阶信息,一般几步到十几步就收敛。原因是参数少(一个位姿才 6 个数),误差的结构也清楚。
+- 每一步:算误差对位姿的导数(雅可比 J),解方程 (JᵀJ + λI)·Δ = −Jᵀr,得到更新量 Δ,把位姿改一点。λ 是 LM 的阻尼,步子迈太大就调大 λ 让它保守。
+- **旋转的小麻烦**:R 必须一直是合法的旋转矩阵,不能直接对 9 个数加减。做法是用 3 个数表示"再转一个小角度",更新成 R ← exp(δφ)·R(这叫李代数上的更新)。所以每步更新的是 6 个数:3 个旋转 + 3 个平移。
+
+**第 4 步:按范围分层优化**
+- **只优化当前帧**(motion-only BA):地图点固定,只调这一帧的 6 个数。每帧都做,很快。
+- **局部 BA**:最近几个关键帧的位姿和它们看到的 3D 点一起调。
+- **回环后做位姿图优化**:只调所有关键帧的位姿,约束是"相邻两帧之间相对运动应该是多少",把漂移分摊回整条轨迹。
+- **全局 BA**:所有位姿和所有点一起调,最准也最慢。
+- 常用工具:g2o、Ceres、GTSAM。BA 能跑得动,靠的是矩阵很稀疏(每个点只被少数几帧看到),可以先把点消掉(Schur 补)只解位姿。
+- VIO 就是在同一个最小二乘里再加 IMU 的误差项(IMU 预积分)。
+
+**手算一个最简单的例子**(只让相机沿 x 方向平移 tx):
+- fx = 500,px = 320,一个 3D 点在 X = 1、Z = 5 米。相机往右挪 tx 后,点的像素位置 u = 500 × (1 − tx) ÷ 5 + 320。
+- 照片上实际看到 u = 400。
+- 初值猜 tx = 0:预测 u = 500 × 1 ÷ 5 + 320 = 420,误差 r = 420 − 400 = 20 像素。
+- 导数 J = du/dtx = −500 ÷ 5 = −100(相机往右挪 1 米,点往左跑 100 像素)。
+- 一步更新:Δ = −r ÷ J = −20 ÷ (−100) = 0.2 → tx = 0.2 米。
+- 验算:500 × 0.8 ÷ 5 + 320 = 400,对上了。
+- 这个例子是线性的,所以一步就到。真实情况有旋转、有除以深度,是非线性的,要迭代几次。
+<span class="en">With one translation and one point: predicted 420, observed 400, error 20 pixels, Jacobian minus 100 pixels per meter, so one Gauss-Newton step gives tx = 0.2 m.</span>
+
+**和你的经历怎么接**:SLAM 你没做过,只懂原理。可以从你熟悉的训练角度讲:BA 和训练网络一样都是"定义误差、迭代把它降下去",区别是 BA 参数少、结构清楚,所以用高斯-牛顿这种二阶方法,几步就收敛;训练网络参数上亿,只能用一阶的梯度下降。
+
+> 🗣 When I say pose optimization is still mostly geometric, I mean deep learning now helps with perception, like learned features, matching and depth priors, but the camera pose itself is usually solved, not regressed. Networks that predict pose directly, like PoseNet, are much less accurate. Even DROID-SLAM uses a network for flow and confidence and then a differentiable bundle adjustment layer to solve the pose. The process is: get an initial guess from a motion model, the IMU, the essential matrix or PnP with RANSAC; define the reprojection error between where the map points should appear under the current pose and where they're actually observed; then minimize the sum of squared errors with Gauss-Newton or Levenberg-Marquardt, using a robust kernel for outliers and updating the rotation on the Lie algebra so it stays a valid rotation. This runs at different scopes: motion-only for each frame, local bundle adjustment over recent keyframes, and pose-graph optimization after a loop closure, typically with g2o, Ceres or GTSAM.
+
 ## F25. 目标检测和 YOLO · Object detection and YOLO
 
 **一句话**:目标检测 = 在图里找出"有什么、在哪"。每个结果是一个框(x, y, 宽, 高)加一个类别和一个置信度。
