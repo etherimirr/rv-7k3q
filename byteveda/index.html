@@ -1762,7 +1762,7 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
 
 | 轮次 <span class="en">Round</span> | 讲哪个 <span class="en">Project</span> | 为什么 <span class="en">Why</span> | 重点句 <span class="en">Key line</span> |
 |---|---|---|---|
-| Ryota 深度学习/数学 <span class="en">Ryota, DL and math</span> | TaskMap 论文 <span class="en">TaskMap paper</span> | 线性代数味最重,接得上 SVD 和 Transformer <span class="en">Most linear-algebra heavy, links to SVD and Transformers</span> | 每个任务的 FFN 改动表示成共享固定正交基上的系数;冻结的 BF16 Qwen2.5-1.5B;20 个没见过的任务上最坏负迁移 −7.9,共享 LoRA 是 −26.7;二作、在审 <span class="en">Task adaptations as coefficients in shared fixed orthogonal bases on a frozen BF16 Qwen2.5-1.5B; worst-case negative transfer −7.9 versus −26.7 for shared LoRA on 20 unseen tasks; second author, under review</span> |
+| Ryota 深度学习/数学 <span class="en">Ryota, DL and math</span> | TaskMap 论文 <span class="en">TaskMap paper</span> | 线性代数味最重,接得上 SVD 和 Transformer <span class="en">Most linear-algebra heavy, links to SVD and Transformers</span> | 每个任务的 FFN 改动表示成共享固定正交基上的系数;冻结的 BF16 Qwen2.5-1.5B;20 个没见过的任务上最坏负迁移 −7.9,共享 LoRA 是 −26.7;二作,WSDM 2027 Findings 已接收 <span class="en">Task adaptations as coefficients in shared fixed orthogonal bases on a frozen BF16 Qwen2.5-1.5B; worst-case negative transfer −7.9 versus −26.7 for shared LoRA on 20 unseen tasks; second author, accepted to WSDM 2027 Findings</span> |
 | Helen 体系结构 <span class="en">Helen, architecture</span> | E6792 CUDA host 层 + TensorRT 实验 <span class="en">E6792 CUDA host layer and TensorRT lab</span> | 讲的是显存、warp、kernel 启动和 Amdahl <span class="en">It's about memory, warps, launches and Amdahl</span> | kernel 课程给、host 端我写;推理 12×、端到端 7.45×,差距用 Amdahl 解释 <span class="en">Kernels provided, host side mine; 12× inference versus 7.45× end to end, explained by Amdahl</span> |
 | Khasim Python/CNN <span class="en">Khasim, Python and CNNs</span> | RCRI <span class="en">RCRI</span> | YOLOv8、模型选择、双 sigmoid bug <span class="en">YOLOv8, model choice, the double-sigmoid bug</span> | s@416 52 ms 对 n@320 14 ms,选 s 因为 n 漏远处小 hold;双 sigmoid 把分数压到 0.5,修好后每图从约 10 个到 40 多个 <span class="en">s@416 at 52 ms over n@320 at 14 ms because n missed small holds; the double sigmoid fix took detections from about 10 to 40-plus</span> |
 | Peter 3D/图像处理 <span class="en">Peter, 3D and image processing</span> | RCRI 的视觉管线(三阶段 + IoU 合并 + HSV 分路线),再补 CLIP 零样本 <span class="en">RCRI's vision pipeline, then zero-shot CLIP</span> | 有检测、颜色空间、几何合并;3D 部分用「如果把 RCRI 做成 3D」接 <span class="en">Detection, color spaces and geometric merging; bridge to 3D with "taking RCRI into 3D"</span> | 三阶段用 IoU ≥ 0.3 合并;HSV 分组是队友写的;3D 延伸:双目或深度相机 + 反投影 + 墙面平面 RANSAC <span class="en">Stages merged at IoU 0.3; HSV grouping was my teammate's; the 3D extension adds depth, back-projection and a RANSAC wall plane</span> |
@@ -1783,7 +1783,7 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
 
 - RCRI(YOLOv8 + TensorRT,12 倍加速):对应「视觉模型上边缘设备」。Byte Veda 做无人机实时感知,这条最贴业务。训练在云上做,部署在边缘(别说成纯边缘)。
 
-- TaskMap(论文二作,评审中):大模型的任务条件适配。可以接 MLLM 两阶段训练和高效微调的话题。只能说 under review。
+- TaskMap(论文二作,WSDM 2027 Findings 已接收):大模型的任务条件适配。可以接 MLLM 两阶段训练和高效微调的话题。可以说 accepted to WSDM 2027 Findings(11/3 通知,2027 年 2 月在香港开会)。
 
 - Walmart 资助的 agent 评测研究:你设计过评测指标和基线。对应他做 MMVP、CV-Bench、All-Angles Bench 这些基准的思路:先怀疑基准本身(不看图能不能答对),再设计能真正测出能力的题。
 
