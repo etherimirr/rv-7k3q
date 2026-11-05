@@ -588,6 +588,54 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
 
 > 🗣 Encoder models like BERT use bidirectional attention and are trained by masked prediction, so they're good for understanding. Decoder-only models like GPT use causal attention and are trained to predict the next token, so they generate autoregressively, feeding each sampled token back in. Temperature and top-p control randomness. During generation we keep a KV cache so earlier keys and values aren't recomputed, which trades memory for speed.
 
+### 问:RLHF 和 DPO 是什么?(11-05 她问的) · RLHF and DPO
+
+**一句话**:两个都是 LLM 训练的第三步"对齐":让模型的回答更合人类口味(有用、诚实、不出格)。RLHF 先训练一个"评委"再用强化学习去讨好它;DPO 跳过评委和强化学习,直接拿"这个回答比那个好"的成对数据训练。
+<span class="en">Both align an LLM with human preferences. RLHF trains a reward model and then optimizes against it with reinforcement learning; DPO skips both and trains directly on preference pairs.</span>
+
+**为什么 SFT 之后还要这一步**:SFT 是照着标准答案模仿。但很多时候写不出唯一的标准答案,人却很容易判断"两个回答哪个更好"。所以收集**偏好数据**:同一个问题,模型给两个回答,人标出好的(chosen)和差的(rejected)。
+
+**比方:学写作文**。
+- **SFT** = 抄范文。
+- **RLHF** = 先请一个评委,让他学会老师的口味(奖励模型);然后你不停写、评委打分、你按分数改。老师还规定你不能改得和原来的自己差太远,免得为了讨好评委写出怪东西。
+- **DPO** = 不请评委。直接拿一堆"这篇比那篇好"的对子给你,让你多写像好的那篇、少写像差的那篇。
+
+**RLHF 三步**(InstructGPT / ChatGPT 的做法):
+1. **SFT**:先用人写的问答对微调。
+2. **训练奖励模型**:输入(问题, 回答),输出一个分数 r。训练目标是让好回答的分数高过差回答:损失 = −log σ(r_好 − r_差)。
+   - 算例:r_好 = 2,r_差 = 0 → σ(2) ≈ 0.88 → 损失 ≈ **0.13**(排对了,损失小)
+   - 两个都是 0 → σ(0) = 0.5 → 损失 ≈ **0.69**(分不出来)
+   - 反过来 r_好 = 0,r_差 = 2 → σ(−2) ≈ 0.12 → 损失 ≈ **2.13**(排反了,损失大)
+3. **用 PPO 强化学习**:模型生成回答 → 奖励模型打分 → 按分数更新模型。目标 = 奖励 − β × KL(新模型和 SFT 模型的差距)。
+   - KL 那一项就是"别跑太远"。不加的话模型会钻评委的空子(reward hacking),比如越写越长、一味奉承,分数高但其实不好。
+
+**RLHF 的麻烦**:训练时显存里要同时放 4 个模型(正在训的模型、冻结的参考模型、奖励模型、PPO 的价值网络),还要边训边生成回答,又贵又不稳定,超参很多。
+
+**DPO(2023)的想法**:数学上可以证明,RLHF 那个"奖励减 KL"的最优解有一个公式,奖励能直接用"新模型和参考模型给同一个回答的概率之比"表示。于是不用单独的奖励模型,也不用强化学习,直接在偏好对上训练:
+- 损失 = −log σ( β × [ 好回答的 log(新概率/参考概率) − 差回答的 log(新概率/参考概率) ] )
+- 直观:让好回答的概率比参考模型涨,差回答的概率比参考模型跌。
+- 算例(β = 0.1):
+  - 刚开始新模型 = 参考模型,两个 log 比都是 0 → σ(0) = 0.5 → 损失 ≈ **0.69**
+  - 训练一阵后,好回答 log 比 = +2,差回答 = −3,差值 5 × 0.1 = 0.5 → σ(0.5) ≈ 0.62 → 损失 ≈ **0.47**
+- 只要 2 个模型(在训的 + 冻结的参考),不用边训边生成,和普通微调一样简单稳定。
+
+**怎么选**:
+| | RLHF(PPO) | DPO |
+|---|---|---|
+| 要几个模型 | 4 个 | 2 个 |
+| 训练时生成回答 | 要 | 不要 |
+| 稳定性和成本 | 难调、贵 | 稳、便宜 |
+| 能不能探索新回答 | 能,在线采样 | 不能,只学固定的成对数据 |
+| 常见用法 | 大厂旗舰模型 | 开源模型、资源有限时 |
+
+**延伸一句**:做数学、代码这类有标准答案的推理任务,现在常用"可验证奖励"的强化学习(对就给 1 分,错给 0 分),比如 DeepSeek 的 GRPO,它省掉了价值网络。
+
+**和多模态、Peter 的连接**:VLM 的幻觉(说出图里没有的东西)也能用偏好数据来压,比如 LLaVA-RLHF、RLHF-V:把"描述准确的回答"标成好、"有幻觉的回答"标成差,再做 RLHF 或 DPO。
+
+**和你的经历**:RLHF、DPO 你没训过,别说做过。最接近的是 TikTok 的多模态 agent 评测里用过 LLM-as-a-judge 给回答打分,这和奖励模型"给回答打分"是同一个思路,可以这样接。
+
+> 🗣 After pretraining and supervised fine-tuning, we align the model with human preferences using pairs of a preferred and a rejected answer. RLHF first trains a reward model with a pairwise loss, then optimizes the policy with PPO to maximize reward minus a KL penalty that keeps it close to the SFT model and prevents reward hacking. It works well but needs four models in memory and online sampling, so it's expensive and unstable. DPO shows that the optimal policy for that same objective can be written in closed form, so we can skip the reward model and RL and train directly on the preference pairs, increasing the likelihood of the preferred answer relative to a frozen reference and decreasing the rejected one. It's much simpler and more stable, though it can't explore beyond the fixed data. The same idea is used to reduce hallucination in vision-language models.
+
 ## F13. ViT 和 CNN 怎么选 · ViT versus CNN
 
 **一句话**:ViT 把图像切成 patch 当 token,直接用 Transformer;CNN 用卷积从局部往外看。
