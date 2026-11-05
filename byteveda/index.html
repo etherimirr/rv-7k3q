@@ -628,12 +628,120 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
 
 > 🗣 A typical multimodal LLM like LLaVA encodes the image with a CLIP ViT into a few hundred patch embeddings, projects them with a small MLP into the language model's embedding space, concatenates them with the text tokens, and lets the decoder generate the answer autoregressively. Training usually first aligns the projector, then instruction-tunes the whole model. If the vision encoder loses fine detail, the language model can't recover it, which is the starting point of Peter's work.
 
-## F22. 不会的时候怎么接 · When you don't know
+## F22. VLM:能看图又能说话的模型 · Vision-language models
+
+**一句话**:VLM(Vision-Language Model)同时吃图片和文字。有的只判断"图和这句话配不配",有的能看着图用文字回答问题。
+<span class="en">A VLM takes both images and text. Some only score whether an image and a caption match; others look at the image and answer in text.</span>
+
+**比方**:
+- **对比式 VLM(CLIP、SigLIP)像"配对裁判"**:给它一张图和几句话,它只告诉你哪句最配,自己不会说话。见 F15。
+- **生成式 VLM(LLaVA、Qwen2-VL、GPT-4o)像"看图说话的人"**:图进去,一段文字出来。流程见 F21。
+
+**生成式 VLM 的三块零件**:
+- **视觉编码器**:通常是 CLIP 或 SigLIP 的 ViT,负责把图变成一串向量。
+- **连接器**:把视觉向量翻译成 LLM 能读的样子。常见三种:
+  - **MLP 投影**(LLaVA):两层全连接。简单,视觉 token 一个不少,全部送进 LLM。
+  - **Q-Former**(BLIP-2):用 32 个可学的"提问向量"去 cross-attention 图像特征(F9),把几百个视觉 token 压成 32 个。省算力,但可能丢细节。
+  - **Cross-attention 插层**(Flamingo):图像不进输入序列,而是在 LLM 层与层之间插 cross-attention 去"查"图像。
+- **LLM**:负责理解指令、组织语言、生成回答(F12)。
+
+**小算例:一张图占多少 token**
+- LLaVA-1.5 用 CLIP ViT-L/14,输入 336×336:336 ÷ 14 = 24,24 × 24 = **576 个 token**。
+- 想看清细节就把图放大。比如 672×672 切成 4 块,每块 576 个,再加一张缩略全图 576 个,一共 5 × 576 = **2880 个**。
+- 注意力是 O(n²)(F9):token 从 576 涨到 2880 是 5 倍,注意力那部分算力约涨 25 倍。所以"分辨率 vs 算力"是 VLM 的核心取舍。
+
+**常见弱点(Peter 的研究就在这)**:
+- **幻觉**:说出图里根本没有的东西。
+- **细粒度和空间**:数数、左右前后、方向、小物体,经常答错。
+- 原因之一:CLIP 训练目标只要"图文配得上",不在乎这些细节,视觉编码器一开始就把细节丢了,LLM 再强也补不回来。
+- 评测:VQAv2、MMBench 看综合能力;MMVP、CV-Bench 专门测这些视觉短板。
+
+**常被追问**:
+- MLP 和 Q-Former 怎么选?要细节、算力够选 MLP;token 预算紧(视频、多图、端侧)选压缩式。LLaVA-1.5 证明了简单的 MLP 效果就很好。
+- 怎么减少幻觉?更好的视觉编码器(比如再拼一个 DINOv2 这类自监督特征)、更高分辨率、带"图里没有"负样本的指令数据、解码时让模型更依赖图像。
+
+**和你的经历**:E6792 里你在 Jetson 上跑过 CLIP 零样本推理,这是对比式 VLM,真做过。生成式 VLM 你理解原理,没训练过,别说成做过。
+
+> 🗣 There are two families of vision-language models. Contrastive ones like CLIP and SigLIP embed images and text into a shared space and score how well they match, which is great for zero-shot classification and retrieval. Generative ones like LLaVA put a vision encoder in front of a language model: the image becomes a few hundred patch tokens, a connector such as an MLP or a Q-Former maps them into the LLM's embedding space, and the LLM answers in text. The key trade-off is resolution versus compute, since more image tokens make attention quadratically more expensive. Their known weaknesses are hallucination and fine-grained spatial reasoning, often because the CLIP-style encoder never learned to keep those details.
+
+## F23. VLA:从"看图说话"到"看图动手" · Vision-language-action models
+
+**一句话**:VLA(Vision-Language-Action)= VLM 再往前一步。输入摄像头画面加一句指令,输出机器人该怎么动。
+<span class="en">A VLA model takes camera images plus an instruction and outputs robot actions instead of text.</span>
+
+**比方**:VLM 是"看着图告诉你杯子在哪",VLA 是"看着图伸手把杯子拿起来"。
+
+**动作怎么从模型里出来**(两条路):
+- **把动作变成 token**(RT-2、OpenVLA):机械臂每一步的动作是 7 个数,也就是末端 x、y、z 的位移,3 个旋转角,再加夹爪开合。每个数切成 256 档,每档当成一个 token,让 LLM 像预测下一个字一样预测动作。
+- **直接输出连续动作**(π0):VLM 后面接一个"动作专家",用 flow matching(扩散的近亲,F18)一次生成一小段未来动作(action chunk),动作更平滑,适合精细操作。
+
+**小算例:动作怎么变 token**
+- 某一维动作范围是 [−1, 1],切 256 档,每档宽 2 ÷ 256 ≈ 0.0078。
+- 想表达 0.30:(0.30 + 1) ÷ 0.0078 ≈ 166.4,落在第 **166 档**,模型就输出代表 166 的那个 token。
+- 一步动作 7 维,就是 7 个 token;误差最多半档,约 0.004。
+
+**为什么难**:
+- **数据少**:图文对有几十亿,机器人轨迹最大的公开合集 Open X-Embodiment 也才约 100 万条,而且每台机器人长得不一样。
+- **太慢**:几十亿参数的模型每秒只能出几次动作,底层控制(尤其飞控)要几百 Hz。
+- **安全和验证**:端到端模型出错很难解释,也很难证明它不会撞。
+
+**和无人机怎么接**:分层用。VLM/VLA 做上层慢速的任务理解和规划,比如"飞到红色屋顶上方再降低高度";底层的避障、姿态控制留给小而快的模型和传统控制器。
+
+**常被追问**:
+- VLA 和传统"感知 → 规划 → 控制"流水线比?VLA 能听懂开放式指令、泛化到没见过的物体;传统流水线每一步可解释、可调、可验证。现实中常常混用。
+- 为什么 OpenVLA 视觉端要拼 SigLIP 和 DINOv2?SigLIP 懂语义,DINOv2 保留空间和几何细节,机器人两样都要。这和 Peter 那篇 Eyes Wide Shut 的结论一致。
+
+**和你的经历**:VLA 你没训练过。你复现过 Ctrl-World(给机器人操作用的扩散世界模型),跑过 policy-in-the-loop rollout,可以用来说明你理解"模型输出动作、环境给反馈"这个闭环。
+
+> 🗣 A VLA model extends a VLM so that it outputs actions. RT-2 and OpenVLA discretize each action dimension, like end-effector translation, rotation and gripper state, into 256 bins and predict them as tokens, so the language model's decoding machinery is reused for control. Pi-zero instead attaches an action expert that generates a continuous chunk of future actions with flow matching. The hard parts are scarce robot data, slow inference compared with control rates, and safety. On a drone I'd use it hierarchically: a VLM or VLA for slow, high-level task planning, and small fast models plus classical control for the real-time loop.
+
+## F24. SLAM:一边画地图一边知道自己在哪 · Simultaneous localization and mapping
+
+**一句话**:SLAM(Simultaneous Localization and Mapping)让机器人或无人机在陌生环境里一边建地图,一边算出自己在地图上的位置。
+<span class="en">SLAM lets a robot build a map of an unknown place while estimating where it is in that map.</span>
+
+**比方**:蒙着眼走进陌生房间,一边摸墙画平面图,一边记自己走到了哪。图画得准,位置才算得准;位置算得准,图才画得准。两件事互相依赖,所以必须"同时"做。
+
+**先补相机基础(就是你在看的那页课件)**:
+- 空间里一个点 X 拍到照片上,公式是 **x = K [R | t] X**。
+- **K 是内参**:相机自己的属性,5 个数,即焦距 fx、fy,倾斜 s(一般是 0),主点 px、py(光轴打在照片上的位置,约等于图像中心)。换个位置拍,K 不变。
+- **R、t 是外参**:相机在世界里的位姿,也就是转了多少(3 个角)和在哪(3 个平移),共 6 个数。
+- 合起来 P = K[R | t] 是 3×4 矩阵,12 个数,但整体乘一个常数投影结果不变,所以是 **11 个自由度**(5 + 6 = 11)。
+- **算一个点**:fx = fy = 500,px = 320,py = 240(640×480 的图)。相机坐标下一个点 (X, Y, Z) = (1, 0.5, 5) 米:
+  - u = 500 × 1 ÷ 5 + 320 = **420**
+  - v = 500 × 0.5 ÷ 5 + 240 = **290**
+  - 读法:点越远(Z 越大)越靠近图像中心。这也是为什么单张图分不清"小东西在近处"还是"大东西在远处"。
+
+**视觉 SLAM 的四个部件**:
+- **前端(视觉里程计)**:每帧提特征点(比如 ORB),和上一帧匹配,用几何算出相机这一步怎么动的(本质矩阵 E,或已知 3D 点时用 PnP)。
+- **后端优化**:前端每步都有小误差,后端把很多帧放一起做 Bundle Adjustment(同时微调所有相机位姿和 3D 点,让重投影误差最小),或者做位姿图优化。
+- **回环检测**:认出"这地方我来过",把累积的漂移一下拉回来。常用词袋(DBoW)做图像检索。
+- **建图**:输出稀疏点云(够定位用),或稠密地图(避障、重建用)。
+
+**小算例:为什么要回环**:里程计每走 1 米偏 1%,绕一圈走 100 米就偏约 1 米;回到起点被认出来后,这 1 米误差会被分摊回整条轨迹。
+
+**几个关键概念**:
+- **单目的尺度问题**:一个摄像头算不出绝对大小,地图整体放大 2 倍也说得通。解决办法:双目、深度相机,或者加 IMU。
+- **VIO(视觉惯性里程计)**:相机加 IMU。IMU 每秒几百次测加速度和角速度,能补上快速运动和画面模糊时的空档,还能给出真实尺度。无人机最常用,代表是 VINS-Mono。
+- **特征点法 vs 直接法**:ORB-SLAM 提角点再匹配,稳、可以回环;DSO 这类直接法用像素亮度本身,能在缺纹理的地方工作,但怕光照变化。
+- **激光 SLAM**:用 LiDAR 点云配准(比如 LOAM),精度高,设备贵、重。
+
+**和深度学习的关系**:学出来的特征和匹配(SuperPoint 加 SuperGlue/LightGlue)比 ORB 更抗光照和视角变化;单目深度网络能给尺度先验;DROID-SLAM 把整个流程做成可微分的。但位姿怎么优化,大多还是几何那一套。
+
+**常被追问**:
+- 无人机为什么用 VIO 而不是纯视觉?飞得快、画面糊、会转得很猛,IMU 高频数据能顶上,还能解决尺度。
+- Bundle Adjustment 在优化什么?把所有 3D 点按当前估计的相机位姿投回每张照片,和真实看到的位置比,把这个误差平方和降到最小。
+
+**和你的经历**:SLAM 你没做过,别说成做过。可以说你懂相机模型和多视图几何(内参、外参、本质矩阵),也做过视觉模型在 Jetson 上的实时部署(RCRI、E6792)。如果问 SLAM 和感知怎么配合:SLAM 负责"我在哪",检测分割负责"周围有什么",两者合起来才能安全飞。
+
+> 🗣 SLAM estimates the robot's pose and builds a map at the same time, because each depends on the other. In visual SLAM the front end tracks features between frames and estimates relative motion with the essential matrix or PnP, using the camera model x equals K times R-t times X, where K holds the five intrinsics and R and t the six extrinsics. The back end refines poses and points with bundle adjustment, and loop closure recognizes revisited places to remove drift. A monocular camera can't recover absolute scale, so drones usually fuse an IMU, which is visual-inertial odometry like VINS-Mono. Learned features such as SuperPoint and LightGlue now make matching more robust, while the optimization itself is still mostly geometric.
+
+## F25. 不会的时候怎么接 · When you don't know
 
 - 先说你确定的部分:"I know the core idea is…, I'm less sure about the exact details of…"
 - 再说你会怎么查或怎么验证:"I'd check the original paper / I'd test it by…"
 - 别编数字。他问到具体论文数字你不确定,就说量级:"on the order of hundreds of millions of pairs"。
-- 能接回项目就接:注意力 → 你在 TikTok 用的 LLM agent;VAE/扩散 → 理解但没做过;量化 → RCRI 和 E6792 真做过。
+- 能接回项目就接:注意力 → 你在 TikTok 用的 LLM agent;VAE/扩散、VLA、SLAM → 理解但没做过;量化 → RCRI 和 E6792 真做过。
 
 > 🗣 I'm confident about the core idea, which is… I'm less sure about the exact number in the paper, so I'd rather not guess, but it's on the order of… If I needed to confirm it, I'd check the original paper or run a quick experiment.
 
