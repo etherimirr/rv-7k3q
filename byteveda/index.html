@@ -1406,6 +1406,50 @@ s 在第一行第二列,意思是**像素的 u 坐标会被 y 方向"带偏"一�
 
 > 🗣 A world model predicts how the environment evolves given an action, so an agent can practice, plan or be evaluated in imagination instead of in the real world. Latent models like Dreamer predict compact state vectors and train the policy inside them; video models like Genie, Cosmos or Ctrl-World generate future frames conditioned on actions; and JEPA-style models predict only future representations. The core difficulty is compounding error: even ninety-nine percent per-step accuracy decays to about sixty percent after fifty steps, so they're usually used for short-horizon planning with frequent real observations, as in model predictive control. I reproduced Ctrl-World, a diffusion world model for robot manipulation, and ran its policy-in-the-loop rollouts to evaluate how well generated futures followed the actions.
 
+### 问:Dreamer 和 JEPA 都是在潜空间里预测吗?区别在哪?(11-05 她问的) · Dreamer versus JEPA: both latent, but how?
+
+**一句话**:**是的,两个都在潜空间(小向量)里预测下一步**。真正的区别在于**这个潜空间是怎么训出来的**:Dreamer 训练时还要求潜向量能**还原回原图**(有解码器);JEPA 完全不碰像素,只要求"能预测出下一刻的特征"。
+<span class="en">Yes, both predict in latent space. The difference is how that latent space is learned: Dreamer also trains a decoder to reconstruct pixels, while JEPA never touches pixels and only learns to predict future features.</span>
+
+**比方:记课堂笔记**。
+- **Dreamer**:笔记可以很简短,但老师要求"凭笔记能把黑板原样画回来"。所以笔记里会记很多细节,包括没用的(黑板角落的涂鸦)。
+- **JEPA**:老师只要求"凭这一页笔记能猜出下一页笔记写什么"。没用的细节不用记。
+- **视频生成**(Sora、Genie、Ctrl-World):不记笔记,直接把下一块黑板画出来。
+
+**Dreamer 具体怎么做**:
+- 编码器把画面压成潜状态(DreamerV3 里是一个记忆向量,加 32 组、每组 32 选 1 的离散变量)。
+- 在潜空间里,根据当前状态和动作预测下一步的潜状态、奖励、这局是否结束。
+- **同时有一个解码器把潜状态还原成图像,重建误差也算进损失**。
+- 然后在"想象"里滚几十步,用这些想象的轨迹训练策略(actor-critic),不用真的去环境里试。
+
+**JEPA 具体怎么做**(I-JEPA 做图片,V-JEPA 做视频):
+- 把输入分成"看得见的部分"和"要预测的部分"(比如遮住视频里的一块区域或后几帧)。
+- 编码器处理看得见的部分,预测器去猜被遮部分的**特征**,和另一个"目标编码器"算出来的真实特征比。
+- **没有解码器,损失里没有任何像素项**。
+
+**关键追问:不还原像素,模型为什么不"偷懒"?**(这叫表征塌缩)
+- 偷懒的办法:编码器对所有输入都输出全 0,预测器也输出全 0,损失直接是 0,但什么都没学到。
+- **Dreamer 不会塌缩**:重建损失逼着潜向量保留画面信息,全 0 就还原不出图。
+- **JEPA 靠两招防塌缩**:目标编码器不直接训练,而是取主编码器参数的**滑动平均**(EMA,比如每步保留 0.996 的旧参数),并且不让梯度传进目标那一侧(stop-gradient)。再加上预测器和编码器结构不对称。和 BYOL 是同一套思路。
+<span class="en">Without reconstruction, the trivial solution is a constant output with zero loss. Dreamer avoids it through the reconstruction loss; JEPA avoids it with an EMA target encoder, stop-gradient and an asymmetric predictor, as in BYOL.</span>
+
+**用途也不一样**:
+- **Dreamer** 是完整的强化学习 agent:世界模型 + 在想象里学策略,预测奖励。DreamerV3 一套超参数能玩 150 多个任务,还在 Minecraft 里从零挖到钻石。
+- **JEPA** 主要是**表征学习**:训一个好的视觉编码器,下游再拿去分类、检测、理解视频。V-JEPA 2(2025)在后面接了一个按动作条件预测的模块,用少量机器人视频训练,再用"让预测的特征接近目标图像的特征"做规划(MPC,F26 上面讲过),可以零样本做抓取放置。
+
+**一个容易被问倒的细节**:Sora 这类视频生成模型其实**也在潜空间里干活**(先用 VAE 把视频压成潜表示,在潜空间里做扩散,F17、F18),但最后一定要解码回像素,目标就是画面逼真。所以分类的关键不是"在不在潜空间算",而是**训练目标要不要还原像素**:
+
+| | Dreamer | 视频生成(Sora、Genie、Ctrl-World) | JEPA |
+|---|---|---|---|
+| 在哪预测 | 潜向量 | 潜空间扩散,再解码成画面 | 特征 |
+| 要不要还原像素 | 训练时要(辅助) | 要,这就是产出 | 完全不要 |
+| 防塌缩靠什么 | 重建损失 | 重建/生成损失 | EMA 目标编码器 + stop-gradient |
+| 主要用途 | 强化学习,想象里训策略 | 模拟器、生成训练数据、评估策略 | 学视觉表征;V-JEPA 2 能做规划 |
+
+**和你的经历怎么接**:你复现的 Ctrl-World 属于视频生成那一类,要生成像素,所以慢,但看得见、方便评估策略。可以说:"生成像素的好处是人能直接检查想象的对不对,代价是算力花在了和决策无关的细节上,这正是 LeCun 提 JEPA 的理由。"
+
+> 🗣 Yes, both Dreamer and JEPA predict in a latent space, but they learn that space differently. Dreamer's world model encodes observations into a compact state, predicts the next state, reward and episode end, and also trains a decoder to reconstruct the image, so the latent keeps pixel information; the policy is then trained on imagined rollouts. JEPA has no decoder at all: it predicts the representation of masked or future parts from the visible parts, and it avoids the trivial collapsed solution with an EMA target encoder and stop-gradient, like BYOL. Dreamer is a full reinforcement-learning agent, while JEPA is mainly representation learning, although V-JEPA 2 adds an action-conditioned predictor for planning. Video models like Sora also work in a latent space, but they decode back to pixels, so the real distinction is whether the training objective reconstructs pixels. Ctrl-World, which I reproduced, is in that pixel-generating family.
+
 ## F27. 不会的时候怎么接 · When you don't know
 
 - 先说你确定的部分:"I know the core idea is…, I'm less sure about the exact details of…"
