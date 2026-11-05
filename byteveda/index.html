@@ -789,6 +789,57 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
 
 > 🗣 For deployment we quantize, prune or distill the model. Quantization stores weights and activations in FP16 or INT8 instead of FP32, cutting memory and bandwidth; INT8 needs calibration data. Distillation trains a small student on a large teacher's soft outputs. TensorRT fuses layers, auto-tunes kernels and runs in reduced precision; in my GPU course project it gave about a 12x speedup, and on the Jetson I ran YOLOv8 in FP16. For a drone, latency per frame matters more than throughput.
 
+### 问:延迟和吞吐各自怎么提高?(11-05 她问的) · Improving latency versus throughput
+
+**一句话**:**延迟** = 一个请求从进来到出结果要多久(单位 ms);**吞吐** = 每秒能处理多少个请求(张/秒、QPS、FPS)。两个经常互相拉扯。
+<span class="en">Latency is how long one request takes end to end; throughput is how many requests you finish per second. They often trade off.</span>
+
+**比方:公交车**。
+- 来一个人就开一趟 → 每个人都不用等(延迟低),但车空着跑,一小时运的人少(吞吐低)。
+- 等坐满再开 → 一小时运的人多(吞吐高),但先上车的人要干等(延迟高)。
+- GPU 就是这辆大车:一次只喂一张图,大部分计算单元闲着。
+
+**一个关系式**(Little 定律):吞吐 ≈ 同时在处理的请求数 ÷ 延迟。
+- 示意数字(不是实测):batch = 1、每次 20 ms → 每秒 50 张;batch = 8、每次 60 ms → 8 ÷ 0.06 ≈ 133 张/秒。
+- 吞吐翻了 2.7 倍,但每张图从 20 ms 变成 60 ms。
+
+**降延迟:让一个请求更快走完** · Lower latency
+1. **少算**:换小模型(YOLOv8n 比 v8s 小)、降输入分辨率(640 → 416,计算量约变成 (416/640)² ≈ 0.42 倍)、剪枝、蒸馏。
+2. **算得快**:FP16/INT8 量化;TensorRT 层融合,把卷积 + BN + ReLU 合成一个 kernel,少读写几次显存、少启动几次 kernel(F20)。
+3. **别等**:batch = 1 不攒批;数据一直留在 GPU 上,少在 CPU 和 GPU 之间来回拷;预处理(缩放、归一化)和 NMS 也放到 GPU 上做;启动后先跑几次预热,第一次推理总是特别慢。
+4. **离用户近**:放到设备上跑(边缘部署),省掉网络来回。无人机传到云端再传回来,光网络就可能几十到上百 ms。
+5. **管尾巴**:线上看的不只是平均值,还看 P99(最慢的 1%)。办法是设超时、限流、别让请求排长队。
+<span class="en">To cut latency: do less work (smaller model, lower resolution, pruning, distillation), do it faster (FP16/INT8, kernel fusion), remove waiting (no batching, keep data on the GPU, warm up), run close to the user, and watch the P99 tail.</span>
+
+**提吞吐:让每秒干的活更多** · Higher throughput
+1. **攒批(batching)**:一次喂多张图,把 GPU 吃满。线上常用**动态批**:最多等几毫秒,或者攒够 N 个就发,先到哪个条件算哪个(Triton 就支持)。
+2. **流水线和并发**:读图、预处理、推理、后处理分成几段同时跑。GPU 在算第 2 帧时,CPU 已经在准备第 3 帧。还可以开多个 CUDA stream,或者一张卡上放多个模型实例。
+3. **省显存**:量化后每个数占的空间小了,同样的显存能放更大的 batch。
+4. **加机器**:多卡、多台机器,前面放负载均衡。这是最直接的,但最贵。
+5. **大模型特有的**:continuous batching(谁生成完谁先走,新请求随时插进来)、KV cache 复用、PagedAttention 管显存(vLLM 就是这一套)。
+<span class="en">To raise throughput: batch requests (dynamic batching), pipeline the stages so CPU and GPU overlap, use multiple streams or model instances, save memory with quantization so batches can be bigger, scale out across GPUs, and for LLMs use continuous batching and paged KV cache.</span>
+
+**注意:流水线主要提吞吐,单帧延迟不会变短**。一帧还是要走完全部几段;好处是各段同时开工,每秒出的帧多了。
+
+**哪些两边都受益**:量化、TensorRT、小模型、降分辨率。每次算得少了,单个请求更快,每秒也能做更多。只有**攒批**是明确的"用延迟换吞吐"。
+
+**怎么选**(面试官最爱听这句):**先定延迟预算,再在预算内把吞吐开到最大**。
+- 实时场景(无人机、自动驾驶、视频通话):看延迟,batch = 1,每帧要在时限内(30 FPS 就是每帧约 33 ms)。
+- 离线或批量场景(给一整个视频库打标签、夜里跑批):看吞吐,batch 开大,不在乎单张多久。
+- 线上服务:两个都要,通常写成"P99 延迟不超过 X ms 的前提下,QPS 尽量高"。
+
+**和你的经历怎么接**:
+- **RCRI(真做过)**:无人机是实时场景,所以看延迟,不攒批。做法是 416 输入、TensorRT FP16、直接在 Jetson 上跑,省掉网络来回。只跑检测是 12 FPS(约 83 ms 一帧),完整的 6 类两阶段管线是 5 FPS(约 200 ms)。
+- **E6792(真做过)**:YOLOv4-Tiny 转 TensorRT 后吞吐约提升 12 倍,靠的是层融合和低精度,这一类优化对延迟也有帮助。
+- **TikTok(真做过)**:高 QPS 服务的超时治理和 P99,就是"管尾巴"那一条。
+- **如果问"RCRI 还能怎么更快"**(思路,没做过,要说"如果再做我会…"):
+  - INT8 量化,用一小批墙面图做校准;
+  - 第二阶段把所有岩点的裁剪图拼成一个 batch 一次分类,不要一个一个送;
+  - 读图、检测、分类做成流水线;
+  - 或者把分类合进检测头,变成一阶段。
+
+> 🗣 Latency is how long a single request takes; throughput is how many we finish per second, and roughly throughput equals concurrency divided by latency. To cut latency, I do less work with a smaller model or lower input resolution, make each step faster with FP16 or INT8 and TensorRT kernel fusion, and remove waiting by keeping data on the GPU, warming up, and running on the edge device instead of round-tripping to the cloud. In production I also watch P99, not just the average. To raise throughput, the main lever is batching, ideally dynamic batching, plus pipelining preprocessing, inference and post-processing so the CPU and GPU overlap, and scaling out. For LLMs that becomes continuous batching and paged KV cache. Batching trades latency for throughput, so I set a latency budget first and then maximize throughput inside it. On the drone project it was real-time, so we optimized for latency: batch size one, 416 input, TensorRT FP16 on the Jetson, about 12 frames per second for detection.
+
 ## F21. 多模态大模型是怎么"看图"的(串起来) · How a multimodal LLM sees, end to end
 
 把上面的概念串成一条线,这是最可能被追问的"综合题":
