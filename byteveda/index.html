@@ -1268,6 +1268,53 @@ s 在第一行第二列,意思是**像素的 u 坐标会被 y 方向"带偏"一�
 
 > 🗣 YOLOv1 divides the image into a 7 by 7 grid, and the cell containing an object's center is responsible for it. Each cell predicts two boxes, each with five numbers: x and y for the center relative to the cell, width and height relative to the whole image, and a confidence equal to the probability of an object times the IoU with the ground truth. Each cell also predicts 20 class probabilities for Pascal VOC, shared by both boxes, so the output is 7 by 7 by 30. The final score for a class is the class probability times the box confidence. Two boxes give each cell two guesses, and because only the box with the higher IoU is trained on each object, the two specialize in different shapes and sizes. The limitation is that a cell can only detect one class and at most two objects, which later versions fixed with anchors and multi-scale, anchor-free heads like YOLOv8's.
 
+### 问:YOLOv8 的损失 BCE、CIoU、DFL 分别是什么?(11-05 她问的) · YOLOv8's loss: BCE, CIoU and DFL
+
+**一句话**:YOLOv8 的损失分三块:**BCE 管"是什么"**(分类),**CIoU 管"框得像不像"**(整体位置和形状),**DFL 管"每条边具体在哪"**(四条边的精确位置)。三者加权相加,默认权重是 框 7.5、分类 0.5、DFL 1.5。
+<span class="en">YOLOv8's loss has three parts: BCE for the class, CIoU for overall box overlap and shape, and DFL for the exact position of each edge, weighted 7.5 for box, 0.5 for class and 1.5 for DFL by default.</span>
+
+**1. BCE(二元交叉熵):分类**
+- 每个类别**单独**过一个 sigmoid,各自问"是不是这一类",而不是像 softmax 那样在所有类里选一个(F4)。
+- 公式:−[y·log p + (1 − y)·log(1 − p)]。y 是目标,p 是预测概率。
+  - 是岩点,模型给 0.9:损失 −ln 0.9 ≈ **0.11**,很小。
+  - 是岩点,模型只给 0.1:损失 −ln 0.1 ≈ **2.30**,很大。
+- **为什么用 BCE 不用 softmax**:
+  - YOLOv8 没有单独的"有没有物体"分数,背景就是所有类别都接近 0。softmax 必须加起来等于 1,表达不了"哪类都不是"。
+  - 允许一个框同时属于多个标签。
+- 小细节:正样本的目标不是硬的 1,而是和"这个框框得有多准"挂钩的软分数(由 TaskAlignedAssigner 算),框得越准目标越接近 1。这样分类分数和框的质量是对齐的,NMS 按分数排序时,留下的也是框得准的。
+- **和你的双 sigmoid bug 是一回事**:训练时 BCE 吃的是 logit(未过 sigmoid 的原始分数),导出的模型已经帮你过了 sigmoid。后处理再套一次,0 到 1 的分数会被压进 sigmoid(0) = 0.5 到 sigmoid(1) ≈ 0.73 之间,阈值一卡,大部分岩点就没了。
+<span class="en">BCE applies an independent sigmoid per class, which lets the background be "no class at all", something softmax can't express.</span>
+
+**2. CIoU:框整体对不对**
+- **起点是 IoU 损失** = 1 − IoU。IoU 越大越好(F25)。
+- **IoU 的毛病**:两个框完全不重叠时 IoU 永远是 0,不管离得多远都一样,没有梯度告诉模型"往哪边挪"。
+- **DIoU 加一项中心距离**:ρ² ÷ c²。ρ 是两个框中心的距离,c 是能同时包住两个框的最小外框的对角线长度。
+- **CIoU 再加一项长宽比**:预测框和真实框的长宽比差得越多,罚得越多。
+- 合起来:**CIoU 损失 = 1 − IoU + ρ²/c² + α·v**,v 衡量长宽比的差距,α 是自动算出来的权重。
+- **算一下为什么有用**(真实框 (0,0)–(10,10),预测框也是 10×10,长宽比一样,所以 v = 0):
+  - 预测框在 (20,0)–(30,10):不重叠,IoU = 0。中心 (5,5) 和 (25,5),ρ = 20,ρ² = 400。外框 (0,0)–(30,10),c² = 30² + 10² = 1000。损失 = 1 − 0 + 400 ÷ 1000 = **1.40**。
+  - 预测框挪到 (12,0)–(22,10):还是不重叠,IoU 还是 0。中心 (17,5),ρ² = 144。外框 (0,0)–(22,10),c² = 484 + 100 = 584。损失 = 1 + 144 ÷ 584 ≈ **1.25**。
+  - 只用 IoU 的话两次都是 1,模型不知道该往哪挪;CIoU 告诉它"靠近了,损失在降"。
+<span class="en">Plain IoU loss gives no gradient when boxes don't overlap. CIoU adds the normalized center distance and an aspect-ratio term, so moving a non-overlapping box closer still lowers the loss, from 1.40 to 1.25 in the example.</span>
+
+**3. DFL(Distribution Focal Loss):每条边在哪**
+- **YOLOv8 怎么表示框**:每个位置是一个"锚点",框用锚点到**左、上、右、下四条边的距离**来表示(单位是这一层的步长)。
+- **普通做法**:每条边直接回归一个数,比如"左边距离 6.3"。
+- **DFL 的做法**:每条边不出一个数,而是在 0 到 15 这 **16 个格子**上出一个概率分布,再取期望当作距离。所以框的输出是 4 条边 × 16 = **64 个数**。
+  - 例:p₆ = 0.7,p₇ = 0.3,其余是 0 → 距离 = 6 × 0.7 + 7 × 0.3 = **6.3**。这一层步长是 8 的话,就是 6.3 × 8 ≈ 50 像素。
+- **损失怎么算**:真实距离 6.3 落在 6 和 7 之间,就让模型把概率放在这两个格子上,离得近的格子分得多:
+  - DFL = −[(7 − 6.3)·log p₆ + (6.3 − 6)·log p₇] = −[0.7·log p₆ + 0.3·log p₇]
+  - 也就是希望 p₆ ≈ 0.7、p₇ ≈ 0.3。
+- **为什么要当分布学**:
+  - **边界本来就模糊**:物体被挡住、边缘发虚(岩点边缘和墙面颜色很接近)时,"边到底在哪"本身就不确定。分布可以表达这种不确定:峰很尖 = 很确定,摊得很平 = 拿不准。
+  - **更好训**:学一个分布比硬回归一个数稳定,定位精度更高。
+  - 出自 2020 年的 Generalized Focal Loss 论文。
+<span class="en">DFL represents each edge distance as a probability distribution over 16 bins and takes the expectation. For a target of 6.3, the loss pushes probability onto bins 6 and 7 with weights 0.7 and 0.3. This captures boundary ambiguity and trains more stably than direct regression.</span>
+
+**三者怎么配合**:每张图 8400 个位置都算 BCE(包括背景,目标全 0);只有被分配成正样本的位置才算 CIoU 和 DFL,背景位置没有框可学。
+
+> 🗣 YOLOv8's loss has three parts. Classification uses binary cross-entropy with an independent sigmoid per class, so background is simply all classes near zero, and the positive targets are soft scores tied to box quality. For the box it uses CIoU, which is one minus IoU plus a normalized center-distance term and an aspect-ratio term, so even non-overlapping boxes get a useful gradient. It also uses Distribution Focal Loss: each of the four edge distances is predicted as a distribution over sixteen bins, the expectation gives the distance, and the loss puts probability on the two bins around the true value. That captures ambiguous boundaries and trains more stably. Box losses apply only to positive locations, and the default weights are 7.5, 0.5 and 1.5. In my project we actually hit a related bug: the exported model already applied the sigmoid, and our post-processing applied it again, which squashed all scores near 0.5.
+
 ## F26. World model:在脑子里预演世界 · World models
 
 **一句话**:world model 学的是"现在是这样,如果我做这个动作,世界下一刻会变成什么样",也就是学一个函数:下一状态 = f(当前状态, 动作)。
