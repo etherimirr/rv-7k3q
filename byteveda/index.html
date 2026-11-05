@@ -155,7 +155,7 @@ p.legend{color:var(--mut);font-size:.88em;margin:.3em 0}
 h3{color:var(--fg)!important}
 h1.ch{border-left-width:3px!important;background:transparent!important}
 #top{position:fixed;left:18px;bottom:18px;background:var(--acc);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer}
-</style><style id="bvfix">#wrap>*{min-width:0}#main{min-width:0!important;width:100%!important;max-width:1000px}#body{overflow-wrap:anywhere}#body pre{overflow-x:auto;max-width:100%;white-space:pre;overflow-wrap:normal}#body table{display:block;overflow-x:auto;max-width:100%}</style></head><body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./"><b>Byte Veda 终面手册</b></a><a href="fpcv.html"><b>FPCV 课程精华 + 点云(第八、九章)</b></a><a href="../alpaca/">Alpaca</a><a href="../">返回 rv-7k3q</a></div>
+</style><style id="bvfix">#wrap>*{min-width:0}#main{min-width:0!important;width:100%!important;max-width:1000px}#body{overflow-wrap:anywhere}#body pre{overflow-x:auto;max-width:100%;white-space:pre;overflow-wrap:normal}#body table{display:block;overflow-x:auto;max-width:100%}</style><style id="iqfix">.iqflow{margin:12px 0 18px}.iqflow svg{width:100%;height:auto;max-width:760px;display:block}.iqflow .bx{fill:var(--card);stroke-width:1.6}.iqflow .bar{opacity:.9}.iqflow .me .bx{stroke:var(--ok)}.iqflow .me .bar,.iqflow .me .dot{fill:var(--ok)}.iqflow .me .tag{fill:var(--ok)}.iqflow .nt .bx{stroke:var(--acc2);stroke-dasharray:6 4}.iqflow .nt .bar,.iqflow .nt .dot{fill:var(--acc2)}.iqflow .nt .tag{fill:var(--acc2)}.iqflow .gen .bx{stroke:var(--mut);stroke-dasharray:2 3}.iqflow .gen .bar,.iqflow .gen .dot{fill:var(--mut)}.iqflow .gen .tag{fill:var(--mut)}.iqflow .t1{fill:var(--fg);font-size:15px;font-weight:600}.iqflow .s1{fill:var(--fg);font-size:13.5px;font-weight:600}.iqflow .t2{fill:var(--mut);font-size:12.5px}.iqflow .tag{font-size:12px;font-weight:700}.iqflow .ar{stroke:var(--mut);stroke-width:1.6}.iqflow .arh{fill:var(--mut)}.iqflow .side{fill:var(--code);stroke:var(--line)}.iqflow .br{stroke:var(--mut);stroke-width:1.4;stroke-dasharray:4 4}.tg{display:inline-block;font-size:.8em;line-height:1.5;padding:0 6px;border-radius:9px;border:1px solid;margin:0 2px;white-space:nowrap}.tg.me{color:var(--ok);border-color:var(--ok)}.tg.nt{color:var(--acc2);border-color:var(--acc2);border-style:dashed}.tg.gen{color:var(--mut);border-color:var(--mut);border-style:dotted}</style></head><body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./"><b>Byte Veda 终面手册</b></a><a href="fpcv.html"><b>FPCV 课程精华 + 点云(第八、九章)</b></a><a href="../alpaca/">Alpaca</a><a href="../">返回 rv-7k3q</a></div>
 <div id="rp"></div>
 <div id="wrap">
 <nav id="toc"><h2>目录</h2><input id="q" placeholder="搜章节 / 题目…"><div id="allprog"></div><div id="tl"></div></nav>
@@ -424,6 +424,20 @@ Q、K、V 都是同一个输入向量分别乘三个**可学的矩阵** W_Q、W_
 - 三个 value:The = [1, 0],cat = [0, 1],sat = [0.5, 0.5]
 - 输出 = 0.14·[1, 0] + 0.58·[0, 1] + 0.28·[0.5, 0.5] ≈ **[0.28, 0.72]**
 - 读法:"sat" 主要去看了 "cat"(谁坐下了?猫),新向量里混进了猫的信息。
+
+**问:「sat 的 q = [1, 0]」是什么意思?**(11-04 她问的)
+- q 是 "sat" 这个 token 发出的**问题向量**,表示"我想找什么样的信息"。
+  <span class="en">q is the query vector of the token "sat": what kind of information it is looking for.</span>
+- 它的来历:sat 先查表得到 embedding x(F2),再乘可学的矩阵 W_Q 得到 q = x · W_Q。比如 x = [1, 0.5],W_Q = [[1, 0], [0, 0]],乘出来就是 [1, 0]。
+  <span class="en">It comes from multiplying the token's embedding by the learned matrix W_Q.</span>
+- [1, 0] 只是为了手算编的 2 维数字。真实模型里每个头的 q 有 64 或 128 维,单独某一维没有人能读懂的含义。
+  <span class="en">The two numbers are made up for hand calculation; real queries have 64 or 128 dimensions per head, and single dimensions are not human-readable.</span>
+- 读法看**方向**:q 和哪个 k 方向越一致,点积越大,就越关注它。cat 的 k = [2, 0] 和 [1, 0] 同方向,点积 2,最关注;The 的 k = [0, 1] 和它垂直,点积 0,不关注;sat 自己的 k = [1, 1] 只有一半同向,点积 1,中等。
+  <span class="en">What matters is direction: the more a key points the same way as the query, the larger the dot product and the more attention it gets.</span>
+- 同一个 token 有三个不同的向量:q 是"我要找什么",k 是"我身上贴的标签",v 是"我能给出的内容"。所以 sat 的 q = [1, 0],k 却是 [1, 1]。
+  <span class="en">One token has three different vectors: q is what it asks for, k is the label it offers, v is the content it gives.</span>
+
+> 🗣 In the toy example, q equals one-zero is simply the query vector of the token "sat", obtained by multiplying its embedding by W_Q. The numbers are made up so we can compute by hand. What matters is its direction: "cat" has a key pointing the same way, so its dot product is the largest and "sat" attends mostly to "cat", while "The" has an orthogonal key and gets almost no attention.
 
 **为什么除以 √d_k**:假设 q 和 k 的每一维均值 0、方差 1,点积是 d_k 项相加,方差变成 d_k。维度 64 时点积的标准差约 8,softmax 会被推到几乎 one-hot,梯度接近 0。除以 √d_k 把方差拉回 1。
 <span class="en">With unit-variance entries, a dot product of d_k terms has variance d_k; dividing by root d_k brings it back to one so softmax doesn't saturate.</span>
@@ -1961,6 +1975,88 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
 | Helen 体系结构 <span class="en">Helen, architecture</span> | E6792 CUDA host 层 + TensorRT 实验 <span class="en">E6792 CUDA host layer and TensorRT lab</span> | 讲的是显存、warp、kernel 启动和 Amdahl <span class="en">It's about memory, warps, launches and Amdahl</span> | kernel 课程给、host 端我写;推理 12×、端到端 7.45×,差距用 Amdahl 解释 <span class="en">Kernels provided, host side mine; 12× inference versus 7.45× end to end, explained by Amdahl</span> |
 | Khasim Python/CNN <span class="en">Khasim, Python and CNNs</span> | RCRI <span class="en">RCRI</span> | YOLOv8、模型选择、双 sigmoid bug <span class="en">YOLOv8, model choice, the double-sigmoid bug</span> | s@416 52 ms 对 n@320 14 ms,选 s 因为 n 漏远处小 hold;双 sigmoid 把分数压到 0.5,修好后每图从约 10 个到 40 多个 <span class="en">s@416 at 52 ms over n@320 at 14 ms because n missed small holds; the double sigmoid fix took detections from about 10 to 40-plus</span> |
 | Peter 3D/图像处理 <span class="en">Peter, 3D and image processing</span> | RCRI 的视觉管线(三阶段 + IoU 合并 + HSV 分路线),再补 CLIP 零样本 <span class="en">RCRI's vision pipeline, then zero-shot CLIP</span> | 有检测、颜色空间、几何合并;3D 部分用「如果把 RCRI 做成 3D」接 <span class="en">Detection, color spaces and geometric merging; bridge to 3D with "taking RCRI into 3D"</span> | 三阶段用 IoU ≥ 0.3 合并;HSV 分组是队友写的;3D 延伸:双目或深度相机 + 反投影 + 墙面平面 RANSAC <span class="en">Stages merged at IoU 0.3; HSV grouping was my teammate's; the 3D extension adds depth, back-projection and a RANSAC wall plane</span> |
+
+## 爱奇艺:一张图从输入到输出经过哪些模块 · iQIYI: modules from input to one output image
+> 被问「walk me through what happens to one image in your iQIYI pipeline」时用。先看图,再看每个模块一两句,最后背 40 秒英文版。
+
+**一句话**:一张图走九步:接单、备料、把字变成数、(可选)加约束、去噪画图、解码成像素、修图、把关、交付。你主要做的是让这条线在生产上又快又稳,不是发明模型。
+<span class="en">One image goes through nine steps: take the request, prep the inputs, turn words into numbers, optionally add constraints, denoise, decode to pixels, touch up, check, deliver. Your part was making the whole line fast and stable in production, not inventing the model.</span>
+
+**比方:照相馆接单出片**。客人说要什么(输入),店员整理需求(预处理),摄影师照着要求拍(生成),后期修片(后处理),店长把关(质检),装袋交给客人(交付)。旁边还有一套「店面运营」:排队、省电、修机器,这就是右边的服务层。
+<span class="en">Think of a photo studio: take the order, prep, shoot, retouch, check, hand over. Running the shop itself, queues, power and repairs, is the serving layer on the right.</span>
+
+### 三种标记是什么意思
+- <span class="tg me">✅ 你做的</span> 简历上写着的,可以放心说。<span class="en">On your resume, safe to say.</span>
+- <span class="tg nt">📝 讲稿里有</span> 只出现在你 5 月自己写的面试讲稿(Downloads 里的「SDE 中文.docx」)里,简历没写。面试前确认自己记得;不确定就用下面的「安全说法」。<span class="en">Only in your May talk notes, not on the resume. Confirm you remember it, otherwise use the safe phrasing below.</span>
+- <span class="tg gen">⚪ 通用环节,可能被问</span> 这类系统一般都有,但你的材料里没写你做过。只讲原理,别说是你搭的。<span class="en">Standard in such systems, but your materials don't say you built it. Explain the idea only.</span>
+
+<div class="iqflow"><svg viewBox="0 0 680 736" role="img" aria-label="爱奇艺图像生成:一张图从输入到交付的九个模块,右侧是贯穿全程的服务层"><g class="me"><rect class="bx" x="10" y="8" width="22" height="16" rx="4"/><text class="t2" x="40" y="21">你做的(简历有)</text></g><g class="nt"><rect class="bx" x="210" y="8" width="22" height="16" rx="4"/><text class="t2" x="240" y="21">讲稿里有,简历没写</text></g><g class="gen"><rect class="bx" x="410" y="8" width="22" height="16" rx="4"/><text class="t2" x="440" y="21">通用环节,可能被问</text></g><g class="gen"><rect class="bx" x="10" y="44" width="410" height="56" rx="8"/><rect class="bar" x="10" y="44" width="6" height="56" rx="3"/><text class="t1" x="28" y="67">① 输入 Input</text><text class="t2" x="28" y="88">文字 prompt + 风格/IP + 参考图(可选)</text><text class="tag" x="410" y="67" text-anchor="end">通用</text></g><line class="ar" x1="215" y1="102" x2="215" y2="113"/><polygon class="arh" points="209,112 221,112 215,120"/><g class="me"><rect class="bx" x="10" y="122" width="410" height="56" rx="8"/><rect class="bar" x="10" y="122" width="6" height="56" rx="3"/><text class="t1" x="28" y="145">② 预处理 Preprocess</text><text class="t2" x="28" y="166">prompt 模板 · 图缩放归一化 · 姿态/mask · 分词</text><text class="tag" x="410" y="145" text-anchor="end">你做的</text></g><line class="ar" x1="215" y1="180" x2="215" y2="191"/><polygon class="arh" points="209,190 221,190 215,198"/><g class="nt"><rect class="bx" x="10" y="200" width="410" height="56" rx="8"/><rect class="bar" x="10" y="200" width="6" height="56" rx="3"/><text class="t1" x="28" y="223">③ 文本编码 CLIP text encoder</text><text class="t2" x="28" y="244">把字变成向量 · 重复 prompt 走缓存</text><text class="tag" x="410" y="223" text-anchor="end">讲稿</text></g><line class="ar" x1="215" y1="258" x2="215" y2="269"/><polygon class="arh" points="209,268 221,268 215,276"/><g class="gen"><rect class="bx" x="10" y="278" width="410" height="56" rx="8"/><rect class="bar" x="10" y="278" width="6" height="56" rx="3"/><text class="t1" x="28" y="301">④ 条件控制(可选)Conditioning</text><text class="t2" x="28" y="322">ControlNet 姿态 / inpainting mask / img2img</text><text class="tag" x="410" y="301" text-anchor="end">通用</text></g><line class="ar" x1="215" y1="336" x2="215" y2="347"/><polygon class="arh" points="209,346 221,346 215,354"/><g class="me"><rect class="bx" x="10" y="356" width="410" height="56" rx="8"/><rect class="bar" x="10" y="356" width="6" height="56" rx="3"/><text class="t1" x="28" y="379">⑤ 去噪主干 UNet + LoRA</text><text class="t2" x="28" y="400">从噪声开始去噪几十步 · 挂风格 LoRA</text><text class="tag" x="410" y="379" text-anchor="end">你做的</text></g><line class="ar" x1="215" y1="414" x2="215" y2="425"/><polygon class="arh" points="209,424 221,424 215,432"/><g class="gen"><rect class="bx" x="10" y="434" width="410" height="56" rx="8"/><rect class="bar" x="10" y="434" width="6" height="56" rx="3"/><text class="t1" x="28" y="457">⑥ VAE 解码 VAE decode</text><text class="t2" x="28" y="478">压缩图 latent → 真像素 RGB</text><text class="tag" x="410" y="457" text-anchor="end">通用</text></g><line class="ar" x1="215" y1="492" x2="215" y2="503"/><polygon class="arh" points="209,502 221,502 215,510"/><g class="me"><rect class="bx" x="10" y="512" width="410" height="56" rx="8"/><rect class="bar" x="10" y="512" width="6" height="56" rx="3"/><text class="t1" x="28" y="535">⑦ 后处理 Post-process</text><text class="t2" x="28" y="556">超分 · 去瑕疵 · 风格增强</text><text class="tag" x="410" y="535" text-anchor="end">你做的</text></g><line class="ar" x1="215" y1="570" x2="215" y2="581"/><polygon class="arh" points="209,580 221,580 215,588"/><g class="gen"><rect class="bx" x="10" y="590" width="410" height="56" rx="8"/><rect class="bar" x="10" y="590" width="6" height="56" rx="3"/><text class="t1" x="28" y="613">⑧ 质检/内容安全 QC and safety</text><text class="t2" x="28" y="634">违规过滤 · 版权合规 · 人工抽查</text><text class="tag" x="410" y="613" text-anchor="end">通用</text></g><line class="ar" x1="215" y1="648" x2="215" y2="659"/><polygon class="arh" points="209,658 221,658 215,666"/><g class="me"><rect class="bx" x="10" y="668" width="410" height="56" rx="8"/><rect class="bar" x="10" y="668" width="6" height="56" rx="3"/><text class="t1" x="28" y="691">⑨ 编码交付 Deliver</text><text class="t2" x="28" y="712">存 PNG · 带版本号存档 · 交内容团队</text><text class="tag" x="410" y="691" text-anchor="end">你做的</text></g><rect class="side" x="440" y="122" width="230" height="602" rx="10"/><line class="br" x1="430" y1="130" x2="430" y2="716"/><text class="t1" x="456" y="150">服务层 Serving</text><text class="t2" x="456" y="170">贯穿 ②–⑨,每一步都要管</text><g class="me"><circle class="dot" cx="460" cy="203" r="5"/><text class="s1" x="474" y="208">批量推理 · 动态批</text><text class="t2" x="474" y="228">吞吐和排队之间取舍</text></g><g class="me"><circle class="dot" cx="460" cy="277" r="5"/><text class="s1" x="474" y="282">LoRA 快速切换</text><text class="t2" x="474" y="302">底座常驻,只换小插件</text></g><g class="me"><circle class="dot" cx="460" cy="351" r="5"/><text class="s1" x="474" y="356">显存与故障排查</text><text class="t2" x="474" y="376">OOM、泄漏;15+ 故障</text></g><g class="nt"><circle class="dot" cx="460" cy="425" r="5"/><text class="s1" x="474" y="430">FP16 混合精度</text><text class="t2" x="474" y="450">省显存,敏感层留 FP32</text></g><g class="nt"><circle class="dot" cx="460" cy="499" r="5"/><text class="s1" x="474" y="504">缓存</text><text class="t2" x="474" y="524">重复 prompt 的向量不重算</text></g><g class="nt"><circle class="dot" cx="460" cy="573" r="5"/><text class="s1" x="474" y="578">分段 profiling</text><text class="t2" x="474" y="598">先量再改</text></g><g class="nt"><circle class="dot" cx="460" cy="647" r="5"/><text class="s1" x="474" y="652">监控告警 · 回滚</text><text class="t2" x="474" y="672">显存曲线设阈值</text></g></svg></div>
+
+### 每个模块一两句 · Each module in one or two lines
+
+**① 输入 Input** <span class="tg gen">⚪ 通用环节,可能被问</span>
+客人下单:一句文字描述(prompt),要哪种风格或哪个 IP 角色,有时给一张参考图,再加张数和分辨率。你讲稿里写的业务是:给动漫、影视 IP 批量出风格化素材,交给内容团队。
+<span class="en">The request: a text prompt, a target style or IP character, sometimes a reference image, plus count and resolution. Per your notes, the business was batch-producing styled assets for anime and drama IPs for the content team.</span>
+
+**② 预处理 Preprocessing** <span class="tg me">✅ 你做的</span> 细节 <span class="tg nt">📝 讲稿里有</span>
+备料:prompt 套进模板、加上风格词;参考图统一缩放、归一化(把像素值缩到固定范围);需要时提取人物姿态(pose)和遮罩(mask,标出「只改这一块」);最后把文字切成 token(分词)。
+<span class="en">Prep: fill the prompt template and add style words, resize and normalize the reference image, optionally extract a pose and a mask, the region to edit, and tokenize the text.</span>
+简历写的是你重构了预处理、推理、后处理三段;模板、姿态、mask 这些细节出自讲稿。
+
+**③ 文本编码器 Text encoder(CLIP)** <span class="tg gen">⚪ 通用环节,可能被问</span> 缓存 <span class="tg nt">📝 讲稿里有</span>
+把字变成数:CLIP 的文本编码器把 token 变成一串向量(embedding,一个词一串数字),后面的去噪网络靠它听懂你要什么。同一个 prompt 反复用时,直接从缓存拿向量,不重算。
+<span class="en">A CLIP text encoder turns tokens into embedding vectors that steer the denoiser. Repeated prompts reuse cached embeddings instead of re-encoding.</span>
+
+**④ 条件控制(可选)Conditioning** <span class="tg gen">⚪ 通用环节,可能被问</span>
+加约束:除了文字,还能用姿态图、mask 或参考图把画面框住。常见三种:ControlNet(照着姿态或边缘画)、inpainting(只重画 mask 那块)、img2img(参考图加噪后再去噪)。你讲稿有姿态和 mask,但没写用的是哪种,见下面第 2 条。
+<span class="en">Constraints beyond text: ControlNet follows a pose or edge map, inpainting redraws only the masked region, img2img starts from a noised reference image. Your notes mention pose and masks but not which method.</span>
+
+**⑤ 去噪主干 Denoising backbone(UNet + LoRA + 采样器)** <span class="tg me">✅ 你做的</span>
+真正画图的一步:从一张纯噪声的压缩小图(latent)开始,UNet 每一步猜「噪声长什么样」并减掉一点,重复几十步就出图。采样器(scheduler)决定走多少步、每步减多少。风格靠 LoRA:底座不动,挂一个很小的插件,换风格就换插件。
+<span class="en">The UNet starts from pure noise in a compressed latent and removes a bit of predicted noise each step, for a few dozen steps; the scheduler sets the steps. Style comes from LoRA adapters, small add-ons on a frozen base, so switching style means swapping the adapter.</span>
+你做的(简历):风格 LoRA 微调、管理多个 LoRA、批量推理里快速切换风格和版本。赶工期时降分辨率、减步数,出自讲稿的 Bias for Action 故事。
+
+**⑥ VAE 解码 VAE decoder** <span class="tg gen">⚪ 通用环节,可能被问</span>
+把压缩图还原成真像素:latent 的边长一般只有原图的 1/8(Stable Diffusion 是这样),VAE 解码器把它放大还原成能看的 RGB 图。这一步不便宜,你讲稿里 profiling 时把它列为耗时点之一。
+<span class="en">The VAE decoder turns the latent, typically one eighth of the side length in Stable Diffusion, back into a full RGB image. It isn't free; your notes list it as one of the profiled costs.</span>
+
+**⑦ 后处理 Post-processing** <span class="tg me">✅ 你做的</span> 细节 <span class="tg nt">📝 讲稿里有</span>
+修片:超分辨率(放大还保持清晰)、去瑕疵(手指、边缘的怪东西)、风格增强。简历写你优化了这一段;具体有哪几个模块出自讲稿。赶工期那次,你临时关掉过几个很贵但效果有限的风格增强模块。
+<span class="en">Touch-up: super-resolution, artifact removal and style enhancement. The resume says you optimized this stage; the module list is from your notes. Under one tight deadline you turned off costly style-enhancement modules that added little.</span>
+
+**⑧ 质检与内容安全 Quality and safety check** <span class="tg gen">⚪ 通用环节,可能被问</span>
+店长把关:一般有违规内容过滤(NSFW)、IP 和版权合规、风格是否一致、人工抽查。你的材料里只有「交付后人工抽样确认质量」,没有自动审核模块,别说你做过。
+<span class="en">Usually NSFW filtering, IP and copyright checks, style consistency and human spot checks. Your materials only mention manual sampling after delivery, so don't claim an automated safety module.</span>
+
+**⑨ 编码与交付 Encode and deliver** <span class="tg me">✅ 你做的</span>
+装袋交货:存成 PNG 或 JPG,带版本号存档(哪个底座、哪个 LoRA、哪组参数),交给内容团队。简历写了 versioned artifacts、被 3 个以上商业项目复用;讲稿还提到「产品化接口封装」。CDN、对象存储属于通用环节。
+<span class="en">Save as PNG or JPG with a version record of base model, LoRA and parameters, then hand off to the content team. Versioned artifacts and reuse by three-plus commercial projects are on your resume; CDN and object storage are generic.</span>
+
+### 右边那条线:服务层 · The serving layer
+- **批量推理 Batching** <span class="tg me">✅ 你做的</span>:几张图拼成一批一起算,GPU 才吃得饱;批太大会排队、爆显存。讲稿写的是从固定 32 张改成动态 8–16 张。<span class="en">Batch images so the GPU stays busy; too large means queueing and OOM. Your notes say a fixed 32 became dynamic 8 to 16.</span>
+- **LoRA 快速切换 Adapter switching** <span class="tg me">✅ 你做的</span>:底座一直留在显存里,换风格只换小插件,不重新加载整个模型(简历:rapid style and version switching;「动态加载」这个说法出自讲稿)。<span class="en">Keep one base model loaded and swap small adapters per style instead of reloading the whole model.</span>
+- **显存与故障 GPU memory and failures** <span class="tg me">✅ 你做的</span>:简历写解决了 15+ 个 GPU 显存、数据管线、运行时故障。讲稿里的例子:显存随批次慢慢涨,是张量没释放造成的泄漏;还有 OOM、批队列卡住、风格不一致。<span class="en">Resume: resolved 15-plus GPU memory, data-pipeline and runtime failures. Notes: a slow leak from tensors kept alive, OOMs, a blocked batch queue, style inconsistency.</span>
+- **FP16 混合精度 Mixed precision** <span class="tg nt">📝 讲稿里有</span>:大部分计算用 16 位,显存省一半、算得更快;归一化、softmax 这类敏感层留 32 位。讲稿写显存降约 40%,简历没有这个数,别主动报。<span class="en">Most math in 16-bit, so less memory and faster; sensitive layers like normalization and softmax stay 32-bit. The 40 percent memory figure is only in your notes.</span>
+- **缓存 Caching** <span class="tg nt">📝 讲稿里有</span>:重复 prompt 的向量和部分中间结果存起来,不重算。<span class="en">Cache repeated prompt embeddings and some intermediate features.</span>
+- **先量再改 Profiling** <span class="tg nt">📝 讲稿里有</span>:分段计时(预处理、推理、后处理)。GPU 是异步的,计时前后要 torch.cuda.synchronize(),不然只量到「发命令」那一下。讲稿写的工具是 Nsight Systems 和 nvidia-smi。<span class="en">Time each stage, and synchronize before reading the clock because GPU work is asynchronous. Your notes name Nsight Systems and nvidia-smi.</span>
+- **监控与回滚 Monitoring and rollback** <span class="tg nt">📝 讲稿里有</span>:修完泄漏后加了显存阈值告警;有一次你自己的预处理改动引发不稳定,先回滚稳住,再查根因。<span class="en">After the leak fix you added GPU memory alerts; when one of your preprocessing changes caused instability, you rolled back first and then found the root cause.</span>
+
+### 不在这张图上:视频修复那条线
+简历还有一条:评测视频修复和多语字幕翻译,老片的 PSNR/SSIM 提升约 15–20%,字幕一致性和流畅度在内部评测里提升约 25%。这是另一条流水线(视频进、视频出),不是生成图的这条,别混在一起讲。被问「图像质量怎么衡量」时可以接:PSNR 看像素误差,SSIM 看结构像不像,都要配人工看。
+<span class="en">A separate line on your resume: evaluating video restoration and subtitle translation, about 15 to 20 percent better PSNR and SSIM on legacy film and about 25 percent better subtitle consistency in internal evaluations. It's a different pipeline, video in and video out. PSNR measures pixel error, SSIM structural similarity, and both need human review.</span>
+
+### 记不清的细节:可能性 + 安全说法
+1. **底座是哪个模型?** A. Stable Diffusion 1.5 一系;B. SDXL;C. 公司内部的底座。材料只写了 existing diffusion checkpoints 和 UNet。回忆触发:默认出图 512×512 多半是 SD 1.5,1024×1024 多半是 SDXL。安全说法:<span class="en">"We started from existing latent diffusion checkpoints with a UNet backbone and adapted them with LoRA."</span>
+2. **姿态和 mask 怎么用进去的?** A. ControlNet(姿态图);B. inpainting,只重画 mask 区域;C. 两种都有,看项目。回忆触发:有没有一张「火柴人」骨架图跟着输入走。安全说法:<span class="en">"Some jobs used pose and mask conditioning to keep characters on model. The generation side was standard; my work was making it run reliably in batch."</span>
+3. **瓶颈到底在哪?** 你的材料有三种说法:A. 5 月讲稿:UNet 推理、VAE 解码、内存到显存的拷贝;B. 10 月 Bitdeer 和 Byte Veda 现场面手册:很多时间花在预处理和数据搬运,不在模型本身;C. 赶工期的故事:推理和几个很贵的风格增强模块。三者不矛盾,合起来说最稳,也和 10/26 现场面准备的口径一致。安全说法:<span class="en">"Time was split across the denoising loop, VAE decoding and data movement. The model cost was expected; the surprise was how much went to preprocessing and host-to-device copies, which we could fix without touching the model."</span>
+4. **简历 agent 版写的 agent-driven 是什么意思?** A. 用大模型帮忙写、扩展 prompt 或选风格;B. 一个编排流程,把生成、视频修复、字幕翻译串在一个入口后面;C. 只是措辞。CV 面别主动提 agent。被问时:<span class="en">"The workflow chained several model steps, generation, restoration and translation, behind one interface."</span>
+5. **爱奇艺用过 TensorRT 吗?** 讲稿「怎么优化」那段出现过 TensorRT 层融合,但简历和 10 月的手册都没写。别主动说。被问时:<span class="en">"My hands-on TensorRT work is the Jetson project. At iQIYI the main wins were batching, precision, caching and data movement."</span>
+6. **数字从哪来**:约 30%、15+、3+、PSNR/SSIM 15–20%、字幕约 25%:简历。¥10K+ 周末收入:简历有,但没有别的出处。显存降约 40%、GPU 利用率只有约 40%、批 32 改 8–16:只在讲稿里,CV 面不要主动报。
+
+### 40 秒英文版 · 40-second spoken version
+> 🗣 A request comes in with a prompt, a target style and sometimes a reference image. Preprocessing builds the prompt from a template, normalizes the image and tokenizes the text. A CLIP text encoder turns the prompt into embeddings, which we cached for repeated prompts. The diffusion UNet then denoises a latent over a few dozen steps with a LoRA adapter for the style, and the VAE decodes it into pixels. Post-processing handles super-resolution and cleanup, and we save versioned outputs for the content team. My part was making this run in production: batching, mixed precision, caching, and fixing GPU memory and data issues. That cut end-to-end latency about 30 percent, I resolved more than 15 production failures, and three commercial projects reused the pipeline.
+
+中文意思:输入、预处理、CLIP 编码(带缓存)、UNet 加 LoRA 去噪、VAE 解码、后处理、带版本交付;你负责让它在生产上跑得动:批处理、混合精度、缓存、修显存和数据问题;结果延迟降约 30%、修了 15+ 个故障、3 个以上商业项目复用。
 
 ## RCRI 的「双 sigmoid」bug(被问调试经历时讲)
 - 发生了什么:后处理里,模型输出已经是 0–1 的概率 p,代码又过了一次 sigmoid。
