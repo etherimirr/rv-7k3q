@@ -1231,6 +1231,43 @@ s 在第一行第二列,意思是**像素的 u 坐标会被 y 方向"带偏"一�
 
 > 🗣 There are three main families of detectors. Two-stage detectors like Faster R-CNN first use a region proposal network to score tens of thousands of anchors and keep a few hundred proposals, then crop a fixed-size feature for each with RoI Align and classify and refine it. That's accurate but slow. One-stage detectors like YOLO, SSD and RetinaNet predict classes and boxes at every location in a single pass and use NMS to remove duplicates; RetinaNet's focal loss fixed the background imbalance that used to hurt their accuracy. DETR uses a Transformer decoder with a fixed set of learned object queries and trains with Hungarian matching, so each object is assigned to exactly one query and the model learns to avoid duplicates without NMS, though the original converges slowly and is weak on small objects. For our climbing-hold project we picked YOLO because we needed real-time inference on a Jetson, and the holds are small and dense, which is a bad fit for the original DETR.
 
+### 问:YOLOv1 每个格子的 30 个数都是什么?为什么是 2 个框?(11-05 她问的) · What YOLOv1's 30 numbers mean
+
+**背景**:这是最早的 YOLO(v1,2016)。输入 448×448,切成 7×7 = 49 个格子,每格 64×64 像素。规则是:**物体的中心点落在哪个格子,就由那个格子负责报它**。数据集是 PASCAL VOC,有 20 类,所以是 20 个类别概率。
+<span class="en">YOLOv1 splits a 448×448 image into a 7×7 grid; the cell containing an object's center is responsible for detecting it. PASCAL VOC has 20 classes.</span>
+
+**每个框的 5 个数**:
+- **x、y**:框的中心在这个格子里的相对位置,0 到 1。(0, 0) 是格子左上角,(1, 1) 是右下角。只描述格子内部,所以数值小、好学。
+- **w、h**:框的宽和高,占**整张图**的比例,0 到 1。因为框可以比格子大得多(一只大狗能占半张图)。
+- **置信度**:"这个框里有物体,而且框得准"的打分 = P(有物体) × IoU(预测框, 真实框)。没物体时目标是 0;有物体时目标是这个框和真实框的 IoU。
+<span class="en">x and y locate the box center within the cell; w and h are relative to the whole image; confidence is P(object) times the IoU with the ground-truth box.</span>
+
+**20 个类别概率**:P(是第 i 类 | 这格有物体)。**每个格子一组,不是每个框一组**,两个框共用。所以一个格子只能报一种类别,这是 v1 的硬伤。
+
+**算一遍**(一只狗):
+- 狗的中心在 (200, 300) 像素,框宽 128、高 192。
+- 哪个格子:200 ÷ 64 = 3.125 → 第 3 列;300 ÷ 64 = 4.6875 → 第 4 行(从 0 数)。
+- x = 0.125(3.125 的小数部分),y = 0.6875。
+- w = 128 ÷ 448 ≈ 0.29,h = 192 ÷ 448 ≈ 0.43。
+- 假设预测框和真实框 IoU = 0.8,置信度目标就是 0.8。
+- 这格类别概率里"狗"= 0.9 → 最终"狗"的得分 = 0.9 × 0.8 = **0.72**。
+- 全图 7 × 7 × 2 = **98 个框**,每个框按这个方法算出 20 个类别得分,低于阈值的丢掉,再做 NMS。
+
+**总数**:每格 2 × 5 + 20 = 30 个数,整张图输出 7 × 7 × 30 = 1,470 个数。
+
+**为什么是 2 个框**:
+- **多一次机会**:一个框猜不准,另一个可能猜准。
+- **训练时两个框会分工**:每次只让和真实框 IoU 更高的那个框"负责"(只有它的坐标和置信度按这个物体算损失),另一个框的置信度目标是 0。久而久之,一个框擅长瘦高的,另一个擅长矮宽的或不同大小的。论文原话的意思就是每个预测器会专门擅长某些尺寸和长宽比,整体召回率更高。
+- **为什么不是更多**:两个框共用一组类别概率,框再多也报不了第二种类别,而且输出越大越慢。2 是作者在速度和召回之间的折中。
+<span class="en">Two boxes give each cell two guesses. During training only the box with the higher IoU is responsible for the object, so the two predictors specialize in different shapes and sizes, which improves recall. More boxes would add cost without allowing more classes per cell.</span>
+
+**v1 的局限,也是后来版本改进的方向**:
+- 一个格子最多 2 个物体、只能是同一类 → 密集小物体(一群鸟)容易漏。
+- YOLOv2 改成每格 5 个 anchor(用 k-means 从数据里聚出常见框形),而且每个 anchor 有自己的类别概率。
+- YOLOv8(你用的)是 anchor-free:三层特征图共 8400 个位置,每个位置直接预测 1 个框(4 个数)加类别分数,不再单独预测置信度。你们的岩点检测器只有 1 类,所以每个位置是 4 + 1 = 5 个数,输出形状是 5 × 8400。
+
+> 🗣 YOLOv1 divides the image into a 7 by 7 grid, and the cell containing an object's center is responsible for it. Each cell predicts two boxes, each with five numbers: x and y for the center relative to the cell, width and height relative to the whole image, and a confidence equal to the probability of an object times the IoU with the ground truth. Each cell also predicts 20 class probabilities for Pascal VOC, shared by both boxes, so the output is 7 by 7 by 30. The final score for a class is the class probability times the box confidence. Two boxes give each cell two guesses, and because only the box with the higher IoU is trained on each object, the two specialize in different shapes and sizes. The limitation is that a cell can only detect one class and at most two objects, which later versions fixed with anchors and multi-scale, anchor-free heads like YOLOv8's.
+
 ## F26. World model:在脑子里预演世界 · World models
 
 **一句话**:world model 学的是"现在是这样,如果我做这个动作,世界下一刻会变成什么样",也就是学一个函数:下一状态 = f(当前状态, 动作)。
