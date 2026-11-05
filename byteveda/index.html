@@ -475,6 +475,29 @@ Q、K、V 都是同一个输入向量分别乘三个**可学的矩阵** W_Q、W_
 
 > 🗣 "The same set" means each attention head in a layer has just one W_Q, one W_K and one W_V, and every token is multiplied by those same three matrices. Tokens end up with different queries, keys and values only because their input vectors differ, like applying one formula to different inputs. Each layer and each head has its own set. Sharing means the number of parameters doesn't grow with sentence length, so the model handles any length and learns rules that apply at every position.
 
+**问:每一层的三个矩阵是怎么确定的?**(11-04 她问的)
+- **一句话**:不是人设计的,是训练出来的。先随机填数,然后让模型做大量"猜下一个词"的练习,每猜错一次就把所有矩阵里的每个数往"更不容易错"的方向挪一点点。
+  <span class="en">Nobody designs them. They start random and are adjusted by training, a tiny step at a time, toward whatever reduces the error.</span>
+- **训练一步的流程**:
+  1. **初始化**:所有矩阵填很小的随机数(GPT-2 用均值 0、标准差 0.02 的正态分布)。
+  2. **前向**:把一句话喂进去,一层层算 q、k、v、注意力……最后猜下一个词。
+  3. **算损失**:猜的概率和正确答案比,用交叉熵(F4)。正确词只给了 0.1 的概率,损失 = −ln 0.1 ≈ 2.30;给了 0.8,损失只有 0.22。
+  4. **反向传播**(F5):从损失往回算,得到每一层、每个矩阵、每个数的梯度,也就是"这个数调大一点,损失会变大还是变小、变多少"。
+  5. **更新**:每个数减去 学习率 × 梯度。
+  6. 换下一批句子,重复几十万到上百万步。
+- **算一个数**:W_Q 里某个数现在是 0.5,梯度是 0.2,学习率 0.01 → 新值 = 0.5 − 0.01 × 0.2 = **0.498**。一次只动一点点,但所有数同时在动,动上百万次。
+  <span class="en">Each weight moves by learning rate times gradient, for example 0.5 minus 0.01 times 0.2 gives 0.498.</span>
+- **为什么不能一开始全填 0 或全填一样的数**:如果所有数都一样,每个头、每个位置算出来的梯度也一样,更新完还是一样,永远学不出分工。随机初始化就是为了"打破对称"。
+- **为什么每层最后学得不一样**:每层在网络里的位置不同,收到的梯度不同,初始随机数也不同,所以自然分工。研究发现低层多管局部和语法(相邻词、词性),高层多管语义和长距离关系。
+- **规模感**:Llama 2 7B 有 32 层,向量 4096 维,一个 W_Q 就是 4096 × 4096 ≈ 1,680 万个数;一层 Q、K、V 三个约 5,000 万,32 层光这三种矩阵就约 16 亿个数。全部靠在约 2 万亿个 token 上训练定下来。
+- **训练完以后**:预训练结束,这些数就固定了。推理(你问它问题)时一个数都不改。
+  - 想让它适应新任务,就是**微调**:继续训练,改这些数。
+  - **LoRA**(F16)不动原矩阵,只在旁边加一个很小的可训练修正 B·A。
+  - 你的 **TaskMap** 也是这个思路的一种:冻结底座,把每个任务对 FFN 权重的修改表示成共享固定正交基上的系数。
+  <span class="en">After pretraining the weights are frozen; fine-tuning, LoRA, and our TaskMap method all change or add to them for new tasks.</span>
+
+> 🗣 The weight matrices aren't designed by hand; they're learned. They're initialized with small random values to break symmetry, then the model is trained on next-token prediction: a forward pass produces a prediction, cross-entropy measures the error, backpropagation computes the gradient of the loss with respect to every weight in every layer, and each weight moves a small step against its gradient. After millions of steps each layer ends up specializing, with lower layers capturing more local and syntactic patterns and higher layers more semantic ones. Once pretraining is done the weights are fixed, and adapting to a new task means fine-tuning them or adding small trainable updates like LoRA, which is also the setting of our TaskMap paper.
+
 **为什么除以 √d_k**:假设 q 和 k 的每一维均值 0、方差 1,点积是 d_k 项相加,方差变成 d_k。维度 64 时点积的标准差约 8,softmax 会被推到几乎 one-hot,梯度接近 0。除以 √d_k 把方差拉回 1。
 <span class="en">With unit-variance entries, a dot product of d_k terms has variance d_k; dividing by root d_k brings it back to one so softmax doesn't saturate.</span>
 
