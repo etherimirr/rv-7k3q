@@ -978,6 +978,30 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
   - v = 500 × 0.5 ÷ 5 + 240 = **290**
   - 读法:点越远(Z 越大)越靠近图像中心。这也是为什么单张图分不清"小东西在近处"还是"大东西在远处"。
 
+**视觉 SLAM 的四个部件**:
+- **前端(视觉里程计)**:每帧提特征点(比如 ORB),和上一帧匹配,用几何算出相机这一步怎么动的(本质矩阵 E,或已知 3D 点时用 PnP)。
+- **后端优化**:前端每步都有小误差,后端把很多帧放一起做 Bundle Adjustment(同时微调所有相机位姿和 3D 点,让重投影误差最小),或者做位姿图优化。
+- **回环检测**:认出"这地方我来过",把累积的漂移一下拉回来。常用词袋(DBoW)做图像检索。
+- **建图**:输出稀疏点云(够定位用),或稠密地图(避障、重建用)。
+
+**小算例:为什么要回环**:里程计每走 1 米偏 1%,绕一圈走 100 米就偏约 1 米;回到起点被认出来后,这 1 米误差会被分摊回整条轨迹。
+
+**几个关键概念**:
+- **单目的尺度问题**:一个摄像头算不出绝对大小,地图整体放大 2 倍也说得通。解决办法:双目、深度相机,或者加 IMU。
+- **VIO(视觉惯性里程计)**:相机加 IMU。IMU 每秒几百次测加速度和角速度,能补上快速运动和画面模糊时的空档,还能给出真实尺度。无人机最常用,代表是 VINS-Mono。
+- **特征点法 vs 直接法**:ORB-SLAM 提角点再匹配,稳、可以回环;DSO 这类直接法用像素亮度本身,能在缺纹理的地方工作,但怕光照变化。
+- **激光 SLAM**:用 LiDAR 点云配准(比如 LOAM),精度高,设备贵、重。
+
+**和深度学习的关系**:学出来的特征和匹配(SuperPoint 加 SuperGlue/LightGlue)比 ORB 更抗光照和视角变化;单目深度网络能给尺度先验;DROID-SLAM 把整个流程做成可微分的。但位姿怎么优化,大多还是几何那一套。
+
+**常被追问**:
+- 无人机为什么用 VIO 而不是纯视觉?飞得快、画面糊、会转得很猛,IMU 高频数据能顶上,还能解决尺度。
+- Bundle Adjustment 在优化什么?把所有 3D 点按当前估计的相机位姿投回每张照片,和真实看到的位置比,把这个误差平方和降到最小。
+
+**和你的经历**:SLAM 你没做过,别说成做过。可以说你懂相机模型和多视图几何(内参、外参、本质矩阵),也做过视觉模型在 Jetson 上的实时部署(RCRI、E6792)。如果问 SLAM 和感知怎么配合:SLAM 负责"我在哪",检测分割负责"周围有什么",两者合起来才能安全飞。
+
+> 🗣 SLAM estimates the robot's pose and builds a map at the same time, because each depends on the other. In visual SLAM the front end tracks features between frames and estimates relative motion with the essential matrix or PnP, using the camera model x equals K times R-t times X, where K holds the five intrinsics and R and t the six extrinsics. The back end refines poses and points with bundle adjustment, and loop closure recognizes revisited places to remove drift. A monocular camera can't recover absolute scale, so drones usually fuse an IMU, which is visual-inertial odometry like VINS-Mono. Learned features such as SuperPoint and LightGlue now make matching more robust, while the optimization itself is still mostly geometric.
+
 ### 问:倾斜 s(一般是 0)是怎么来的?(11-05 她问的) · Where the skew term comes from
 
 **一句话**:s 描述的是**像素网格的两条轴不垂直**。传感器上的像素如果排成的不是长方形格子,而是有点歪的平行四边形格子,x 轴和 y 轴的夹角 θ 就不是 90°,K 里就多出一项 s。θ = 90° 时 s = 0。
@@ -1016,30 +1040,6 @@ s 在第一行第二列,意思是**像素的 u 坐标会被 y 方向"带偏"一�
 - 所以内参常说"5 个",固定 s = 0 后其实是 4 个,P 的自由度也从 11 变成 10。
 
 > 🗣 The skew term in the intrinsic matrix models a pixel grid whose x and y axes aren't perpendicular. If the angle between them is theta, the geometry gives s equal to minus f-x times cot theta, so it's exactly zero when theta is ninety degrees. Modern sensors are made by lithography, so the grid is essentially square and the skew is negligible: even a one-degree error with a focal length of 500 pixels shifts points by less than a pixel. It can be non-zero in unusual cases, like scanning film or photographing a photograph at an angle. In practice calibration tools such as OpenCV fix the skew at zero, which leaves four intrinsic parameters instead of five.
-
-**视觉 SLAM 的四个部件**:
-- **前端(视觉里程计)**:每帧提特征点(比如 ORB),和上一帧匹配,用几何算出相机这一步怎么动的(本质矩阵 E,或已知 3D 点时用 PnP)。
-- **后端优化**:前端每步都有小误差,后端把很多帧放一起做 Bundle Adjustment(同时微调所有相机位姿和 3D 点,让重投影误差最小),或者做位姿图优化。
-- **回环检测**:认出"这地方我来过",把累积的漂移一下拉回来。常用词袋(DBoW)做图像检索。
-- **建图**:输出稀疏点云(够定位用),或稠密地图(避障、重建用)。
-
-**小算例:为什么要回环**:里程计每走 1 米偏 1%,绕一圈走 100 米就偏约 1 米;回到起点被认出来后,这 1 米误差会被分摊回整条轨迹。
-
-**几个关键概念**:
-- **单目的尺度问题**:一个摄像头算不出绝对大小,地图整体放大 2 倍也说得通。解决办法:双目、深度相机,或者加 IMU。
-- **VIO(视觉惯性里程计)**:相机加 IMU。IMU 每秒几百次测加速度和角速度,能补上快速运动和画面模糊时的空档,还能给出真实尺度。无人机最常用,代表是 VINS-Mono。
-- **特征点法 vs 直接法**:ORB-SLAM 提角点再匹配,稳、可以回环;DSO 这类直接法用像素亮度本身,能在缺纹理的地方工作,但怕光照变化。
-- **激光 SLAM**:用 LiDAR 点云配准(比如 LOAM),精度高,设备贵、重。
-
-**和深度学习的关系**:学出来的特征和匹配(SuperPoint 加 SuperGlue/LightGlue)比 ORB 更抗光照和视角变化;单目深度网络能给尺度先验;DROID-SLAM 把整个流程做成可微分的。但位姿怎么优化,大多还是几何那一套。
-
-**常被追问**:
-- 无人机为什么用 VIO 而不是纯视觉?飞得快、画面糊、会转得很猛,IMU 高频数据能顶上,还能解决尺度。
-- Bundle Adjustment 在优化什么?把所有 3D 点按当前估计的相机位姿投回每张照片,和真实看到的位置比,把这个误差平方和降到最小。
-
-**和你的经历**:SLAM 你没做过,别说成做过。可以说你懂相机模型和多视图几何(内参、外参、本质矩阵),也做过视觉模型在 Jetson 上的实时部署(RCRI、E6792)。如果问 SLAM 和感知怎么配合:SLAM 负责"我在哪",检测分割负责"周围有什么",两者合起来才能安全飞。
-
-> 🗣 SLAM estimates the robot's pose and builds a map at the same time, because each depends on the other. In visual SLAM the front end tracks features between frames and estimates relative motion with the essential matrix or PnP, using the camera model x equals K times R-t times X, where K holds the five intrinsics and R and t the six extrinsics. The back end refines poses and points with bundle adjustment, and loop closure recognizes revisited places to remove drift. A monocular camera can't recover absolute scale, so drones usually fuse an IMU, which is visual-inertial odometry like VINS-Mono. Learned features such as SuperPoint and LightGlue now make matching more robust, while the optimization itself is still mostly geometric.
 
 ## F25. 目标检测和 YOLO · Object detection and YOLO
 
