@@ -1769,6 +1769,13 @@ FID 是什么:用一个预训练网络分别提取真图和生成图的特征,�
 
 > 提纲:先 Canny 拿边缘 → 每个边缘点对所有可能的线投票 → ρ = x cosθ + y sinθ → 票数峰值就是直线 → 概率 Hough 出线段 → LSD 不用调参
 
+**问:"概率 Hough 出线段 → LSD 不用调参"是什么意思?(11-05 她问的)**
+- **普通 Hough**:只输出无限长的直线 (ρ, θ),不知道线从哪开始、到哪结束。
+- **概率 Hough**(OpenCV 的 HoughLinesP):只随机抽一部分边缘点投票,更快;输出**线段**的两个端点 (x1, y1, x2, y2)。但要调三个参数:票数阈值、最短线段长度(比如 50 像素)、允许的最大断口(比如 10 像素以内的断口连成一条)。换一张图,这三个数常常要重调。
+- **LSD**(Line Segment Detector,2010):**不用 Canny,也不用投票**。直接看每个像素的梯度方向,把方向相近(22.5° 以内)的相邻像素长成一块,用矩形去拟合,再做统计检验:在一张纯噪声图里碰巧出现这么整齐一块的期望次数(NFA)小于 1,才算一条真线段。
+- **"不用调参"的意思**:LSD 的门槛是统计算出来的,不是人拍脑袋定的阈值,默认参数在大部分图上直接能用,不用每张图重调。而且是线性时间,很快。OpenCV 里是 createLineSegmentDetector。
+<span class="en">Probabilistic Hough returns segments with endpoints but needs a vote threshold, a minimum length and a maximum gap tuned per image. LSD skips Canny and voting: it groups pixels with similar gradient direction into rectangles and accepts one only if it would appear less than once by chance in pure noise, so its threshold is statistical and the defaults work across images.</span>
+
 比方:每个边缘点都在喊「我可能在这些线上」,大家一起往投票箱里投,票最多的那条线就是真的。
 <span class="en">Analogy: every edge pixel shouts "I could be on these lines," and the line with the most votes wins.</span>
 为什么用 ρ、θ 而不用 y = kx + b:竖线的斜率是无穷大,没法投票;ρ 是原点到直线的距离,θ 是垂线的角度,两个都有界。
