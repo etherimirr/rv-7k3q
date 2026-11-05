@@ -457,6 +457,24 @@ Q、K、V 都是同一个输入向量分别乘三个**可学的矩阵** W_Q、W_
 
 > 🗣 Keys and values come from the same input as the query, just through different learned matrices: k equals x times W_K and v equals x times W_V. All tokens in a layer share the same three matrices, so they differ only because their inputs differ. The matrices start random and are learned by backpropagation. In cross-attention the queries come from one sequence and the keys and values from another, for example text queries attending to image features.
 
+**问:「同一组 W_Q、W_K、W_V」是什么意思?**(11-04 她问的)
+- 一层里只有**三个矩阵**:一个 W_Q、一个 W_K、一个 W_V。不是每个词各有一套,句子里所有词都拿去乘这同样的三个。
+  <span class="en">A layer has exactly three matrices, and every token is multiplied by the same three.</span>
+- **比方**:工厂里有三台机器(出问题机、贴标签机、装内容机)。每个词都依次过这三台机器。机器是同一台,出来的东西不同,是因为放进去的原料(x)不同。就像同一个公式 y = 2x,放 1 出 2,放 3 出 6。
+- **算给你看**:cat 的 x = [2, 0],用和 sat 完全一样的矩阵:
+  - q = [2, 0] · [[1, 0], [0, 0]] = [2, 0]
+  - k = [2, 0] · [[1, 0], [0, 2]] = [2, 0](正好是例子里 cat 的 k)
+  - sat 的 x = [1, 0.5] 乘同样的矩阵得到 q = [1, 0]、k = [1, 1]。矩阵没变,词变了,结果就变了。
+- **「同一层」**:Transformer 叠了很多层(比如 32 层),每层有自己的一组三个矩阵,层与层之间不共用;多头时每个头也各有一组。共用只发生在"同一层、同一个头里的所有词"之间。
+  <span class="en">Different layers and different heads have their own matrices; sharing is across tokens within one head of one layer.</span>
+- **为什么要共用**:
+  - 参数不随句子变长而增加:句子 3 个词还是 3000 个词,都是这三个矩阵。
+  - 所以模型能处理任意长度的输入,也能处理训练时没见过的词组合。
+  - 学到的规则是通用的:"动词该去找主语"这种规律,对所有位置的词都成立。
+  <span class="en">Sharing keeps the parameter count independent of sequence length and makes the learned rules apply to every position.</span>
+
+> 🗣 "The same set" means each attention head in a layer has just one W_Q, one W_K and one W_V, and every token is multiplied by those same three matrices. Tokens end up with different queries, keys and values only because their input vectors differ, like applying one formula to different inputs. Each layer and each head has its own set. Sharing means the number of parameters doesn't grow with sentence length, so the model handles any length and learns rules that apply at every position.
+
 **为什么除以 √d_k**:假设 q 和 k 的每一维均值 0、方差 1,点积是 d_k 项相加,方差变成 d_k。维度 64 时点积的标准差约 8,softmax 会被推到几乎 one-hot,梯度接近 0。除以 √d_k 把方差拉回 1。
 <span class="en">With unit-variance entries, a dot product of d_k terms has variance d_k; dividing by root d_k brings it back to one so softmax doesn't saturate.</span>
 
