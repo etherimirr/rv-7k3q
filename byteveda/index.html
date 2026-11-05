@@ -736,12 +736,99 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
 
 > 🗣 SLAM estimates the robot's pose and builds a map at the same time, because each depends on the other. In visual SLAM the front end tracks features between frames and estimates relative motion with the essential matrix or PnP, using the camera model x equals K times R-t times X, where K holds the five intrinsics and R and t the six extrinsics. The back end refines poses and points with bundle adjustment, and loop closure recognizes revisited places to remove drift. A monocular camera can't recover absolute scale, so drones usually fuse an IMU, which is visual-inertial odometry like VINS-Mono. Learned features such as SuperPoint and LightGlue now make matching more robust, while the optimization itself is still mostly geometric.
 
-## F25. 不会的时候怎么接 · When you don't know
+## F25. 目标检测和 YOLO · Object detection and YOLO
+
+**一句话**:目标检测 = 在图里找出"有什么、在哪"。每个结果是一个框(x, y, 宽, 高)加一个类别和一个置信度。
+<span class="en">Object detection finds what is in an image and where: each output is a box, a class label and a confidence score.</span>
+
+**比方**:分类是"这张照片里有猫吗",检测是"把每只猫都圈出来,并标上是猫",分割是"把猫的每个像素都涂上颜色"。
+
+**两大流派**:
+- **两阶段**(Faster R-CNN):先由候选区域网络(RPN)提出几百个"可能有东西"的框,再逐个精细分类和修框。准,但慢。
+- **单阶段**(YOLO、SSD、RetinaNet):一次前向直接出所有框和类别。快,适合实时。YOLO = You Only Look Once,"只看一眼"。
+- **Transformer 检测**(DETR):用一组可学的查询向量直接"认领"物体,训练时用匈牙利匹配一一对应,不需要 NMS。慢一些、训练久。
+
+**YOLO 的核心想法(以最早的 v1 算一遍)**:
+- 把图切成 7 × 7 的格子。物体中心落在哪个格子,就由那个格子负责预测它。
+- 每个格子预测 2 个框,每个框 5 个数(x、y、w、h、置信度),再加 20 个类别概率:2 × 5 + 20 = 30。
+- 所以输出就是一个 **7 × 7 × 30** 的张量,一次前向全部出来。
+
+**现代 YOLO(v8,你 RCRI 用的)**:
+- **三段结构**:backbone 提特征(CSP 风格的 CNN)→ neck 融合不同尺度(FPN/PAN,把深层的语义和浅层的细节拼起来)→ head 输出框和类别。
+- **三个尺度一起预测**:输入 640×640,步长 8、16、32 得到 80×80、40×40、20×20 三张特征图,共 6400 + 1600 + 400 = **8400 个候选预测**。小步长的那张专管小物体。
+- **anchor-free**:早期 YOLO 先预设几种框的形状(anchor)再去微调;v8 直接预测"中心点到四条边的距离",少调一堆超参。
+- **损失**:分类用 BCE,框回归用 CIoU 加 DFL(把边界位置当成一个分布来学)。
+
+**IoU 算一遍**:框 A 从 (0,0) 到 (10,10),框 B 从 (5,5) 到 (15,15)。交集是 5 × 5 = 25,并集 = 100 + 100 − 25 = 175,IoU = 25 ÷ 175 ≈ **0.143**。
+
+**NMS(非极大值抑制)**:同一个物体常被画出好几个重叠框,要去重。
+- 按置信度从高到低排,留下最高的。
+- 和它 IoU 超过阈值(常用 0.5 左右)的框删掉。
+- 对剩下的重复,直到没框。
+- 例子:A 0.9、B 0.8、C 0.7。IoU(A, B) = 0.7,删 B;IoU(A, C) = 0.1,C 是另一个物体,留下。结果 A、C。
+
+**相关任务一句话版**:
+- **语义分割**:每个像素一个类别,不分你我(所有人都是"人")。
+- **实例分割**:每个物体单独一张掩码(Mask R-CNN、YOLOv8-seg)。
+- **SAM**:给一个点或框当提示,就能分割出任意物体,不限类别。
+- **多目标跟踪**:每帧先检测,再把框和上一帧的轨迹配对。SORT/ByteTrack 用卡尔曼滤波预测下一帧位置,再按 IoU 做匈牙利匹配。
+
+**无人机上的难点**:物体很小(高空俯拍)、视角是俯视、机身晃动造成模糊、算力和功耗都紧。常见对策:提高输入分辨率或把大图切块检测(SAHI)、加一个步长 4 的高分辨率检测头、用 TensorRT 和 FP16/INT8 加速(F20)。
+
+**常被追问**:
+- 单阶段和两阶段怎么选?实时场景(无人机、视频)选单阶段;离线、对小物体精度要求极高时两阶段或 DETR 类更稳。
+- 小物体为什么难?下采样 32 倍后,一个 20 像素的物体在最深的特征图上还不到一格,信息几乎没了,所以要靠浅层高分辨率特征和 FPN。
+- mAP50 和 mAP50-95 的区别见 F19。
+
+**和你的经历**:RCRI 是真做过的。你和队友从 COCO 预训练的 YOLOv8 出发,用攀岩点数据微调,训练在 GCP 上跑,导出 ONNX 再转 TensorRT FP16 部署到 Jetson Nano,实时跑到 12 FPS。E6792 里你还对比过 YOLOv4-Tiny 转 TensorRT 后约 12 倍的吞吐提升。
+
+> 🗣 Object detection outputs boxes with class labels and confidences. Two-stage detectors like Faster R-CNN propose regions and then classify them, which is accurate but slow; one-stage detectors like YOLO predict everything in a single forward pass, which is why they're used for real time. YOLOv8 has a CNN backbone, an FPN-PAN neck that fuses multiple scales, and an anchor-free head that predicts at strides 8, 16 and 32, so a 640 input gives 8400 candidate predictions, which non-maximum suppression then deduplicates by IoU. In my climbing-route project we fine-tuned a COCO-pretrained YOLOv8 on GCP and deployed it on a Jetson Nano with TensorRT FP16 at about 12 frames per second. For drones the main challenges are small objects and tight compute, which I'd handle with higher-resolution heads or tiling plus low-precision TensorRT engines.
+
+## F26. World model:在脑子里预演世界 · World models
+
+**一句话**:world model 学的是"现在是这样,如果我做这个动作,世界下一刻会变成什么样",也就是学一个函数:下一状态 = f(当前状态, 动作)。
+<span class="en">A world model learns how the world will change: given the current state and an action, it predicts the next state.</span>
+
+**比方**:下棋高手在脑子里推演"我走这步,他会怎么走";开车时你预判"现在打方向盘,车会往左偏"。world model 就是给机器装一个这种"脑内模拟器"。
+
+**为什么要它**:
+- **在想象里试错**:真机器人、真无人机摔一次很贵,在模型里摔一万次不花钱。
+- **做规划**:每一步先在模型里试很多条动作序列,挑结果最好的那条再执行。
+- **生成训练数据**:造出罕见、危险的场景(比如突然冲出来的行人)。
+- **评估策略**:把一个控制策略放进 world model 里跑,看它能不能完成任务,不用每次都上真机。
+
+**三类主流做法**:
+- **潜空间模型**(Dreamer 系列):先把画面压成一个小向量(F17 那种编码器),只在这个小向量上预测下一步和奖励,再在"想象"里训练策略。快、省算力。
+- **视频生成式**(Sora、Genie、NVIDIA Cosmos、Ctrl-World):直接生成未来的画面,并且受动作控制。比如 Genie 里你按方向键,它生成下一帧。好看、直观,但很慢。
+- **只在表征空间预测**(LeCun 的 JEPA、V-JEPA):不去生成像素,只预测"下一刻的特征"。理由是像素细节(树叶怎么晃)对决策没用,预测它是浪费。
+
+**小算例:为什么长时预演会跑偏(误差累积)**:
+- 假设每一步预测有 99% 是对的。
+- 连续推 50 步:0.99⁵⁰ ≈ **0.61**,只剩约六成可信。
+- 所以实际用法通常是"推演短一点、走一步就用真实观测纠正一次"。
+
+**规划怎么用它(MPC,模型预测控制)**:
+- 每一步随机想 100 条动作序列,每条往后推 10 步。
+- 用 world model 算出每条的结果,打分,挑最好的一条。
+- 只执行这条的第一步,拿到新的真实观测后重新来一遍。
+
+**常被追问**:
+- world model 和普通视频生成有什么区别?关键在"受动作控制"和"用来做决策"。视频生成只要好看,world model 要求"我换个动作,未来也跟着对应地变"。
+- 和物理仿真器比?仿真器是人写的物理公式,准但难覆盖真实世界的复杂度;world model 从数据学,能覆盖复杂外观,但可能违反物理(物体凭空消失、穿模)。
+- 最大难点?误差累积、物理一致性、生成太慢、很难评估"预测得对不对"。
+
+**和无人机的连接**:在学出来的模拟器里练规划和避障策略;生成罕见天气、光照、障碍物数据;预测周围移动物体(鸟、其他飞机)下一刻在哪。
+
+**和你的经历**:你复现过 **Ctrl-World**,一个给机器人操作用的扩散 world model,基于 Stable Video Diffusion,以机器人状态、任务和动作为条件生成未来视频。你跑通了它的三种推理模式:回放数据集轨迹、用键盘控制生成、把策略接进来做 policy-in-the-loop rollout;并在生成的视频上评估连贯性、控制响应和任务完成情况。这是复现,不是你提出的方法,说清楚就好。
+
+> 🗣 A world model predicts how the environment evolves given an action, so an agent can practice, plan or be evaluated in imagination instead of in the real world. Latent models like Dreamer predict compact state vectors and train the policy inside them; video models like Genie, Cosmos or Ctrl-World generate future frames conditioned on actions; and JEPA-style models predict only future representations. The core difficulty is compounding error: even ninety-nine percent per-step accuracy decays to about sixty percent after fifty steps, so they're usually used for short-horizon planning with frequent real observations, as in model predictive control. I reproduced Ctrl-World, a diffusion world model for robot manipulation, and ran its policy-in-the-loop rollouts to evaluate how well generated futures followed the actions.
+
+## F27. 不会的时候怎么接 · When you don't know
 
 - 先说你确定的部分:"I know the core idea is…, I'm less sure about the exact details of…"
 - 再说你会怎么查或怎么验证:"I'd check the original paper / I'd test it by…"
 - 别编数字。他问到具体论文数字你不确定,就说量级:"on the order of hundreds of millions of pairs"。
-- 能接回项目就接:注意力 → 你在 TikTok 用的 LLM agent;VAE/扩散、VLA、SLAM → 理解但没做过;量化 → RCRI 和 E6792 真做过。
+- 能接回项目就接:注意力 → 你在 TikTok 用的 LLM agent;VAE/扩散、VLA、SLAM → 理解但没做过;YOLO → RCRI 真做过;world model → Ctrl-World 复现过;量化 → RCRI 和 E6792 真做过。
 
 > 🗣 I'm confident about the core idea, which is… I'm less sure about the exact number in the paper, so I'd rather not guess, but it's on the order of… If I needed to confirm it, I'd check the original paper or run a quick experiment.
 
