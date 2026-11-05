@@ -682,6 +682,58 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
 
 > 🗣 ViT splits the image into patches and runs a standard Transformer, so it has global context from the first layer but weak inductive bias and needs a lot of pretraining data. CNNs have locality and translation equivariance built in, scale linearly with resolution and are easier to deploy on edge devices, which is why I used YOLOv8 on the Jetson. Hybrids like Swin, and modernized CNNs like ConvNeXt, sit in between.
 
+### 问:ViT 比 CNN 好在哪?(11-05 她问的) · Advantages of ViT over CNN
+
+**一句话**:ViT 的好处都来自同一件事:**它对图像几乎没有预设**。数据少时这是缺点,数据多时它反而学得更高;而且图片变成和文字一样的 token,特别好和语言模型拼在一起。
+<span class="en">ViT's advantages all come from making few assumptions about images: it scales better with data, sees globally from the first layer, and turns images into tokens that plug straight into language models.</span>
+
+**1. 第一层就能看全图**
+- 224×224 的图切成 16×16 的块,得到 14 × 14 = **196 个 token**。第一层 attention 里,每个 token 就能直接看另外 195 个。
+- CNN 的 3×3 卷积每加一层,视野只往外扩 1 个像素(每边):L 层后视野是 2L + 1。不降采样的话,要约 112 层才能看满 224 像素。实际靠降采样会快很多,但研究发现"有效视野"比理论值小得多,大部分注意力还是集中在中间一小块。
+- 有什么用:需要远距离关系的任务。比如俯拍时判断图两端的两段路是不是同一条,或者"人手里拿的东西"和"人"隔得很远。
+<span class="en">Every patch attends to every other patch in the first layer, while a CNN's receptive field grows slowly and its effective receptive field is much smaller than the theoretical one.</span>
+
+**2. 数据越多越强(扩展性好)**
+- CNN 的"邻居相关、平移等变"这些预设(F8),在数据少时是帮忙,数据多时变成天花板:模型被限制在这个框框里。
+- ViT 原论文:只在 ImageNet-1k(约 130 万张)上训,不如 ResNet;换到 JFT-300M(3 亿张)预训练,就反超了。
+- 后来的大视觉模型(CLIP、DINOv2、SigLIP)几乎都用 ViT,因为模型和数据一起放大时,ViT 的效果涨得更稳。
+<span class="en">With small data CNN priors help, but with hundreds of millions of images ViT keeps improving while CNNs saturate earlier.</span>
+
+**3. 权重随内容变(动态)**
+- 卷积核训好之后是固定的:每张图、每个位置都用同一组 3×3 权重。
+- attention 的权重是**看了输入之后才算出来的**(Q·K,F9):同一个 token,在不同的图里会去看不同的地方。表达能力更灵活。
+
+**4. 和语言模型天然兼容(多模态)**
+- 图片变成一串 token,和文字 token 格式一样,接一个投影层就能喂进 LLM。LLaVA、CLIP、VLA 的视觉端几乎都是 ViT(F21、F22)。
+- Peter 的研究方向就是这些多模态模型里的视觉编码器,这一点在这场面试里最值得讲。
+<span class="en">Image tokens have the same form as text tokens, so a ViT plugs straight into an LLM; almost every VLM uses a ViT vision encoder.</span>
+
+**5. 自监督预训练特别顺手**
+- MAE:随机遮住 **75%** 的 patch,让模型补全。patch 本来就是一个个 token,直接扔掉就行,还顺便省了计算(编码器只处理剩下 25%)。CNN 做这件事很别扭(ConvNeXt V2 得专门改成稀疏卷积)。
+- DINO:不用任何标签训出来的 ViT,注意力图里自己就"分割"出了主体物体。
+- 这意味着可以用海量无标签图片预训练,再迁移到检测、分割、深度估计。
+
+**6. 更看形状、对遮挡更稳**
+- 研究发现 ImageNet 上训的 CNN 偏重纹理(把一只带大象皮纹理的猫认成大象),ViT 更偏重形状,更接近人的判断。
+- 遮掉一部分 patch 时,ViT 的性能掉得比 CNN 慢,因为它可以从全局别处找线索。
+
+**7. 输入灵活**
+- token 数可变:可以丢掉不重要的 token 来加速(token pruning),也可以不缩放图片、按原始长宽比切块(NaViT、SigLIP 2)。
+- 很容易把别的东西也变成 token 一起放进去:深度、多视角、时间帧。
+
+**但要说清代价**(面试官一定会追问):
+- **数据饥渴**:数据少时不如 CNN。
+- **计算随 token 数平方涨**:196 个 token 的 attention 表约 3.8 万格;1024×1024 的图有 4096 个 token,约 1,680 万格,是原来的约 **437 倍**。高分辨率很贵。
+- **密集预测要补多尺度**:原版 ViT 只有一种分辨率的特征,做检测分割要加 FPN 类结构(ViTDet)或改成分层的(Swin)。
+- **边缘部署更难**:Jetson 这类设备上,CNN 更省、更成熟。
+
+**怎么回答"选哪个"**:看数据量和部署场景。
+- 有大规模预训练模型可用、要多模态理解、跑在服务器上 → ViT。
+- 数据少、要在机上实时跑 → CNN,或者轻量的混合结构。
+- 无人机上的答法:**机上实时检测和避障用 CNN**(你的 RCRI 就是 YOLOv8 在 Jetson 上);**地面站或云端做场景理解、语言交互用 ViT 系的 VLM**。
+
+> 🗣 ViT's advantages mostly come from having very few built-in assumptions. Every patch can attend to every other patch from the first layer, so it captures long-range relationships that a CNN only reaches after many layers, and its attention weights depend on the input rather than being fixed kernels. With small data that weak prior hurts, but with large-scale pretraining ViT keeps improving where CNNs saturate, which is why CLIP, DINOv2 and SigLIP are all ViTs. Patches are tokens, so ViTs plug directly into language models, which is why almost every VLM uses one, and they suit masked pretraining like MAE. They also tend to be more shape-biased and robust to occlusion. The costs are data hunger, quadratic cost in the number of tokens, and harder edge deployment. So on a drone I'd run a CNN like YOLO onboard for real-time detection, which is what I did on the Jetson, and use ViT-based models for heavier scene understanding.
+
 ## F14. 监督、自监督、对比学习 · Supervised, self-supervised, contrastive
 
 **一句话**:监督 = 人给标签;自监督 = 从数据本身造题目(遮住一块让它补、两张增强图让它认出是同一张);对比学习是自监督的一种:**把配对的拉近,不配对的推远**。
