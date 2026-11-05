@@ -705,6 +705,42 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
 
 > 🗣 CLIP has an image encoder and a text encoder trained contrastively on roughly 400 million image-caption pairs, so matching images and captions have high cosine similarity. For zero-shot classification you turn each class name into a prompt like "a photo of a cat", embed the prompts once, and pick the one closest to the image embedding. That's what I deployed in my GPU course project, with the text embeddings cached.
 
+### 问:SigLIP 是什么?(11-05 她问的) · What SigLIP is
+
+**一句话**:SigLIP 就是**把 CLIP 的损失函数换掉**的 CLIP。结构一样,还是一个图像编码器加一个文字编码器;区别只在训练时怎么打分:CLIP 用 softmax,SigLIP 用 sigmoid。Google 2023 年提出,全名 Sigmoid Loss for Language-Image Pre-training。
+<span class="en">SigLIP is CLIP with a different loss: same two encoders, but each image-text pair is scored with an independent sigmoid instead of a softmax over the batch.</span>
+
+**先回忆 CLIP 怎么训**:一个 batch 里有 N 张图和 N 句话,算出 N×N 的相似度表,对角线是真配对。
+- CLIP 对每一行做 softmax(F4):"这张图在这 N 句话里,哪句是它的?"这是一道 **N 选 1 的选择题**,所以每一行要和整行比,大家抢同一份概率。
+- 还要按列再做一遍("这句话是哪张图的"),两个方向取平均。
+
+**SigLIP 改成什么**:表里每一格**单独**做一道**判断题**:"这张图和这句话是不是一对?"
+- 是一对 → 希望 sigmoid 输出接近 1;不是 → 接近 0。
+- 每格自己算自己的,不用和同一行的其他格比。
+
+**算一下**(batch = 4):表里 16 格,4 格是真配对,12 格是假配对。
+- CLIP:4 行各做一次 4 选 1 的 softmax,再 4 列各做一次。
+- SigLIP:16 格各做一次是/否的 sigmoid,加起来就是损失。
+<span class="en">With a batch of 4, CLIP solves four 4-way classification problems per direction; SigLIP solves sixteen independent yes-or-no problems.</span>
+
+**为什么要改**(面试官要听的点):
+1. **省显存、好并行**:softmax 要把整行加起来做归一化,多卡训练时每张卡都得拿到全 batch 的分数才能算;sigmoid 每格独立,可以分块一块一块算,不用凑出整张表。
+2. **小 batch 也好用**:CLIP 的效果很依赖超大 batch(它用了 32k),batch 小了每行的"干扰项"太少。论文里 SigLIP 在小 batch 下明显更好;batch 加到 32k 左右就基本饱和,再往上收益很小。
+3. **更符合实际**:网上的图文对是噪声很多的,一张图可能配好几句话都对。softmax 硬说"只有一个是对的",sigmoid 允许每格独立判断。
+
+**一个细节:偏置 b 初始化成 −10**。
+- 公式:每格分数 = t · (图向量 · 文字向量) + b,再过 sigmoid。t 是可学的温度,b 是可学的偏置。
+- 为什么是 −10:每行只有 1 个正例、N−1 个负例,负例占绝大多数。b = −10 时 sigmoid 一开始对所有格都输出约 0.00005,也就是先默认"都不是一对",这对绝大多数格已经是对的,开局不会被一大堆负例的梯度冲垮。
+<span class="en">The bias starts at −10 so the model initially predicts "not a pair" everywhere, which matches the heavy imbalance of negatives and keeps early training stable.</span>
+
+**现在用在哪**:很多 VLM 的视觉编码器就是 SigLIP,比如 PaliGemma、Idefics2、OpenVLA(拼 SigLIP + DINOv2,见 F23)。2025 年有 SigLIP 2,在 sigmoid 损失之外又加了生成描述、自蒸馏、遮挡预测这些训练目标,定位和稠密特征更好,也支持多语言。
+
+**和你的经历怎么接**:
+- E6792 里你**真做过** CLIP 零样本推理(文字向量缓存、Jetson 实时摄像头)。可以说:"推理时 SigLIP 和 CLIP 的用法几乎一样,也是图文向量算相似度,只是 SigLIP 的分数过 sigmoid 后可以直接当'是不是这一类'的独立概率看,不用在类别之间做 softmax。"
+- SigLIP 本身你**没训过,只懂原理**,别说用过。
+
+> 🗣 SigLIP is basically CLIP with a different training loss. CLIP builds an N-by-N similarity matrix for a batch and applies a softmax over each row and column, so each image has to pick its caption out of the whole batch. SigLIP instead treats every cell as an independent binary question, is this image-text pair a match or not, using a sigmoid with a learnable temperature and bias. Because there's no normalization across the batch, it's more memory-efficient, easy to compute in chunks across devices, and it works much better at small batch sizes. The bias is initialized around minus ten because almost all pairs are negatives. Today SigLIP is a common vision encoder in VLMs like PaliGemma and OpenVLA. I've deployed CLIP for zero-shot classification, and at inference SigLIP is used the same way.
+
 ## F16. 预训练、微调、迁移学习和 LoRA · Pretraining, fine-tuning, LoRA
 
 **一句话**:先在海量通用数据上学通用本领(预训练),再在你自己的小数据上调一调(微调)。从别的任务借来本领就叫迁移学习。
