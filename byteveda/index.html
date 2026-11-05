@@ -211,10 +211,10 @@ toc.addEventListener('click',function(e){if(narrow()&&e.target.closest('a')){set
 | 什么时候 | 做什么 | 大约 |
 |---|---|---|
 | 周二晚(Alpaca 回来) | 篇二:看 Saining Xie 讲座 + Eyes Wide Shut 讲解两个视频 | 1.5 小时 |
-| 周三上午 | 篇四:押题 A 的 A1–A19,能白板讲 + 代数字 | 3 小时 |
-| 周三下午 | 篇四点云 8 题 + 篇五押题 B 的 12 题 | 2.5 小时 |
-| 周三晚 | 篇六:自我介绍念 3 遍,RCRI 和 CLIP 两个故事讲顺 | 1 小时 |
-| 周四上午 | 篇七一页纸 + 收藏过的题 | 1 小时 |
+| 周三上午 | 篇五:押题 A 的 A1–A19,能白板讲 + 代数字 | 3 小时 |
+| 周三下午 | 篇五点云 8 题 + 篇六押题 B 的 12 题 | 2.5 小时 |
+| 周三晚 | 篇七:自我介绍念 3 遍,RCRI 和 CLIP 两个故事讲顺 | 1 小时 |
+| 周四上午 | 篇八一页纸 + 收藏过的题 | 1 小时 |
 
 # 篇二 · Peter 的工作和视频
 > 他做什么、每篇论文一句话、哪些视频值得看(链接都核对过标题)
@@ -249,9 +249,395 @@ toc.addEventListener('click',function(e){if(narrow()&&e.target.closest('a')){set
 | 9 | CS231n 2025 L15 3D Vision(押题 A 的底子) | Stanford | ~1h20 | https://www.youtube.com/watch?v=7lxrKDKtykM |
 | 10 | NUS 3D CV L5 相机模型与标定(押题 A 的底子) | NUS CVRP Lab | ~1h | https://www.youtube.com/watch?v=sae97GVUXcg |
 
-时间不够:只看 1 和 2,再把篇四、篇五的题过一遍。
+时间不够:只看 1 和 2,再把篇五、篇六的题过一遍。
 
-# 篇三 · 知识点:他那几篇论文讲的东西
+# 篇三 · 基础概念从零讲
+> token、embedding、attention、Transformer、VAE、扩散、指标、量化:被问「X 是什么」先看这里
+
+> 被问「X 是什么」时的统一答法:**一句话定义 → 打个比方 → 公式或一个小算例 → 优缺点 → 和你的项目怎么接**。每节最后的 🗣 是能直接说出口的英文版。
+<span class="en">For any "what is X" question: one-line definition, an analogy, a formula or tiny worked example, pros and cons, then a link to your own project.</span>
+
+## F1. Token 是什么 · What a token is
+
+**一句话**:token 是模型一次"读进去"的最小单位。文字切成词或词的一部分,图像切成小方块(patch),每个 token 再变成一串数字(向量)喂给模型。
+<span class="en">A token is the smallest unit a model reads. Text is split into words or word pieces, images into patches, and each token becomes a vector.</span>
+
+**比方**:像拼乐高。模型不直接看整句话或整张图,而是看一块一块的积木;词表就是"积木种类表"。
+
+**文字怎么切**:常用 BPE(字节对编码):从单个字符开始,把训练语料里最常一起出现的两块反复合并。常见词是一整个 token,生僻词被拆开,比如 unhappiness → un + happiness。
+- 经验值:英文 1 个 token 约 4 个字母、约 0.75 个单词。<span class="en">Rule of thumb: one English token is about four characters, or three quarters of a word.</span>
+- 词表大小:GPT-2 是 50,257;Llama 2 是 32,000;Llama 3 是 128,256。
+- 每个 token 有一个编号(id),模型用编号去 embedding 表里查出它的向量(见 F2)。
+
+**图像怎么切(ViT)**:224×224 的图切成 16×16 的小块,每边 224 / 16 = 14 块,共 14 × 14 = **196 个 patch token**,再加 1 个 [CLS] 分类 token,一共 197 个。每块 16×16×3 = 768 个像素值,拉平后过一个线性层变成向量。
+<span class="en">ViT cuts a 224 by 224 image into 16 by 16 patches: 14 times 14 is 196 patch tokens, plus one CLS token. Each patch is flattened and linearly projected.</span>
+- 多模态模型里图像 token 很多:LLaVA-1.5 用 CLIP ViT-L/14、336 分辨率,336 / 14 = 24,24 × 24 = **576 个图像 token**,比一句话的文字 token 多得多。所以"分辨率 vs token 数"是多模态的核心取舍。
+
+**常被追问**:
+- 为什么不直接按字母?序列太长,注意力代价随长度平方涨(见 F9)。为什么不按整词?词表会爆,还处理不了新词。BPE 是折中。
+- 上下文长度 4K/128K 说的就是 token 数,不是字数。
+
+> 🗣 A token is the basic unit a model processes. For text we use subword tokenization like BPE, so common words are one token and rare words are split into pieces; in English one token is roughly three quarters of a word. For images, a ViT cuts the picture into patches: a 224 by 224 image with 16 by 16 patches gives 196 tokens. Each token id is mapped to an embedding vector, and the context length of a model is counted in tokens.
+
+## F2. Embedding 和向量相似度 · Embeddings and similarity
+
+**一句话**:embedding 是把一个东西(词、图片块、整张图)变成一串数字,让**意思相近的东西数字也相近**。
+<span class="en">An embedding turns an item into a vector so that similar meanings end up close together.</span>
+
+**比方**:给每个词在地图上安个坐标。"猫"和"狗"挨得近,"猫"和"发动机"离得远。真实的地图不是 2 维,而是几百到几千维。
+
+**怎么来的**:文字 embedding 就是一张大表,形状 = 词表大小 × 维度(比如 32,000 × 4096),token id 是第几行就取第几行,这张表跟着训练一起学。
+
+**怎么比远近**:常用**余弦相似度** = 两个向量的点积 ÷ 各自长度的乘积,范围 −1 到 1。
+- 例:a = [1, 0],b = [1, 1]。点积 = 1;|a| = 1,|b| = √2 ≈ 1.414;余弦 = 1 / 1.414 ≈ **0.707**(夹角 45°)。
+- CLIP 就是让"图片向量"和"对应文字向量"的余弦相似度变高(见 F15)。
+
+> 🗣 An embedding maps a token or an image to a dense vector so that semantically similar things are close. For text it's a learned lookup table of size vocabulary by dimension. We usually compare embeddings with cosine similarity, which is the dot product divided by the norms, and that's exactly what CLIP optimizes between image and text embeddings.
+
+## F3. 神经元、全连接层和激活函数 · Neurons, linear layers, activations
+
+**一句话**:一个全连接层就是 y = Wx + b(矩阵乘再加偏置);激活函数是夹在层之间的非线性"弯折"。
+<span class="en">A linear layer computes y = Wx + b; an activation function adds the non-linearity between layers.</span>
+
+**为什么必须有激活**:没有激活,两层线性叠起来 W₂(W₁x) = (W₂W₁)x,还是一层线性,叠一百层也只能画直线。加了激活才能拟合弯曲的复杂关系。
+<span class="en">Without activations, stacked linear layers collapse into one linear map.</span>
+
+| 激活 | 公式 | 输出范围 | 用在哪 | 毛病 |
+|---|---|---|---|---|
+| Sigmoid | 1 / (1 + e⁻ˣ) | (0, 1) | 二分类输出、门控 | 两头饱和,梯度消失 |
+| Tanh | (eˣ − e⁻ˣ)/(eˣ + e⁻ˣ) | (−1, 1) | RNN | 同样饱和 |
+| ReLU | max(0, x) | [0, ∞) | CNN 默认 | 负半边梯度为 0,可能"死神经元" |
+| GELU | x · Φ(x)(Φ 是标准正态的累积分布) | 约 (−0.17, ∞) | Transformer(BERT、GPT、ViT) | 稍慢 |
+
+小算例:sigmoid(0) = 0.5;sigmoid(2) ≈ 0.881;ReLU(−3) = 0,ReLU(3) = 3。
+
+> 🗣 A linear layer is a matrix multiply plus a bias. Activations add non-linearity; without them any stack of linear layers is still one linear function. ReLU is the default in CNNs because it's cheap and doesn't saturate for positive inputs; Transformers usually use GELU, a smooth version. Sigmoid squashes to zero to one, which is useful for binary outputs but saturates and causes vanishing gradients in deep stacks.
+
+## F4. Softmax 和交叉熵 · Softmax and cross-entropy
+
+**一句话**:softmax 把一串任意分数(logits)变成加起来等于 1 的概率;交叉熵衡量"正确答案拿到的概率有多低",越低罚得越重。
+<span class="en">Softmax turns raw scores into probabilities that sum to one; cross-entropy penalizes a low probability on the correct class.</span>
+
+**softmax 算例**:logits = [2, 1, 0]。e² ≈ 7.389,e¹ ≈ 2.718,e⁰ = 1,总和 ≈ 11.107。概率 ≈ [**0.665, 0.245, 0.090**]。
+
+**交叉熵**:loss = −log(正确类的概率)。
+- 正确类拿到 0.8 → −ln 0.8 ≈ **0.223**(罚得轻)
+- 正确类只拿到 0.1 → −ln 0.1 ≈ **2.303**(罚得重)
+
+**常被追问**:
+- 数值稳定:先把所有 logits 减去最大值再算 e 的指数,结果不变但不会溢出。
+- PyTorch 的 CrossEntropyLoss 自带 log_softmax,输入要给原始 logits,别先手动 softmax(和你 RCRI 双 sigmoid 是同一类坑)。
+- 为什么分类不用 MSE:softmax 配交叉熵时,梯度正好是"预测概率 − 真实标签",干净且不会因饱和变小。
+
+> 🗣 Softmax exponentiates the logits and normalizes them so they sum to one. Cross-entropy is minus the log of the probability assigned to the correct class, so 0.8 costs about 0.22 while 0.1 costs about 2.3. Combined with softmax, its gradient is simply prediction minus label. In practice we subtract the max logit for numerical stability, and PyTorch's cross-entropy expects raw logits.
+
+## F5. 梯度下降和反向传播 · Gradient descent and backpropagation
+
+**一句话**:梯度告诉你"参数往哪个方向动,loss 涨得最快",梯度下降就是往反方向走一小步;反向传播是用链式法则从输出往回一层层算出每个参数的梯度。
+<span class="en">The gradient points where the loss rises fastest; gradient descent steps the other way. Backpropagation computes all gradients with the chain rule, from the output backwards.</span>
+
+**比方**:蒙着眼下山。用脚感受哪边往下(梯度),迈一步(学习率决定步子大小),重复。
+
+**算例**:模型 y = w·x,loss = (y − t)²。x = 2,t = 4,w 初始 1。
+1. 前向:y = 2,loss = (2 − 4)² = 4
+2. 反向:dloss/dw = 2(y − t) · x = 2 × (−2) × 2 = −8
+3. 更新(学习率 0.1):w ← 1 − 0.1 × (−8) = **1.8**
+4. 再前向:y = 3.6,loss = 0.16,降了
+
+**名词**:batch = 一次更新用多少样本;iteration = 更新一次;epoch = 把全部数据过一遍。1 万张图、batch 100 → 每个 epoch 100 次 iteration。
+- 学习率太大:loss 震荡甚至变 NaN;太小:降得极慢。常配 warmup + 余弦衰减。
+- 优化器:SGD 加动量(记住之前的方向);Adam = 动量 + 每个参数自己调步长,上手快;AdamW 把权重衰减单独拿出来,Transformer 常用。
+
+> 🗣 Training minimizes a loss by gradient descent: compute the gradient of the loss with respect to each weight and step in the opposite direction, scaled by the learning rate. Backpropagation is just the chain rule applied from the output layer back to the input, reusing intermediate results. For example with y equals w x and squared error, the gradient is two times the error times x. Adam adds momentum and per-parameter step sizes, and AdamW is the usual choice for Transformers.
+
+## F6. 过拟合、正则化和 Dropout · Overfitting and regularization
+
+**一句话**:过拟合 = 把训练题背下来了,考新题就错。表现是训练 loss 一直降,验证 loss 先降后升。
+<span class="en">Overfitting means memorizing the training set: training loss keeps falling while validation loss turns back up.</span>
+
+**怎么治**:
+- 更多数据、数据增强(翻转、裁剪、调颜色;RCRI 里你就做了增强)
+- 权重衰减(L2):loss 里加 λ·Σw²,让权重别太大
+- Dropout:训练时每次随机把一部分神经元(比如 p = 0.1 或 0.5)置 0,逼网络不依赖某几个;**推理时关掉**(PyTorch 里 model.eval())
+- 早停:验证 loss 不再降就停
+- 换小模型或加 BatchNorm
+
+**偏差和方差**:欠拟合 = 偏差大(模型太简单,训练集都学不好);过拟合 = 方差大(对训练数据太敏感)。
+
+> 🗣 Overfitting is when the model memorizes training data, so training loss keeps dropping but validation loss rises. Fixes are more data and augmentation, weight decay, dropout, early stopping, or a smaller model. Dropout randomly zeroes activations during training so the network can't rely on a few units, and it is turned off at inference.
+
+## F7. BatchNorm 和 LayerNorm · Normalization layers
+
+**一句话**:都是把数值"拉回均值 0、方差 1"再乘一个可学的缩放、加一个可学的平移,让训练更稳更快。区别是**沿哪个方向求平均**。
+<span class="en">Both normalize to zero mean and unit variance, then apply a learned scale and shift. They differ in which axis they average over.</span>
+
+| | BatchNorm | LayerNorm |
+|---|---|---|
+| 在哪个方向求均值 | 同一个通道,跨整个 batch(和空间位置) | 同一个样本,跨它所有特征 |
+| 依赖 batch 吗 | 依赖,batch 太小就不准;推理时用训练时记下的滑动平均 | 不依赖,训练和推理一样 |
+| 用在哪 | CNN | Transformer、RNN |
+
+**为什么 Transformer 用 LayerNorm**:句子长短不一、batch 常常很小,而且推理时一次可能只有一个样本,BN 的统计量不靠谱。
+
+> 🗣 BatchNorm normalizes each channel using statistics across the batch, which works well for CNNs but depends on batch size and uses running averages at inference. LayerNorm normalizes each sample across its own features, so it's independent of the batch and of sequence length, which is why Transformers use it.
+
+## F8. 卷积和 CNN · Convolution and CNNs
+
+**一句话**:卷积是拿一个小窗口(卷积核,比如 3×3)在图上滑,每个位置做"对应相乘再相加";同一个核在整张图上共用。
+<span class="en">A convolution slides a small kernel over the image, computing a weighted sum at each position, with the same weights shared everywhere.</span>
+
+**比方**:拿一个"竖边检测器"小印章在图上到处盖,哪里有竖边哪里就亮。
+
+**两个好处**:局部性(像素只和邻居强相关)+ 权值共享(猫在左上角还是右下角都是猫),所以参数少、对平移不敏感。
+**毛病**:感受野要靠堆层才变大,远处的关系看不到;这正是 ViT 用注意力来补的地方。
+
+**两个必会公式**:
+- 输出尺寸 = ⌊(W − K + 2P) / S⌋ + 1。例:224 输入、3×3 核、P = 1、S = 1 → 224;S = 2 → ⌊223 / 2⌋ + 1 = **112**
+- 参数量 = K × K × 输入通道 × 输出通道 + 输出通道(偏置)。例:3×3、64 → 128 通道:3·3·64·128 + 128 = **73,856**
+
+**池化**:2×2 最大池化取每个 2×2 小格的最大值,尺寸减半,没有参数。
+**残差连接(ResNet)**:y = x + F(x),梯度能沿着"+ x"这条直路传回去,所以网络能堆到上百层。
+
+> 🗣 A convolution slides a small learned kernel across the image and computes a weighted sum at each location, sharing the same weights everywhere. That gives locality and translation equivariance with very few parameters. Output size is W minus K plus 2P over S, plus one, and a 3 by 3 conv from 64 to 128 channels has about 74 thousand parameters. The weakness is a limited receptive field, which deep stacks, dilation or attention address. Residual connections let gradients flow through the identity path so very deep networks train.
+
+## F9. Attention 背后的原理 · How attention works
+
+**一句话**:attention 让每个 token 自己决定"该看谁、看多少",然后把被看的那些 token 的信息按比例混合进来。
+<span class="en">Attention lets each token decide which other tokens to look at and how much, then mixes in their information by those weights.</span>
+
+**比方:图书馆查资料**。
+- **Q(Query,查询)**:你手里的问题,"我想找讲猫的书"
+- **K(Key,键)**:每本书书脊上的标签
+- **V(Value,值)**:书里真正的内容
+- 拿问题和每个标签比相似度(Q·K),越像分数越高 → softmax 变成比例 → 按比例把各本书的内容(V)混在一起带走。
+
+Q、K、V 都是同一个输入向量分别乘三个**可学的矩阵** W_Q、W_K、W_V 得到的,所以"该问什么、怎么贴标签、存什么内容"都是学出来的。
+
+**公式**:Attention(Q, K, V) = softmax(Q·Kᵀ / √d_k) · V
+
+**手算一遍**(3 个 token:The、cat、sat,维度 d_k = 2,看 "sat" 这个 token 怎么更新):
+- sat 的 q = [1, 0]
+- 三个 key:The = [0, 1],cat = [2, 0],sat = [1, 1]
+- 点积 q·k:0,2,1
+- 除以 √2 ≈ 1.414:0,1.414,0.707
+- softmax:e⁰ = 1,e^1.414 ≈ 4.11,e^0.707 ≈ 2.03,总和 ≈ 7.14 → 权重 ≈ [**0.14, 0.58, 0.28**]
+- 三个 value:The = [1, 0],cat = [0, 1],sat = [0.5, 0.5]
+- 输出 = 0.14·[1, 0] + 0.58·[0, 1] + 0.28·[0.5, 0.5] ≈ **[0.28, 0.72]**
+- 读法:"sat" 主要去看了 "cat"(谁坐下了?猫),新向量里混进了猫的信息。
+
+**为什么除以 √d_k**:假设 q 和 k 的每一维均值 0、方差 1,点积是 d_k 项相加,方差变成 d_k。维度 64 时点积的标准差约 8,softmax 会被推到几乎 one-hot,梯度接近 0。除以 √d_k 把方差拉回 1。
+<span class="en">With unit-variance entries, a dot product of d_k terms has variance d_k; dividing by root d_k brings it back to one so softmax doesn't saturate.</span>
+
+**几个变体**:
+- **Self-attention**:Q、K、V 来自同一段序列(句子看自己)。
+- **Cross-attention**:Q 来自一边,K、V 来自另一边。例:文字去"查"图像特征,或翻译时译文去查原文。
+- **Multi-head(多头)**:把维度切成几份,各算各的注意力再拼回来。例:d_model = 512、8 个头,每头 64 维。不同的头可以关注不同关系(语法、指代、位置)。
+- **Causal mask(因果遮罩)**:GPT 生成时,在 softmax 前把"未来位置"的分数设成 −∞,保证第 i 个 token 只能看 1…i。
+
+**代价**:每个 token 都要和每个 token 算一次,序列长 n,注意力矩阵是 n × n,计算 O(n²·d)、显存 O(n²)。长度翻倍,代价约翻 4 倍。这就是为什么图像 token 太多会很贵(F1)。
+
+**和 CNN 比**:CNN 只看邻居,要堆很多层才看得到远处;attention 第一层就能看全局,但缺少"邻居更重要"这种先验,所以更吃数据。
+
+> 🗣 Attention computes, for each token, a weighted average of the other tokens' values. Each token is projected into a query, a key and a value with learned matrices. The query is compared with every key by dot product, scaled by root d_k so the softmax doesn't saturate, and the softmax weights are used to mix the values. In self-attention all three come from the same sequence; in cross-attention the queries come from one modality and the keys and values from another. Multi-head attention runs several of these in parallel on smaller subspaces. The cost is quadratic in sequence length, which is why the number of image tokens matters so much in multimodal models.
+
+## F10. 位置编码 · Positional encoding
+
+**一句话**:attention 本身不知道顺序("猫咬狗"和"狗咬猫"对它是一样的一堆 token),位置编码就是给每个 token 加上"我在第几个"的信息。
+<span class="en">Attention is order-blind, so positional encodings inject each token's position.</span>
+
+三种常见做法:
+- **正弦位置编码**(原版 Transformer):用不同频率的 sin/cos 生成一个向量,加到 embedding 上;不用学。
+- **可学的位置编码**(BERT、ViT):每个位置一个可学的向量。ViT 换分辨率时要对它插值。
+- **RoPE 旋转位置编码**(Llama 等):把 Q 和 K 按位置旋转一个角度,点积只和两者的**相对距离**有关,长文本外推更好。
+
+和 NeRF 里的"位置编码"同名但目的不同:NeRF 那个是把坐标变成高频 sin/cos,让网络学得出细节。
+
+> 🗣 Self-attention is permutation-invariant, so we add positional information. The original Transformer used fixed sinusoids, BERT and ViT learn a vector per position, and modern LLMs like Llama use RoPE, which rotates queries and keys so their dot product depends on relative distance.
+
+## F11. 一层 Transformer 长什么样 · One Transformer block
+
+**一句话**:一层 = 注意力(让 token 互相交流)+ 前馈网络 FFN(每个 token 自己再加工),两处都带残差连接和 LayerNorm。整个模型就是把这一层叠 N 次。
+<span class="en">One block is attention for tokens to exchange information plus a feed-forward network applied to each token, each wrapped with a residual connection and LayerNorm.</span>
+
+```
+x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► LayerNorm ──► FFN ──► (+) ──► 输出
+ └──────────────────────────────────┘          └───────────────────┘
+          残差                                           残差
+```
+
+- FFN:两层全连接,中间先放大约 4 倍再缩回,比如 512 → 2048 → 512,中间用 GELU。
+- 上图是 Pre-LN(先归一化再进子层),现在大多用这种,训练更稳;原版论文是 Post-LN。
+- 大部分参数在 FFN 里,不在注意力里。
+
+> 🗣 A Transformer block has two sub-layers: multi-head self-attention, where tokens exchange information, and a position-wise feed-forward network, usually expanding the width by four with a GELU. Each sub-layer has a residual connection and LayerNorm, and most modern models apply the norm before the sub-layer for stability. The model is just N of these blocks stacked.
+
+## F12. Encoder、Decoder 和 GPT 怎么生成 · Encoders, decoders and generation
+
+**一句话**:encoder 双向看全句,适合"理解";decoder 只能看左边,适合"一个字一个字往下写"。
+<span class="en">Encoders see the whole sequence and suit understanding; decoders only see the left context and suit generation.</span>
+
+| 类型 | 代表 | 怎么训练 | 擅长 |
+|---|---|---|---|
+| 只有 encoder | BERT、ViT | 遮住 15% 的词让它猜(掩码语言模型) | 分类、检索、特征 |
+| 只有 decoder | GPT、Llama | 预测下一个 token | 生成、对话 |
+| encoder + decoder | 原版 Transformer、T5 | 输入编码,输出逐字生成,中间用 cross-attention | 翻译、摘要 |
+
+**自回归生成**:输入"今天天气" → 输出下一个 token 的概率分布 → 选一个(比如"很")→ 把它接到输入后面 → 再预测下一个 → 直到出现结束符。
+- **温度(temperature)**:logits 先除以 T 再 softmax。T < 1 更保守,T > 1 更随机,T 接近 0 就是每次挑最大的(贪心)。
+- **top-k / top-p**:只在概率最高的 k 个、或累积概率到 p 的那几个里抽。
+- **KV cache**:生成第 100 个 token 时,前 99 个的 K 和 V 不会变,存起来就不用重算,每步只算新 token 的。代价是显存随长度线性增长,这也是推理服务的主要瓶颈之一。
+
+**LLM 训练三步**:预训练(海量文本预测下一个 token)→ 指令微调 SFT(人写的问答对)→ 对齐(RLHF 或 DPO,按人类偏好调)。
+
+> 🗣 Encoder models like BERT use bidirectional attention and are trained by masked prediction, so they're good for understanding. Decoder-only models like GPT use causal attention and are trained to predict the next token, so they generate autoregressively, feeding each sampled token back in. Temperature and top-p control randomness. During generation we keep a KV cache so earlier keys and values aren't recomputed, which trades memory for speed.
+
+## F13. ViT 和 CNN 怎么选 · ViT versus CNN
+
+**一句话**:ViT 把图像切成 patch 当 token,直接用 Transformer;CNN 用卷积从局部往外看。
+<span class="en">ViT treats image patches as tokens for a Transformer; a CNN builds up from local convolutions.</span>
+
+- **归纳偏置**:CNN 天生知道"邻居相关、平移不变",数据少也能学好;ViT 没有这些先验,要大量数据(原论文在 ImageNet-21k 或 JFT-300M 上预训练才超过 ResNet)。
+- **全局性**:ViT 第一层就能看全图;CNN 要堆层。
+- **代价**:ViT 随 token 数平方涨,高分辨率很贵;CNN 随像素数线性涨,在 Jetson 这类边缘设备上更好部署(你 RCRI 用 YOLOv8,就是 CNN)。
+- **折中**:Swin Transformer(窗口内做注意力)、ConvNeXt(把 CNN 现代化,性能追上 ViT,这是 Peter 导师 Saining Xie 的工作)。
+
+> 🗣 ViT splits the image into patches and runs a standard Transformer, so it has global context from the first layer but weak inductive bias and needs a lot of pretraining data. CNNs have locality and translation equivariance built in, scale linearly with resolution and are easier to deploy on edge devices, which is why I used YOLOv8 on the Jetson. Hybrids like Swin, and modernized CNNs like ConvNeXt, sit in between.
+
+## F14. 监督、自监督、对比学习 · Supervised, self-supervised, contrastive
+
+**一句话**:监督 = 人给标签;自监督 = 从数据本身造题目(遮住一块让它补、两张增强图让它认出是同一张);对比学习是自监督的一种:**把配对的拉近,不配对的推远**。
+<span class="en">Supervised learning uses human labels; self-supervised learning makes its own task from the data; contrastive learning pulls matching pairs together and pushes others apart.</span>
+
+- **MAE**:遮掉图像 75% 的 patch,让模型补全像素。
+- **DINO**:同一张图做两种增强,让学生网络的输出去对齐老师网络(老师是学生的滑动平均),不需要负样本。
+- **对比学习的损失(InfoNCE)**:一个 batch 里有 N 对,算 N × N 的相似度矩阵,对角线是正确配对,对每一行做"N 选 1"的交叉熵。
+- 为什么重要:标签贵,网上的无标签图和图文对几乎无限。
+
+> 🗣 Self-supervised learning creates the training signal from the data itself, for example MAE masks 75 percent of patches and reconstructs them, and DINO matches a student to a momentum teacher across augmentations. Contrastive learning is a family where matched pairs are pulled together and everything else in the batch is pushed apart, typically with the InfoNCE loss, which is cross-entropy over a similarity matrix.
+
+## F15. CLIP 和零样本 · CLIP and zero-shot
+
+**一句话**:CLIP 有一个图像编码器和一个文字编码器,用约 4 亿对网上图文做对比学习,让配对的图和文字向量靠近。训练完,不用再训练就能分类:把类别写成句子,看图和哪句话最像。
+<span class="en">CLIP trains an image encoder and a text encoder contrastively on about 400 million image-text pairs; zero-shot classification picks the caption most similar to the image.</span>
+
+**零样本分类怎么做**:类别 = 猫、狗、鸟 → 写成 "a photo of a cat" 等 3 句 → 文字编码器出 3 个向量 → 图片出 1 个向量 → 算 3 个余弦相似度 → 最高的就是答案。你 E6792 里做的就是这个,文字向量提前算好缓存起来。
+- zero-shot = 没见过这个任务的标注样本;few-shot = 只给几个例子。
+- 弱点:细节、数数、方向、空间关系不行,因为图文对的文字很少描述这些(Peter 的 Eyes Wide Shut 就是讲这个,见篇四)。
+
+> 🗣 CLIP has an image encoder and a text encoder trained contrastively on roughly 400 million image-caption pairs, so matching images and captions have high cosine similarity. For zero-shot classification you turn each class name into a prompt like "a photo of a cat", embed the prompts once, and pick the one closest to the image embedding. That's what I deployed in my GPU course project, with the text embeddings cached.
+
+## F16. 预训练、微调、迁移学习和 LoRA · Pretraining, fine-tuning, LoRA
+
+**一句话**:先在海量通用数据上学通用本领(预训练),再在你自己的小数据上调一调(微调)。从别的任务借来本领就叫迁移学习。
+<span class="en">Pretrain on huge general data, then fine-tune on your small task data; borrowing knowledge across tasks is transfer learning.</span>
+
+- 你 RCRI 就是迁移学习:从 COCO 预训练的 YOLOv8 开始,在攀岩点数据上微调。
+- **全量微调**:所有参数都改,效果好但贵。
+- **LoRA**:原权重 W 冻住不动,旁边加两个小矩阵 B·A(秩 r 很小),只训练它们。例:4096 × 4096 的矩阵有约 1,680 万参数;r = 8 时 A 是 8 × 4096、B 是 4096 × 8,共 65,536 个参数,约 **0.39%**。推理时可以把 B·A 合并回 W,不增加延迟。
+- 冻住 backbone 只训分类头叫 linear probe(线性探测),常用来评估特征好不好。
+
+> 🗣 Transfer learning starts from a model pretrained on large data and fine-tunes it on the target task; in my climbing project I fine-tuned a COCO-pretrained YOLOv8. LoRA freezes the original weights and learns a low-rank update B times A; for a 4096 by 4096 layer with rank 8 that's about 65 thousand trainable parameters instead of 16.8 million, and it can be merged back so inference cost doesn't change.
+
+## F17. Autoencoder 和 VAE · Autoencoders and VAEs
+
+**一句话**:autoencoder 把图压成一小串数字(潜变量 z)再还原回来;VAE 在此基础上要求这串数字**服从一个规整的分布**(标准正态),这样随便抽一个 z 也能解码出像样的图,所以 VAE 能**生成**。
+<span class="en">An autoencoder compresses an input to a small latent code and reconstructs it. A VAE also forces the latent space to follow a standard normal distribution, so random samples decode to plausible images, which makes it generative.</span>
+
+**比方**:普通 autoencoder 像把每张照片存进仓库的一个**精确货架号**,货架之间是空的,随便报一个号码,取出来是垃圾。VAE 要求每张照片存成"大概在这一片区域",而且所有区域都挤在仓库中央、互相重叠,所以随便指一个位置,取出来都像一张正常照片,相邻位置的照片也很像。
+
+**结构**:
+```
+图 x ──► 编码器 ──► μ(均值), σ(标准差) ──► 抽样 z = μ + σ·ε ──► 解码器 ──► 还原图 x̂
+                                              ε ~ N(0, 1)
+```
+
+**损失 = 重建损失 + KL 散度**:
+- 重建:x̂ 和 x 越像越好(MSE 或交叉熵)
+- KL:让编码器给出的分布 N(μ, σ²) 靠近标准正态 N(0, 1)。每一维 KL = ½(μ² + σ² − log σ² − 1)。μ = 0、σ = 1 时正好是 0。
+- 两者合起来是 ELBO(证据下界)的负数,最小化它 = 最大化数据似然的下界。
+
+**重参数化技巧**:直接"从 N(μ, σ²) 里抽一个数"这一步没法求导。改写成 z = μ + σ·ε,随机性全在 ε 里,μ 和 σ 就能正常反向传播。
+<span class="en">Sampling isn't differentiable, so we write z = μ + σ·ε with ε from a standard normal; the randomness moves into ε and gradients flow through μ and σ.</span>
+
+**在今天的模型里的位置**:Stable Diffusion 先用 VAE 把 512 × 512 × 3 的图压成 64 × 64 × 4 的潜变量(每边缩 8 倍,数字个数从 786,432 降到 16,384,约 48 倍),扩散过程在这个小空间里做,省很多算力,最后再用 VAE 解码器还原。Peter 参与的 **RAE** 就是把这个 VAE 换成冻结的表示编码器(如 DINOv2)+ 训练的解码器(见篇四)。
+
+**毛病**:用 MSE 重建时 VAE 生成的图偏糊,因为它在"平均"所有可能;Stable Diffusion 的 VAE 额外加了感知损失和对抗损失来变清晰。
+
+| | Autoencoder | VAE | GAN | 扩散模型 |
+|---|---|---|---|---|
+| 能生成吗 | 不行(潜空间有洞) | 能 | 能 | 能 |
+| 清晰度 | — | 偏糊 | 清晰 | 清晰 |
+| 训练 | 稳 | 稳 | 不稳,会模式崩塌 | 稳,但生成要多步,慢 |
+
+> 🗣 An autoencoder compresses an input into a latent code and reconstructs it, but its latent space has gaps, so random codes decode to garbage. A VAE has the encoder output a mean and variance, samples z with the reparameterization trick, z equals mu plus sigma times epsilon, and adds a KL term that pulls each latent distribution toward a standard normal. The loss is reconstruction plus KL, the negative ELBO. That makes the latent space smooth enough to sample from. Today the main use is as the compressor in latent diffusion: Stable Diffusion's VAE maps 512 by 512 images to 64 by 64 by 4 latents, and RAE replaces that VAE with a frozen representation encoder.
+
+## F18. GAN 和扩散模型(一分钟版) · GANs and diffusion in one minute
+
+**GAN**:两个网络对打。生成器从噪声造假图,判别器分真假;生成器想骗过判别器。图很清晰,但训练不稳定,容易只会画几种图(模式崩塌)。
+<span class="en">A GAN trains a generator against a discriminator; sharp results but unstable training and mode collapse.</span>
+
+**扩散模型**:训练时把真图一步步加噪声(比如 1000 步)直到变成纯噪声,让网络学"这一步加了什么噪声"(预测噪声,MSE 损失);生成时从纯噪声出发,一步步把噪声减掉。稳定、多样、质量高,缺点是要多步所以慢(DDIM 等采样器能把步数降到几十步)。详细的从零讲解在篇四 4.1。
+<span class="en">Diffusion adds noise over many steps during training and learns to predict the noise; generation denoises step by step from pure noise. Stable and high quality, but slow because of the many steps.</span>
+
+> 🗣 GANs pit a generator against a discriminator and give sharp images but are unstable and prone to mode collapse. Diffusion models learn to reverse a gradual noising process by predicting the added noise, which trains stably and gives diverse high-quality samples, at the cost of many denoising steps at inference. Latent diffusion runs that process inside a VAE's latent space to save compute.
+
+## F19. 评价指标 · Evaluation metrics
+
+**分类和检测**:
+- Precision(查准)= TP / (TP + FP):你说是的里面,真是的比例
+- Recall(查全)= TP / (TP + FN):真是的里面,你找到的比例
+- F1 = 2PR / (P + R)
+- 算例:图里真有 100 个攀岩点,模型画了 90 个框,其中 80 个对 → P = 80/90 ≈ **0.889**,R = 80/100 = **0.80**,F1 ≈ **0.842**
+- IoU = 两框交集面积 / 并集面积;mAP50 = IoU ≥ 0.5 算对时的平均精度(各类 AP 再平均);mAP50-95 = IoU 阈值从 0.5 到 0.95 每隔 0.05 取一次再平均,更严。你 RCRI 是 mAP50 0.825。
+- 类别极不平衡时别只看 accuracy:99% 是负样本,全猜负也有 99%。
+
+**图像质量**:PSNR = 10 · log₁₀(MAX² / MSE),单位 dB,越高越好;SSIM 比较亮度、对比度、结构,0 到 1,越接近 1 越像。
+
+**语言模型**:困惑度 perplexity = e^(平均每个 token 的交叉熵),越低越好,可以理解为"每一步平均在几个词之间犹豫"。
+
+> 🗣 Precision is the fraction of predicted positives that are correct, recall is the fraction of true positives we found, and F1 is their harmonic mean. For detection we match boxes by IoU, and mAP at 0.5 averages precision over recall levels and classes; my climbing-hold detector reached 0.825. For image restoration we use PSNR and SSIM, and for language models perplexity, the exponential of the average token cross-entropy.
+
+## F20. 推理加速:量化、剪枝、蒸馏、TensorRT · Making inference fast
+
+**一句话**:训练完的模型太大太慢,上设备前要"瘦身"。
+<span class="en">Before deployment we shrink and speed up the trained model.</span>
+
+- **量化**:用更少的位数存数字。FP32 每个数 4 字节 → FP16 2 字节 → INT8 1 字节。显存和带宽减半或减到 1/4,硬件上算得更快;INT8 需要用一小批校准数据定缩放范围,精度可能掉一点。
+- **剪枝**:去掉不重要的权重或通道。
+- **蒸馏**:让小模型(学生)去学大模型(老师)的输出分布,比只学硬标签效果好。
+- **TensorRT**:NVIDIA 的推理引擎,做层融合(比如卷积 + BN + ReLU 合成一个 kernel)、选最快的 kernel、支持 FP16/INT8。你 E6792 实测 12 倍加速,RCRI 在 Jetson 上用 FP16。
+- **延迟 vs 吞吐**:延迟 = 一张图要多久(实时无人机看这个);吞吐 = 每秒能处理多少张(批量服务看这个)。加大 batch 提吞吐但通常拉高延迟。
+
+> 🗣 For deployment we quantize, prune or distill the model. Quantization stores weights and activations in FP16 or INT8 instead of FP32, cutting memory and bandwidth; INT8 needs calibration data. Distillation trains a small student on a large teacher's soft outputs. TensorRT fuses layers, auto-tunes kernels and runs in reduced precision; in my GPU course project it gave about a 12x speedup, and on the Jetson I ran YOLOv8 in FP16. For a drone, latency per frame matters more than throughput.
+
+## F21. 多模态大模型是怎么"看图"的(串起来) · How a multimodal LLM sees, end to end
+
+把上面的概念串成一条线,这是最可能被追问的"综合题":
+
+```
+图片 ──► 切 patch(F1)──► 视觉编码器 ViT/CLIP(F13, F15)──► 576 个视觉向量
+                                                                │
+                                                     投影层(2 层 MLP)
+                                                                ▼
+文字 ──► 分词 BPE(F1)──► embedding(F2)──► [视觉 token + 文字 token] ──► LLM decoder(F11, F12)──► 逐字生成回答
+```
+
+- 投影层的作用:把视觉向量"翻译"成 LLM 认识的维度和空间。
+- 常见训练两阶段(LLaVA):先只训投影层做图文对齐,再放开 LLM 做指令微调。
+- 弱点链条:视觉编码器丢了细节(CLIP 弱点)→ LLM 再聪明也答不对,这就是 Peter 的研究起点。
+
+> 🗣 A typical multimodal LLM like LLaVA encodes the image with a CLIP ViT into a few hundred patch embeddings, projects them with a small MLP into the language model's embedding space, concatenates them with the text tokens, and lets the decoder generate the answer autoregressively. Training usually first aligns the projector, then instruction-tunes the whole model. If the vision encoder loses fine detail, the language model can't recover it, which is the starting point of Peter's work.
+
+## F22. 不会的时候怎么接 · When you don't know
+
+- 先说你确定的部分:"I know the core idea is…, I'm less sure about the exact details of…"
+- 再说你会怎么查或怎么验证:"I'd check the original paper / I'd test it by…"
+- 别编数字。他问到具体论文数字你不确定,就说量级:"on the order of hundreds of millions of pairs"。
+- 能接回项目就接:注意力 → 你在 TikTok 用的 LLM agent;VAE/扩散 → 理解但没做过;量化 → RCRI 和 E6792 真做过。
+
+> 🗣 I'm confident about the core idea, which is… I'm less sure about the exact number in the paper, so I'd rather not guess, but it's on the order of… If I needed to confirm it, I'd check the original paper or run a quick experiment.
+
+# 篇四 · 知识点:他那几篇论文讲的东西
 > 从零讲:视觉编码器、MLLM 怎么接图、多视角空间、扩散和 RAE
 
 ## 视觉编码器:CLIP、ViT、自监督
@@ -552,7 +938,7 @@ FID 是什么:用一个预训练网络分别提取真图和生成图的特征,�
 
 > 🗣 A VLA model extends a vision-language model so it outputs robot actions instead of just text. RT-2 discretized actions into tokens and co-trained on web data. OpenVLA is a 7B open model whose vision encoder fuses SigLIP and DINOv2 features, which connects nicely to the Eyes Wide Shut finding that CLIP-style features alone miss spatial detail. π0 adds an action expert trained with flow matching to output continuous action chunks. The main challenges are scarce robot data, latency for high-rate control, and generalization. On a drone, I'd keep the real-time loop on small, fast models and use a VLA-style model for slower, high-level task planning.
 
-# 篇四 · 押题 A:3D 建模 + 图像处理(主战场)
+# 篇五 · 押题 A:3D 建模 + 图像处理(主战场)
 > Helen 写在 Peter 那轮日程上的主题,也是初筛真题的方向。每题都要能白板讲、能代数字
 
 底子不够时看 [FPCV 课程精华 + 点云从零讲(第八、九章,单独一页,带 112 张图)](fpcv.html)。
@@ -1212,7 +1598,7 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
 这段在说什么:先诚实说没做过 → 讲真实的相邻经验(RCRI,数字照实)→ 证明懂流程和数学 → 给一个具体的延伸思路,有底气但不夸大。
 <span class="en">What this does: honest first, then the real adjacent experience with exact numbers, then proof of understanding, then a concrete extension; confident without overclaiming.</span>
 
-# 篇五 · 押题 B:多模态视觉(如果是 Peter Tong)
+# 篇六 · 押题 B:多模态视觉(如果是 Peter Tong)
 > 每题先提纲(中文 + English),再给一段能直接说的英文(🗣)
 
 ## 12 道押题(点开每题看答案)
@@ -1349,7 +1735,7 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
 
 > 🗣 On a drone the real-time loop has a hard latency budget, so detection and tracking should stay on efficient models like a CNN or a small ViT optimized with TensorRT, which is what I did in my RCRI project. Multimodal models fit at a lower rate: describing scenes, answering operator questions, or labeling data offline. They are also good teachers for distilling into smaller models. The surprise idea from Cambrian-S maps well to drones too: only spend compute or memory when the scene changes unexpectedly.
 
-# 篇六 · 自我介绍、项目、反问
+# 篇七 · 自我介绍、项目、反问
 > 开场 1 分钟、每个项目怎么接、RCRI 的双 sigmoid 故事、最后问他什么
 
 ## 一分钟自我介绍(偏 CV / 3D)· One-minute introduction, CV and 3D flavor
@@ -1423,7 +1809,7 @@ iterations needed (p=0.99, w=0.7, s=2): 6.839247698175309
    为什么问:你是 F-1,毕业后用 OPT,之后需要 H-1B;这类产品线有时涉及出口管制,问清楚对双方都好。
    <span class="en">Why: you're on F-1 with OPT and later H-1B, and some products in this space involve export controls.</span>
 
-# 篇七 · 考前一页纸
+# 篇八 · 考前一页纸
 > 周四上午只看这页
 
 ## 一页纸
