@@ -978,6 +978,45 @@ x ──► LayerNorm ──► 多头自注意力 ──► (+ x) ──► Lay
   - v = 500 × 0.5 ÷ 5 + 240 = **290**
   - 读法:点越远(Z 越大)越靠近图像中心。这也是为什么单张图分不清"小东西在近处"还是"大东西在远处"。
 
+### 问:倾斜 s(一般是 0)是怎么来的?(11-05 她问的) · Where the skew term comes from
+
+**一句话**:s 描述的是**像素网格的两条轴不垂直**。传感器上的像素如果排成的不是长方形格子,而是有点歪的平行四边形格子,x 轴和 y 轴的夹角 θ 就不是 90°,K 里就多出一项 s。θ = 90° 时 s = 0。
+<span class="en">Skew models a pixel grid whose x and y axes are not perpendicular. If the angle between them is exactly 90 degrees, the skew is zero.</span>
+
+**K 长这样**:
+```
+K = | fx   s   px |
+    |  0   fy  py |
+    |  0   0    1 |
+```
+s 在第一行第二列,意思是**像素的 u 坐标会被 y 方向"带偏"一点**:u = fx·(X/Z) + s·(Y/Z) + px。
+
+**s 是怎么推出来的**(比方:把方格纸斜着推成平行四边形):
+- 先想一个标准的直角坐标 (x, y)。现在 v 轴往右歪,和 u 轴的夹角是 θ。
+- 同一个点在歪坐标里的读数:往 v 方向走 y ÷ sin θ,同时 u 方向要减掉 y · cot θ(因为 v 轴自己已经往右带了一段)。
+- 乘上焦距、加上主点,就得到:
+  - u = fx·(X/Z) − fx·cot θ·(Y/Z) + px → 所以 **s = −fx · cot θ**
+  - v = (fy ÷ sin θ)·(Y/Z) + py
+- θ = 90° 时 cot θ = 0,s = 0,K 就回到最常见的样子。
+<span class="en">Working through the geometry gives s = −fx·cot θ, so s vanishes when θ = 90°. (Sign conventions differ between textbooks; some write it without the minus.)</span>
+
+**算一下有多小**:fx = 500,就算轴歪了 1°(θ = 89°,工业上已经算很差了):
+- cot 89° ≈ 0.0175,s ≈ −500 × 0.0175 ≈ **−8.7**
+- 一个点 Y/Z = 0.1,u 只偏 8.7 × 0.1 ≈ **0.87 个像素**。
+- 现代 CMOS 是光刻做出来的,网格几乎严格垂直,偏差远小于 1°,所以 s 实际上就是 0。
+
+**什么时候 s 不为 0**:
+- 很老或很特殊的传感器,像素阵列做歪了。
+- **拍照片的照片**:比如扫描胶片、翻拍一张图时,底片和镜头没对正,得到的"相机"等效有倾斜。Hartley & Zisserman 书里举的就是这个例子。
+- 软件对图片做过斜切(shear)变换后,再把它当原始图来标定。
+
+**标定时怎么处理**:
+- 张正友标定法(拍几张棋盘格)在数学上能把 s 一起解出来,论文里叫 γ。
+- 实际几乎都**固定 s = 0** 不估:OpenCV 的 calibrateCamera 相机矩阵里这一格就是 0;MATLAB 的标定工具也默认不估倾斜。原因是它真值约等于 0,硬去估只会把噪声拟进去。
+- 所以内参常说"5 个",固定 s = 0 后其实是 4 个,P 的自由度也从 11 变成 10。
+
+> 🗣 The skew term in the intrinsic matrix models a pixel grid whose x and y axes aren't perpendicular. If the angle between them is theta, the geometry gives s equal to minus f-x times cot theta, so it's exactly zero when theta is ninety degrees. Modern sensors are made by lithography, so the grid is essentially square and the skew is negligible: even a one-degree error with a focal length of 500 pixels shifts points by less than a pixel. It can be non-zero in unusual cases, like scanning film or photographing a photograph at an angle. In practice calibration tools such as OpenCV fix the skew at zero, which leaves four intrinsic parameters instead of five.
+
 **视觉 SLAM 的四个部件**:
 - **前端(视觉里程计)**:每帧提特征点(比如 ORB),和上一帧匹配,用几何算出相机这一步怎么动的(本质矩阵 E,或已知 3D 点时用 PnP)。
 - **后端优化**:前端每步都有小误差,后端把很多帧放一起做 Bundle Adjustment(同时微调所有相机位姿和 3D 点,让重投影误差最小),或者做位姿图优化。
