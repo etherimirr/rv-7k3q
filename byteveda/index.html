@@ -1173,6 +1173,64 @@ s 在第一行第二列,意思是**像素的 u 坐标会被 y 方向"带偏"一�
 
 > 🗣 We split the problem into two stages because the public datasets disagreed on class definitions. Stage one is a single-class hold detector trained on about 5,300 merged images so it misses as few holds as possible; stage two classifies hold types like crimp, jug and sloper, and the two are merged by IoU matching and NMS. I fine-tuned from COCO-pretrained YOLOv8 weights for up to 100 epochs with Adam, batch 16 and 416-pixel inputs, using early stopping with patience 20, weight decay and mosaic augmentation that we turned off for the last ten epochs. The best hold detector was YOLOv8s at 0.825 mAP50. Two practical issues were that dense images with hundreds of boxes crashed the Mac's MPS backend, so we capped annotations and moved full training to a GCP T4, and that on the small five-class set the larger model overfit, so the nano model actually did better. Then I exported to ONNX, built a TensorRT FP16 engine and ran it on a Jetson Nano at 12 frames per second for detection alone.
 
+### 问:两阶段、单阶段、DETR 三类检测器分别怎么工作?(11-05 她问的) · Two-stage, one-stage and DETR detectors
+
+**比方**:
+- **两阶段** = 先海选再复试:先粗筛出几百个"像是有东西"的地方,再一个个仔细看。
+- **单阶段** = 一次考完当场出分:图上每个位置同时报"我这有没有东西、是什么、框多大"。
+- **DETR** = 100 个座位认领:准备 100 个"认领员",每个物体只能被一个认领员领走,其余的说"我这没东西"。
+<span class="en">Two-stage: shortlist, then inspect each candidate. One-stage: every location answers at once. DETR: a fixed set of queries each claims at most one object.</span>
+
+**1. 两阶段:Faster R-CNN(2015)**
+- **骨干网络**先把图变成特征图。1000×600 的图,步长 16,特征图约 60×40。
+- **第一阶段 RPN(候选区域网络)**:在特征图每个位置放 9 个预设框,叫 anchor(3 种大小 × 3 种长宽比)。60×40×9 ≈ **2 万多个** anchor。对每个 anchor 只问两件事:有没有东西(不管是什么)、框该怎么挪一点。按分数留前 2000 个,做 NMS,最后剩约 **300 个候选框**。
+- **第二阶段**:把每个候选框对应的那块特征图"抠"出来,缩成固定的 7×7(RoI Pooling,后来改进成 RoI Align,不做取整,位置更准),再送进一个小网络:分成哪一类(含"背景")、框再精修一次。
+- **为什么准**:框被修了两次;第二阶段每个候选都看自己对齐好的特征;训练时还能控制正负样本比例(比如每张图抽 512 个候选,正负 1:3),不会被海量背景淹没。
+- **为什么慢**:几百个候选要一个个过第二阶段。原论文在 GPU 上约 5 FPS。
+<span class="en">Faster R-CNN: an RPN scores about twenty thousand anchors for objectness, keeps about three hundred proposals, then RoI Align crops a fixed-size feature for each and a head classifies and refines it. Accurate, but per-proposal work makes it slow.</span>
+
+**2. 单阶段:YOLO、SSD、RetinaNet**
+- 没有"先海选"那一步。特征图上每个位置直接输出:类别分数 + 框。一次前向全部出来,所以快。
+- YOLOv8 在 640 输入下有三层特征图:80×80 + 40×40 + 20×20 = **8400 个**候选位置,每个都直接预测。
+- 同一个物体会被附近好几个位置同时报出来,所以最后要 **NMS** 去重(F25 上面讲过)。
+- **单阶段原来的毛病:类别极度不平衡**。几万个位置里只有几个有物体,剩下全是背景。背景大多很容易判断,但数量太多,它们的损失加起来盖过了真正难的样本。
+- **RetinaNet(2017)的 Focal Loss 解决了这个**:损失乘一个 (1 − p)^γ,γ 一般取 2,p 是模型对正确答案的把握。
+  - 简单背景,模型已经有 0.9 的把握:权重 (1 − 0.9)² = **0.01**,损失被压到 1/100。
+  - 难样本,只有 0.5 把握:权重 (0.5)² = **0.25**。
+  - 效果:训练注意力集中到难样本上。单阶段第一次在精度上追平两阶段。
+<span class="en">One-stage detectors predict class and box at every location in one pass, then use NMS to remove duplicates. Their old weakness was the flood of easy background; RetinaNet's focal loss multiplies the loss by (1 − p)^γ, so an easy example at p = 0.9 is down-weighted a hundredfold.</span>
+
+**3. DETR(2020,Facebook):Transformer 检测**
+- **结构**:CNN 骨干出特征 → Transformer 编码器让各位置互相看(F9)→ 解码器里放 **100 个可学的 object query**(就是 100 个"认领员"向量)。每个 query 通过 cross-attention 去图里找东西,最后输出一个类别(包括"无物体 ∅")和一个框。
+- **训练的关键:匈牙利匹配**。图里只有 2 个物体,模型却出了 100 个预测,哪个预测该对哪个物体?
+  - 把"预测 i 配物体 j"的代价都算出来(类别对不对 + 框的 L1 距离 + GIoU),找一个**一对一**、总代价最小的配法。匈牙利算法就是专门解这个配对问题的。
+  - 配上的预测按真实物体算损失;没配上的 98 个,目标都是"∅"。
+- **为什么不需要 NMS**(举例):图里有一只猫、一只狗。
+  - query 1 说"猫,0.9",框很准;query 2 也说"猫,0.8",框也挺准;query 3 说"狗,0.7"。
+  - 匈牙利匹配:query 1 → 猫,query 3 → 狗,**query 2 → ∅**。
+  - 所以 query 2 被训练成"别人已经领了这只猫,我该说没东西"。query 之间通过 self-attention 互相看得见,慢慢学会不重复。重复框在训练里就被惩罚了,推理时自然不用 NMS。
+- **缺点**:
+  - **训练慢**:原版在 COCO 上要训 500 个 epoch,Faster R-CNN 大约 36 个就够。原因是一开始 attention 均匀撒在全图,要很久才学会盯住具体位置。
+  - **小物体差**:只用了最后一层低分辨率特征,没有 FPN 那种多尺度。
+- **后续改进**:Deformable DETR 让每个 query 只看少数几个采样点,并用多尺度特征,训练快约 10 倍,小物体也好了;RT-DETR(2023)做到了实时,能和 YOLO 正面比。
+<span class="en">DETR uses a hundred learned object queries in a Transformer decoder. Training uses Hungarian matching to assign each ground-truth object to exactly one prediction and the rest to "no object", so the model learns not to produce duplicates and needs no NMS. The original trains slowly and struggles with small objects; Deformable DETR and RT-DETR address both.</span>
+
+**一张表对比**:
+
+| | 两阶段 Faster R-CNN | 单阶段 YOLO | DETR |
+|---|---|---|---|
+| 候选从哪来 | RPN 先筛约 300 个 | 每个位置都预测(8400 个) | 100 个 query |
+| 去重 | NMS | NMS | 匈牙利匹配,不需要 NMS |
+| 速度 | 慢 | 快,能实时 | 原版慢,RT-DETR 能实时 |
+| 典型弱点 | 慢 | 原来精度略低,靠 Focal Loss、FPN 追上 | 训练久、小物体差 |
+
+**和你的 RCRI 怎么接**(常被追问"为什么选 YOLO"):
+- **为什么不用 Faster R-CNN**:要在 Jetson 上实时跑,两阶段太慢。
+- **为什么不用 DETR**:岩点又小又密(有的图 272 个框),原版 DETR 小物体差,而且只有 100 个 query,装不下;训练也要很多 epoch 和数据,你们只有 5,341 张图。
+- **注意别混**:你们的"两阶段"是**先检测岩点、再分 6 类**,两个都是 YOLO 模型,和 Faster R-CNN 那种"RPN + RoI 头"不是一回事。被问到要主动说清楚。
+
+> 🗣 There are three main families of detectors. Two-stage detectors like Faster R-CNN first use a region proposal network to score tens of thousands of anchors and keep a few hundred proposals, then crop a fixed-size feature for each with RoI Align and classify and refine it. That's accurate but slow. One-stage detectors like YOLO, SSD and RetinaNet predict classes and boxes at every location in a single pass and use NMS to remove duplicates; RetinaNet's focal loss fixed the background imbalance that used to hurt their accuracy. DETR uses a Transformer decoder with a fixed set of learned object queries and trains with Hungarian matching, so each object is assigned to exactly one query and the model learns to avoid duplicates without NMS, though the original converges slowly and is weak on small objects. For our climbing-hold project we picked YOLO because we needed real-time inference on a Jetson, and the holds are small and dense, which is a bad fit for the original DETR.
+
 ## F26. World model:在脑子里预演世界 · World models
 
 **一句话**:world model 学的是"现在是这样,如果我做这个动作,世界下一刻会变成什么样",也就是学一个函数:下一状态 = f(当前状态, 动作)。
