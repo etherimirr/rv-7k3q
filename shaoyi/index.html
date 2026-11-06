@@ -456,7 +456,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 # 篇五 · 她可能问的题
 > 每题先中文提纲,再英文原话。不要背,记住结构
 
-## 1. "GPU scheduling for robot workloads" 是什么意思?· What do you mean by that?
+## 第 1 题 · "GPU scheduling for robot workloads" 是什么意思?· What do you mean by that?
 
 这是你自己写的,她很可能问。先说清楚:**你还没做过调度器**。
 
@@ -467,7 +467,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 
 🈶 一个机器人要在一块 GPU 上跑好几个模型:感知、策略,可能还有世界模型,它们的截止时间不一样。RCRI 里我们只是串行跑,所以 12 FPS 掉到 5。我还没做过调度器。我想探索的是,系统能不能在运行时根据剩余时间,决定哪个模型牺牲一点质量。
 
-## 2. 讲讲 RCRI · Tell me about RCRI
+## 第 2 题 · 讲讲 RCRI · Tell me about RCRI
 
 <span class="tg me">真做过</span> 两人项目,各约一半;姿态打分和 HSV 分组是队友的。
 
@@ -478,7 +478,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 - **怎么把 5 FPS 提上去?** 两个模型共用主干;只对新出现的岩点分类;隔几帧分类一次。<span class="en">Share a backbone, classify only new holds, or classify every few frames.</span> 这些是想法,**没做过**。
 - **最难的 bug?** ONNX 后处理多做了一次 sigmoid,分数全挤在 0.5,每张图只出约 10 个岩点。去掉后 40 多个。<span class="en">Double sigmoid squeezed scores near 0.5; about 10 holds per image became over 40.</span>
 
-## 3. 讲讲 GPU 那门课 · Tell me about the GPU course
+## 第 3 题 · 讲讲 GPU 那门课 · Tell me about the GPU course
 
 <span class="tg me">真做过</span> E6792。**kernel 是课程给的,你写的是 host 端。**
 
@@ -488,7 +488,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 
 另外还有 CLIP:文本塔预先算好存起来,每帧只跑图像塔。<span class="en">Text embeddings are cached, so each frame runs only the image tower.</span>
 
-## 4. 讲讲 Ctrl-World · Tell me about Ctrl-World
+## 第 4 题 · 讲讲 Ctrl-World · Tell me about Ctrl-World
 
 <span class="tg nt">复现过</span> 没有改算法,这点要说清楚。
 
@@ -502,7 +502,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 
 回忆线索:用的什么 GPU?在哪台机器上跑的?当时等一条视频要不要去干别的?
 
-## 5. 讲讲 TaskMap · Tell me about TaskMap
+## 第 5 题 · 讲讲 TaskMap · Tell me about TaskMap
 
 <span class="tg me">真做过</span> 二作,你做的是消融和冷启动实验。
 
@@ -513,7 +513,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 - **为什么正交?** 两个更新的距离等于两组系数的距离,系数是唯一的坐标。LoRA 的 B·A 不唯一。<span class="en">With orthonormal bases, distance between updates equals distance between coefficients. LoRA factors aren't unique.</span>
 - **会更慢吗?** 实验里用 Python hook 加残差,没有优化。单任务可以把更新合进权重。<span class="en">We used Python hooks. For one task you could merge the update into the weights.</span> 后半句是你的想法。
 
-## 6. 你的 LoRA 经验 · Your LoRA experience
+## 第 6 题 · 你的 LoRA 经验 · Your LoRA experience
 
 你消息里写了 LoRA fine-tuning。三处:
 
@@ -521,7 +521,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 - iQIYI:管理多个 LoRA 适配器,做风格控制的图像生成。
 - TaskMap:LoRA 是对照组。
 
-## 7. 你怎么做实验?· How do you run experiments?
+## 第 7 题 · 你怎么做实验?· How do you run experiments?
 
 讲 BOLT,这是最能打动做系统的人的故事。
 
@@ -529,7 +529,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 
 🈶 同样的方法,没控制环境测出 73%,控制后 92%。所以现在我先控环境,再信数字。
 
-## 8. 为什么读博?· Why a PhD?
+## 第 8 题 · 为什么读博?· Why a PhD?
 
 ⚠️ **这段只能你自己定,下面是草稿。** 不像你说的话就改。
 
@@ -539,7 +539,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 
 > Yes, I'm looking at industry roles too, since I graduate in December. Research is what I want to build toward, and working with a group before applying would help me decide well.
 
-## 9. 想申哪些学校?· Which schools?
+## 第 9 题 · 想申哪些学校?· Which schools?
 
 我没有你的申请名单。今晚想一下。不确定就说:
 
@@ -547,7 +547,7 @@ PARSE 两个都提速了。这个你为 Alpaca 学过。
 
 Stevens 博士:**1 月 15 日是 preferred deadline**,之后滚动。全部博士生有资助,要两封推荐信、SOP、writing sample,GRE 可选。
 
-## 10. 一周能投入多少?什么时候开始?· Time and start date
+## 第 10 题 · 一周能投入多少?什么时候开始?· Time and start date
 
 ⚠️ **我不替你填这个数。** 明天之前想好:
 
@@ -558,7 +558,7 @@ Stevens 博士:**1 月 15 日是 preferred deadline**,之后滚动。全部博�
 
 **实习的身份和钱**:你不主动提。她问到再说 "I'd check with Columbia's international office to make sure the setup is right."
 
-## 11. 现场解释题 · Explain on the spot
+## 第 11 题 · 现场解释题 · Explain on the spot
 
 她可能会顺手考一下:
 
