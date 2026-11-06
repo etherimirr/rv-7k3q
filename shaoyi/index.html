@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>黄老师研究聊天</title>
+<style>.hljs{color:var(--fg)}.hljs-keyword,.hljs-literal,.hljs-selector-tag{color:#a626a4}.hljs-string,.hljs-attr,.hljs-addition{color:#50a14f}.hljs-number,.hljs-symbol{color:#986801}.hljs-comment,.hljs-quote{color:#8a8a8a;font-style:italic}.hljs-title,.hljs-section{color:#4078f2}.hljs-built_in,.hljs-type{color:#c18401}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hljs-keyword,:root:not([data-theme="light"]) .hljs-literal{color:#c678dd}:root:not([data-theme="light"]) .hljs-string,:root:not([data-theme="light"]) .hljs-attr{color:#98c379}:root:not([data-theme="light"]) .hljs-number{color:#d19a66}:root:not([data-theme="light"]) .hljs-title{color:#61afef}:root:not([data-theme="light"]) .hljs-built_in{color:#e5c07b}}</style>
+<style>
+:root{--bg:#fbfaf8;--fg:#1b1a18;--mut:#6b6862;--line:#e3e0da;--acc:#b4503a;--acc2:#2f6f8f;--ok:#4e8a4a;--card:#fff;--code:#f4f2ee;--note:#fff8e6;--noteline:#e9d9a8;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16151a;--fg:#e9e7e2;--mut:#9a958c;--line:#2e2c33;--acc:#e08a70;--acc2:#7fb3d0;--ok:#8cc084;--card:#1e1d23;--code:#23222a;--note:#2a2618;--noteline:#5a4e2a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16151a;--fg:#e9e7e2;--mut:#9a958c;--line:#2e2c33;--acc:#e08a70;--acc2:#7fb3d0;--ok:#8cc084;--card:#1e1d23;--code:#23222a;--note:#2a2618;--noteline:#5a4e2a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif}
+#rp{position:fixed;top:0;left:0;height:3px;background:var(--acc);width:0;z-index:9}
+#wrap{display:flex;min-height:100%}
+#toc{width:300px;flex:0 0 300px;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto;height:100vh;position:sticky;top:0;background:var(--card)}
+#toc h2,#qa h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 10px 6px}
+#q{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font-size:14px;margin-bottom:10px}
+#allprog{font-size:12px;color:var(--mut);margin:0 6px 10px}
+.bar{height:5px;background:var(--code);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--ok);width:0}
+#toc details{margin:6px 0}
+#toc summary{cursor:pointer;font-weight:700;color:var(--acc);padding:5px 8px;border-radius:6px;list-style:none;font-size:14px}
+#toc summary::-webkit-details-marker{display:none}
+#toc summary .pp{float:right;font-weight:400;font-size:12px;color:var(--mut)}
+#toc a{display:block;padding:3px 8px;border-radius:6px;text-decoration:none;color:var(--fg);font-size:13.5px}
+#toc a:hover{background:var(--code)}
+#toc a.l1{font-weight:600;margin-top:6px;padding-left:12px}
+#toc a.l2{padding-left:26px;color:var(--mut);font-size:13px}
+#toc a.l3{padding-left:40px;color:var(--mut);font-size:12px;display:none}
+#toc a.l2.open ~ a.l3.of-{display:block}
+#toc a.done::before{content:"✓ ";color:var(--ok)}
+#toc a.cur{background:var(--code)}
+#main{flex:1;min-width:0;padding:22px 36px 120px;max-width:940px}
+#quick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+#quick a{font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--fg);background:var(--card)}
+#quick a:hover{border-color:var(--acc)}
+.part{margin:3.2em 0 1.2em;padding:18px 22px;border-radius:14px;background:linear-gradient(135deg,var(--card),var(--code));border:1px solid var(--line)}
+.part .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.part h1{border:none;margin:2px 0 4px;padding:0;font-size:1.9rem}
+.part p{margin:0;color:var(--mut)}
+#qa{width:330px;flex:0 0 330px;border-left:1px solid var(--line);padding:16px 14px;overflow-y:auto;height:100vh;position:sticky;top:0;background:var(--note)}
+#qa textarea{width:100%;min-height:110px;padding:10px;border:1px solid var(--noteline);border-radius:8px;background:var(--card);color:var(--fg);font:14px/1.6 inherit;resize:vertical}
+#qa .sec{font-size:12px;color:var(--mut);margin:6px 0 4px;min-height:1.2em}
+#qa .btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
+#qa button{border:1px solid var(--noteline);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+#qa button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.note{background:var(--card);border:1px solid var(--noteline);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:13.5px}
+.note .t{color:var(--mut);font-size:12px;display:flex;justify-content:space-between;gap:8px}
+.note .t a{color:var(--acc);text-decoration:none;cursor:pointer}
+.note .b{white-space:pre-wrap;margin-top:4px}
+.note.answered{border-color:#8cb37a}
+.ask{font-size:12px;color:var(--acc);margin-left:8px;cursor:pointer;opacity:.55;text-decoration:none}
+.ask:hover{opacity:1}
+.chk{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.chk.on{opacity:1;color:var(--ok);border-color:var(--ok)}
+.fav{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.fav.on{opacity:1;color:#c99400;border-color:#c99400}
+#favs{background:var(--card);border:1px solid #e6c55a;border-left:5px solid #c99400;border-radius:12px;padding:12px 16px;margin:0 0 14px}
+#favs h2{font-size:1.05rem;margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#favs .fbtn{font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:2px 8px;cursor:pointer}
+#favs .fi{border-top:1px dashed var(--line);padding:6px 0}
+#favs .fi .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#favs .fi a.t{color:var(--acc2);text-decoration:none;font-weight:600;flex:1;min-width:0}
+#favs .fi .body{margin:6px 0 4px 10px;padding-left:10px;border-left:2px solid #e6c55a}
+#favs .hint,#later .hint{color:var(--mut);font-size:13px;margin:0}
+.lat{font-size:12px;margin-left:8px;cursor:pointer;opacity:.6;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 6px;user-select:none}
+.lat.on{opacity:1;color:#2f6f8f;border-color:#2f6f8f}
+#later{background:var(--card);border:1px solid #9cc3d6;border-left:5px solid #2f6f8f;border-radius:12px;padding:12px 16px;margin:0 0 14px}
+#later h2{font-size:1.05rem;margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#later .fbtn{font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:2px 8px;cursor:pointer}
+#later .fi{border-top:1px dashed var(--line);padding:6px 0}
+#later .fi .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#later .fi a.t{color:var(--acc2);text-decoration:none;font-weight:600;flex:1;min-width:0}
+#later .fi .body{margin:6px 0 4px 10px;padding-left:10px;border-left:2px solid #9cc3d6}
+#toc a.lat-on::after{content:" 🔖"}
+#qacol{float:right;border:1px solid var(--noteline);background:var(--card);color:var(--fg);border-radius:6px;padding:1px 8px;font-size:12px;cursor:pointer;letter-spacing:0;text-transform:none;font-weight:400}
+#qaopen{display:none;position:fixed;right:0;top:38%;z-index:30;writing-mode:vertical-rl;background:var(--note);color:var(--fg);border:1px solid var(--noteline);border-right:none;border-radius:8px 0 0 8px;padding:12px 6px;font-size:13px;cursor:pointer;box-shadow:-2px 2px 8px rgba(0,0,0,.08)}
+body.qa-hide #qa{display:none}
+body.qa-hide #qaopen{display:block}
+body.qa-hide #main{max-width:1000px;margin:0 auto}
+@media(max-width:900px){#qacol,#qaopen{display:none!important}}
+@media(max-width:1100px){#qa{width:280px;flex-basis:280px}}
+#tocbtn,#qabtn{display:none}
+@media(max-width:900px){#wrap{flex-direction:column}#main{padding:16px 16px 90px;min-width:0}#main pre,#main table{max-width:100%;overflow-x:auto;display:block}
+#toc{display:none;position:fixed;inset:0 0 0 0;width:auto;height:100%;max-height:none;z-index:50;border:none;padding:calc(14px + env(safe-area-inset-top,0px)) 14px 90px}
+body.toc-open #toc{display:block}body.toc-open{overflow:hidden}
+#qa{display:none;width:auto;flex:none;height:auto;position:static;border:none;border-top:1px solid var(--line)}
+body.qa-open #qa{display:block}
+#tocbtn,#qabtn{display:block;position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:60;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#tocbtn{right:16px;background:var(--acc);color:#fff}
+#qabtn{right:110px;background:var(--card);color:var(--fg);border:1px solid var(--line)}
+#top{left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px))}}
+h1{font-size:1.7rem;border-bottom:2px solid var(--acc);padding-bottom:8px;margin-top:2.4em;text-wrap:balance}
+h2{font-size:1.3rem;margin-top:2em;text-wrap:balance}
+h3{font-size:1.1rem;margin-top:1.6em}
+table{border-collapse:collapse;width:100%;display:block;overflow-x:auto;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--code)}
+blockquote{border-left:3px solid var(--acc);margin:1em 0;padding:.2em 1em;background:var(--card);color:var(--mut)}
+code{background:var(--code);padding:2px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:14px;border-radius:10px;overflow-x:auto}
+pre code{background:none;padding:0}
+hr{border:none;border-top:1px solid var(--line);margin:2.4em 0}
+img{max-width:100%}
+.gl{border-bottom:1px dotted var(--acc2);cursor:help}
+.en{display:block;color:var(--acc2);font-size:.96em;line-height:1.6;margin:3px 0 2px}
+td .en{font-size:.92em}
+blockquote .en{color:var(--acc2)}
+.zh{color:var(--acc2);font-size:.95em}
+.ans{background:var(--card);border:1px dashed var(--noteline);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:13px;white-space:pre-wrap;line-height:1.6}
+.ans.think{color:var(--mut);font-style:italic}
+#qa .btns2{display:flex;gap:6px;margin-top:6px}
+#tip{position:fixed;z-index:20;max-width:360px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;pointer-events:none}
+#tip b{color:var(--acc2)}
+
+/* ---- 生动化:标注块 ---- */
+blockquote.co{border-left-width:4px;border-radius:10px;padding:12px 16px;position:relative}
+blockquote.co::before{content:attr(data-l);display:inline-block;font-size:11px;letter-spacing:.08em;font-weight:700;border-radius:999px;padding:1px 9px;margin-bottom:6px;color:#fff}
+blockquote.co-basic{background:#eef7ee;border-color:#4e8a4a;color:var(--fg)}blockquote.co-basic::before{background:#4e8a4a}
+blockquote.co-warn{background:#fff6e5;border-color:#d08a1a;color:var(--fg)}blockquote.co-warn::before{background:#d08a1a}
+blockquote.co-ok{background:#eef6f9;border-color:#2f6f8f;color:var(--fg)}blockquote.co-ok::before{background:#2f6f8f}
+blockquote.co-hot{background:#fdeeee;border-color:#c0392b;color:var(--fg)}blockquote.co-hot::before{background:#c0392b}
+blockquote.co-tip{background:#f3eefc;border-color:#7b52c1;color:var(--fg)}blockquote.co-tip::before{background:#7b52c1}
+blockquote.co-say{background:var(--card);border-color:var(--acc);color:var(--fg)}blockquote.co-say::before{background:var(--acc)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) blockquote.co-basic{background:#17261a}:root:not([data-theme="light"]) blockquote.co-warn{background:#2b2214}:root:not([data-theme="light"]) blockquote.co-ok{background:#152128}:root:not([data-theme="light"]) blockquote.co-hot{background:#2c1816}:root:not([data-theme="light"]) blockquote.co-tip{background:#221a2e}}
+:root[data-theme="dark"] blockquote.co-basic{background:#17261a}:root[data-theme="dark"] blockquote.co-warn{background:#2b2214}:root[data-theme="dark"] blockquote.co-ok{background:#152128}:root[data-theme="dark"] blockquote.co-hot{background:#2c1816}:root[data-theme="dark"] blockquote.co-tip{background:#221a2e}
+h1.ch{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--acc);border-bottom:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-top:3em}
+h1.ch small{display:block;font-size:12.5px;color:var(--mut);font-weight:400;margin-top:4px}
+h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h2 .num{font-size:12px;color:var(--acc);background:var(--code);border:1px solid var(--line);border-radius:6px;padding:0 7px;font-weight:600;letter-spacing:.04em}
+h3{color:var(--acc2)}
+#chbar{position:sticky;top:0;z-index:8;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin:0 0 14px;font-size:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+#chbar b{color:var(--acc)}
+#chbar .left{color:var(--mut)}
+#chbar .bar{flex:1;min-width:120px;height:6px;margin:0}
+#chbar .bar i{background:var(--acc)}
+.chnav{display:flex;justify-content:space-between;gap:10px;margin:2.2em 0 0;padding-top:14px;border-top:1px dashed var(--line)}
+.chnav a{font-size:13px;text-decoration:none;color:var(--acc2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--card)}
+.chnav a:hover{border-color:var(--acc2)}
+#toc a .rt{float:right;font-size:11px;color:var(--mut);font-weight:400}
+
+/* ---- calm reading mode (10-06): fewer colors, quieter widgets ---- */
+blockquote.co{background:transparent!important;border-left:3px solid var(--line)!important;border-radius:0!important;padding:4px 14px!important;color:var(--fg)!important}
+blockquote.co::before{display:none!important}
+blockquote.co-hot{border-left-color:var(--acc)!important}
+blockquote.co-say{border-left-color:var(--acc2)!important}
+blockquote{color:var(--fg)}
+.en{color:var(--mut)!important;font-size:.93em!important}
+td .en{font-size:.9em!important}
+.zh{color:var(--mut)!important}
+.chk,.ask,.fav,.lat{opacity:.0!important;transition:opacity .15s}
+h1:hover .chk,h1:hover .ask,h1:hover .fav,h1:hover .lat,h2:hover .chk,h2:hover .ask,h2:hover .fav,h2:hover .lat,h3:hover .chk,h3:hover .ask,h3:hover .fav,h3:hover .lat{opacity:.75!important}
+.chk.on,.fav.on,.lat.on{opacity:.8!important}
+@media(hover:none){.chk,.ask,.fav,.lat{opacity:.35!important;font-size:11px!important}}
+p.legend{color:var(--mut);font-size:.88em;margin:.3em 0}
+h3{color:var(--fg)!important}
+h1.ch{border-left-width:3px!important;background:transparent!important}
+#top{position:fixed;left:18px;bottom:18px;background:var(--acc);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer}
+</style><meta name="robots" content="noindex,nofollow"><style id="syfix">#wrap>*{min-width:0}#main{min-width:0!important;width:100%!important;max-width:1000px}#body{overflow-wrap:anywhere}#body pre{overflow-x:auto;max-width:100%;white-space:pre;overflow-wrap:normal}#body table{display:block;overflow-x:auto;max-width:100%}.dg{margin:14px 0 18px}.dg svg{width:100%;max-width:560px;height:auto;display:block;margin:0 auto}.dg .bx{fill:var(--card);stroke:var(--line);stroke-width:1.5}.dg .bx.me{stroke:var(--ok);stroke-width:2}.dg .bx.hl{stroke:var(--acc);stroke-width:2}.dg .t1{fill:var(--fg);font-size:15px;font-weight:700}.dg .s1{fill:var(--fg);font-size:13.5px;font-weight:600}.dg .t2{fill:var(--mut);font-size:12.5px}.dg .tag{fill:var(--acc);font-size:13px;font-weight:700}.dg .ar{stroke:var(--mut);stroke-width:1.6}.tg{display:inline-block;font-size:.8em;line-height:1.5;padding:0 6px;border-radius:9px;border:1px solid;margin:0 2px;white-space:nowrap}.tg.me{color:var(--ok);border-color:var(--ok)}.tg.nt{color:var(--acc2);border-color:var(--acc2);border-style:dashed}.tg.gen{color:var(--mut);border-color:var(--mut);border-style:dotted}</style></head><body><div class="site" style="display:flex;gap:8px;flex-wrap:wrap;font-size:.9rem;margin:0 0 12px"><a href="./"><b>黄老师研究聊天 11/6</b></a><a href="../byteveda/">基础概念(Byte Veda)</a><a href="../">返回 rv-7k3q</a></div>
+<div id="rp"></div>
+<div id="wrap">
+<nav id="toc"><h2>目录</h2><input id="q" placeholder="搜章节 / 题目…"><div id="allprog"></div><div id="tl"></div></nav>
+<main id="main"><div id="later"></div><div id="favs"></div><div id="quick"></div><div id="chbar"><span class="left">本章</span><b id="chname">—</b><span class="left" id="chleft">≈ — 分钟</span><div class="bar"><i id="chprog"></i></div><span class="left" id="chpct">0%</span></div><div id="body"></div></main>
+<aside id="qa">
+  <h2>📝 我的 Q&A <button id="qacol" title="收起右栏">收起 ›</button></h2>
+  <div class="sec" id="cursec">当前章节:—</div>
+  <textarea id="qtext" placeholder="看到不懂的,直接写在这里。会自动记上你当前在看的章节。"></textarea>
+  <div class="btns">
+    <button class="primary" id="save">记下来</button>
+    <button id="copy">复制全部为 Markdown</button>
+    <button id="clear">清空全部</button>
+  </div>
+  <div id="notes"></div>
+  <p style="font-size:12px;color:var(--mut)">记下的问题存在浏览器里。每条问题下有「生成解答」:在 claude.ai 上打开的版本会用 Claude 结合你正在看的章节直接写出解答(第一次会弹一次授权);本地文件版没有这个能力,点「复制全部为 Markdown」发给我。标题右边的 ☐ 是"这节我掌握了",勾了目录里会算进度。</p>
+</aside>
+</div>
+<button id="top">↑ 顶部</button>
+<button id="qaopen" title="展开我的 Q&A">‹ 📝 Q&A</button><script>(function(){var b=document.body,K='manual-qa-hide';function set(h){b.classList.toggle('qa-hide',h);try{localStorage.setItem(K,h?'1':'0')}catch(e){}}var v=null;try{v=localStorage.getItem(K)}catch(e){}set(v!=='0');document.getElementById('qacol').addEventListener('click',function(){set(true)});document.getElementById('qaopen').addEventListener('click',function(){set(false)});})();</script><button id="tocbtn">☰ 目录</button><button id="qabtn">笔记</button>
+<script>(function(){var b=document.body,tb=document.getElementById('tocbtn'),qb=document.getElementById('qabtn'),toc=document.getElementById('toc');
+function narrow(){return window.matchMedia('(max-width:900px)').matches}
+tb.addEventListener('click',function(){b.classList.toggle('toc-open');tb.textContent=b.classList.contains('toc-open')?'✕ 关闭':'☰ 目录'});
+qb.addEventListener('click',function(){b.classList.toggle('qa-open');if(b.classList.contains('qa-open')){document.getElementById('qa').scrollIntoView({behavior:'smooth'})}});
+toc.addEventListener('click',function(e){if(narrow()&&e.target.closest('a')){setTimeout(function(){b.classList.remove('toc-open');tb.textContent='☰ 目录'},50)}});})();</script>
+<script type="text/markdown" id="src"># 篇零 · 开会前看这一屏
+> 11/6 周五 15:00–15:30 ET,Zoom。今晚读完篇一、篇二,明天 14:45 只看这一屏和反问
+
+## 时间和链接 · Time and link
+
+- **15:00–15:30 ET**,30 分钟,Zoom:<a href="https://stevens.zoom.us/j/9231685583">stevens.zoom.us/j/9231685583</a>
+- 你前面 14:00–14:45 是 ArrePath,中间只有 15 分钟。后面 16:00 是 Emissary。
+- 邀请里只写了 "Meeting with Christina Jia",没有议程。
+
+## 这是什么会 · What this meeting is
+
+不是面试,但黄老师会判断你能不能进组。
+
+她回你的原话是:可以约时间聊 "your research interest"。所以第一题大概率就是:你想做什么研究?
+
+她主页写着在招**全奖博士生和远程实习生**,要 CV、成绩单和研究兴趣。所以这件事是真实存在的,不用绕弯子。
+
+## 你要带走的三件事 · Three goals
+
+1. **让她记住一句话**:你想让重模型在机器人上跑得够快。
+2. **让她相信你动过手**:Jetson 上真部署过,世界模型真复现过,论文真做过实验。
+3. **拿到下一步**:一个小任务,或者发 CV 给谁,或者博士申请该做什么。
+
+<div class="dg"><svg viewBox="0 0 400 300" role="img" aria-label="30 分钟安排"><text class="t1" x="200" y="20" text-anchor="middle">30 分钟怎么走</text><g><rect class="bx" x="20" y="34" width="360" height="46" rx="8"/><text class="s1" x="34" y="54">0–2 分 · 寒暄,谢谢她</text><text class="t2" x="34" y="72">别一上来就问招不招人</text></g><g><rect class="bx" x="20" y="88" width="360" height="46" rx="8"/><text class="s1" x="34" y="108">2–4 分 · 研究兴趣(篇一的一分钟)</text><text class="t2" x="34" y="126">讲完停下,等她问</text></g><g><rect class="bx" x="20" y="142" width="360" height="46" rx="8"/><text class="s1" x="34" y="162">4–15 分 · 她追问你的项目</text><text class="t2" x="34" y="180">她问哪个讲哪个,每次一分钟内</text></g><g><rect class="bx hl" x="20" y="196" width="360" height="46" rx="8"/><text class="s1" x="34" y="216">15–24 分 · 聊她的论文和你的想法</text><text class="t2" x="34" y="234">这段最重要:从这里接到具体任务</text></g><g><rect class="bx" x="20" y="250" width="360" height="46" rx="8"/><text class="s1" x="34" y="270">24–30 分 · 反问 + 约下一步</text><text class="t2" x="34" y="288">24 分还没到这步,就自己转过去</text></g></svg></div>
+
+## 最后 60 秒只记这四句 · Four lines to remember
+
+> I want to make heavy models fast enough to run on robots.
+
+🈶 我想让重模型在机器人上跑得够快。
+
+> On a Jetson, one model ran at 12 FPS, and two models in series fell to 5. That gap is why I care about scheduling.
+
+🈶 在 Jetson 上,一个模型 12 FPS,两个串起来掉到 5。这个落差就是我关心调度的原因。
+
+> Your caching and rank-selection work looks like knobs that trade quality for time. I'd like to see if a robot can turn those knobs at runtime.
+
+🈶 您做的缓存和选秩,像是用质量换时间的旋钮。我想看机器人能不能在运行时自己转这些旋钮。
+
+> What would be a good small first task?
+
+🈶 什么样的小任务适合作为开始?
+
+# 篇一 · 开场和研究兴趣
+> 她问 "tell me about your research interest" 时说的话
+
+## 一分钟研究兴趣 · One-minute research interest
+
+提纲:想做机器人上的高效推理 → 设备这边:RCRI,12 FPS 掉到 5 → 模型这边:复现 Ctrl-World,TaskMap 论文 → 所以找您。
+<span class="en">Outline: efficient inference for robots → device side: RCRI, 12 FPS falling to 5 → model side: Ctrl-World and TaskMap → why you.</span>
+
+> [Who] Hi Professor Huang, thank you for making time. I'm Christina. I'm finishing my Master's in Computer Engineering at Columbia this December.
+>
+> [Interest] I want to make heavy models fast enough to run on robots. I came to that from two directions.
+>
+> [Device] On the device side, a teammate and I built RCRI, a climbing-route recognizer. We compiled YOLOv8 into a TensorRT FP16 engine on a 2-gigabyte Jetson Nano. Hold detection alone ran at 12 FPS, but the full pipeline runs two models in series and fell to 5. That gap got me thinking about how models should share one small GPU.
+>
+> [Model] On the model side, I reproduced Ctrl-World, a diffusion world model for robot manipulation, including policy-in-the-loop rollouts. I'm also second author on TaskMap, at WSDM 2027 Findings, which represents per-task LLM updates as coefficients in a shared orthogonal basis.
+>
+> [Why you] So when I saw SpectralCache and IG-VLA from your group, it felt very close to what I want to work on.
+
+🈶 中文版:老师好,谢谢您抽时间。我是 Christina,12 月从哥大计算机工程硕士毕业。我想让重模型在机器人上跑得够快,是从两个方向走到这里的。设备这边,我和队友做了攀岩路线识别 RCRI,把 YOLOv8 编译成 TensorRT FP16 引擎,跑在 2GB 的 Jetson Nano 上。只跑岩点检测有 12 FPS,完整流程要串行跑两个模型,就掉到 5。这个落差让我开始想多个模型怎么共用一块小 GPU。模型这边,我复现过机器人操作的扩散世界模型 Ctrl-World,包括策略闭环;还是 TaskMap 的二作,中了 WSDM 2027 Findings,它把每个任务的大模型权重更新表示成公共正交基上的系数。所以看到您组里的 SpectralCache 和 IG-VLA,觉得和我想做的很接近。
+
+⚠️ 最后一句的前提是你今晚真的读了这两篇的摘要(篇三)。没读就改成 "your recent work on world models and VLA"。
+
+## 她很可能会用中文 · She may switch to Chinese
+
+你们都会中文。她说中文你就跟着说中文,技术词照常用英文。上面有中文版。
+
+## 你发过的那条消息 · The message you already sent
+
+你 11/1 写的是:有 TensorRT on Jetson 和 LoRA fine-tuning 经验;对 **efficient inference and GPU scheduling for robot workloads** 感兴趣;**申请 Fall 2027 的博士**;问研究或远程实习机会。
+
+她可能照着这条问。下面篇五的前几题就是对着它准备的。
+
+# 篇二 · 你和她的工作怎么接上
+> 这张图是整场聊天的骨架
+
+## 对应关系总图 · How your work maps to hers
+
+<div class="dg"><svg viewBox="0 0 400 356" role="img" aria-label="你的经历与她论文的对应"><text class="tag" x="100" y="18" text-anchor="middle">你做过的</text><text class="tag" x="300" y="18" text-anchor="middle">她做的</text><g><rect class="bx me" x="8" y="28" width="170" height="70" rx="8"/><text class="s1" x="18" y="50">Ctrl-World 复现</text><text class="t2" x="18" y="68">扩散世界模型</text><text class="t2" x="18" y="85">iQIYI 扩散管线 −30%</text><rect class="bx" x="222" y="28" width="170" height="70" rx="8"/><text class="s1" x="232" y="50">SpectralCache</text><text class="t2" x="232" y="68">世界模型的特征缓存</text><text class="t2" x="232" y="85">5.22 倍</text><line class="ar" x1="178" y1="63" x2="222" y2="63"/></g><g><rect class="bx me" x="8" y="108" width="170" height="70" rx="8"/><text class="s1" x="18" y="130">RCRI · E6792 CLIP</text><text class="t2" x="18" y="148">Jetson 上真部署</text><text class="t2" x="18" y="165">nvprof 测过</text><rect class="bx" x="222" y="108" width="170" height="70" rx="8"/><text class="s1" x="232" y="130">IG-VLA · P2P</text><text class="t2" x="232" y="148">VLA 提速 6.38 倍</text><text class="t2" x="232" y="165">VLM 计算量 −55%</text><line class="ar" x1="178" y1="143" x2="222" y2="143"/></g><g><rect class="bx me" x="8" y="188" width="170" height="70" rx="8"/><text class="s1" x="18" y="210">TaskMap · LoRA</text><text class="t2" x="18" y="228">权重的低维表示</text><text class="t2" x="18" y="245">消融实验</text><rect class="bx" x="222" y="188" width="170" height="70" rx="8"/><text class="s1" x="232" y="210">RFID-MoE · PARSE</text><text class="t2" x="232" y="228">P-GAP</text><text class="t2" x="232" y="245">低秩压缩、低维微调</text><line class="ar" x1="178" y1="223" x2="222" y2="223"/></g><g><rect class="bx me" x="8" y="268" width="170" height="70" rx="8"/><text class="s1" x="18" y="290">BOLT 研究</text><text class="t2" x="18" y="308">受控测量</text><text class="t2" x="18" y="325">73% 还是 92%</text><rect class="bx" x="222" y="268" width="170" height="70" rx="8"/><text class="s1" x="232" y="290">GPU-WSE 特性研究</text><text class="t2" x="232" y="308">分层测试 +</text><text class="t2" x="232" y="325">性能模型</text><line class="ar" x1="178" y1="303" x2="222" y2="303"/></g></svg></div>
+
+**第一排最值钱。** 她最新的世界模型论文,正好接你复现过的世界模型。
+
+## 她这几年在做什么 · Her direction over time
+
+黄老师的方向可以看成三段:
+
+1. **2021–2024:稀疏和加速。** Transformer 和图神经网络的剪枝、FPGA 和 GPU 上的软硬协同。
+2. **2025–2026 上半年:大模型压缩。** 专门压 MoE 大模型,还有不用反向传播的微调。
+3. **2026 年 10 月:往世界模型和机器人走。** SpectralCache、IG-VLA、VLM 剪枝都是 10 月才挂上 arXiv 的。
+
+第 3 段就是你的切入点。你消息里写的 robot workloads 刚好对上,这是真的巧,可以大方说。
+
+## 她的基本情况 · Who she is
+
+- Stevens 计算机系 tenure-track 助理教授,2024 年秋入职,在 Hoboken,离你一条河。
+- 博士:UConn,2024。导师 Caiwen Ding 和 Omer Khan。
+- 2024 年 MLCommons ML and Systems Rising Star。
+- 实习过 **ByteDance**(2022 夏,Austin,研究实习)和 Moffett AI(2021 夏)。你也在 TikTok 实习过,可以轻轻提一句,别攀关系。
+- 学生:博士 Zhendong Mi、Hengyi Zhu;共同指导 Qichang Wan、Shenglan Li。很多论文一作是 Zhendong Mi。
+- 算力线索:NSF NAIRR Pilot、Google Cloud Research Credits、OpenAI Researcher Access(主页写的,具体额度不知道)。
+
+⚠️ Stevens 官网她的页面列的是混凝土机器学习论文,那是合作项目。别被带偏,也不用提。
+
+# 篇三 · 她的六篇论文(今晚读)
+> 只看摘要就够,每篇记住一句人话和一句可以说的话。数字全部来自摘要
+
+## 先看这两篇:SpectralCache 和 IG-VLA · Read these two first
+
+### SpectralCache(2026.10,arXiv)
+一作 Zhendong Mi,黄老师是末位作者。
+
+- **问题**:扩散世界模型生成视频要跑很多步,每步都过一遍大网络,太慢。
+- **比方**:画动画,相邻两帧大部分一样,没必要每帧都重画。
+- **做法**:相邻去噪步之间,特征的「方向」(奇异子空间)几乎不变,变的只是「力度」(奇异值)。所以复用方向,只用线性外推估力度。再根据相邻结果的一致性,跳过一些大网络计算。不用重新训练。
+- **结果**:HunyuanWorld-Voyager-13B 上加速 5.22 倍,静态场景 WorldScore 65.90。
+
+> I reproduced Ctrl-World, so I've felt how heavy these rollouts are. What I'd want to know is whether caching that looks fine visually still keeps a policy's outcome the same.
+
+🈶 我复现过 Ctrl-World。我想知道的是:画面上看没问题的缓存,策略的结果还能保持一样吗?
+
+### IG-VLA(2026.10,arXiv)
+一作 Shenglan Li。VLA = vision-language-action,看图 + 听指令 → 出动作。
+
+- **问题**:让机器人先「想象」未来再动作,效果好,但想象太慢。
+- **比方**:学骑车时要一步步想,熟练后变成直觉,想的结果留下来了,过程省掉了。
+- **做法**:训练时预测场景怎么变化,但只在特征空间预测,不生成像素。再把学到的东西压进一个 Scene Gist Token。推理时不再想象,只用这个 token。
+- **结果**:LIBERO-Plus Language 上成功率比最强基线高近 6%;每个动作块延迟从 1081 ms 降到 169.5 ms(单张 A6000);最高 6.38 倍提速。
+
+> 169 milliseconds on an A6000 is a big step. I'm curious how far it is from running on the robot's own compute.
+
+🈶 A6000 上 169 毫秒已经进步很大。我好奇离跑在机器人自己的算力上还有多远。
+
+## 大模型压缩三篇 · Three LLM compression papers
+
+### RFID-MoE(ICML 2026)
+- **问题**:MoE 大模型用 SVD 压缩时,以前对所有专家差不多一视同仁。
+- **比方**:预算有限,常用又重要的工具买好的,很少用的买便宜的。
+- **做法**:用「被调用的频率」和「有效秩」给专家打分,重要的多分秩。压缩丢掉的信息,再用稀疏投影补回来一部分。
+- **结果**:Qwen3-30B 压缩到 60%,PTB 困惑度 16.92,比基线低 8 以上;HellaSwag 准确率约高 8%。
+
+### PARSE(2026.5,arXiv)
+一作 Hengyi Zhu。
+
+- **问题**:SVD 压缩后所有输入都用同样的秩,但不同问题需要的不一样。
+- **比方**:简单问题用小模型回答,难问题多调用一些。
+- **做法**:离线训练一个线性路由器,按 prompt 选秩;相似 prompt 的选择结果可以缓存复用。
+- **结果**:LLaMA-7B 在压缩比 0.6 下平均准确率最高提升 10%;prefill 提速 2.5 倍,decode 提速 2.4 倍。
+
+> PARSE and SpectralCache feel like the same idea at different levels: spend less compute when the input doesn't need it.
+
+🈶 PARSE 和 SpectralCache 好像是同一个想法在不同层面:输入不需要的时候,就少花计算。
+
+### P-GAP(2025.10,arXiv)
+- **问题**:微调大模型要反向传播,内存和时间都贵。零阶方法不用反向传播,但参数太多,估得不准,收敛慢。
+- **做法**:先估一个低维的梯度子空间,在里面沿着投影后的梯度方向扰动。扰动的维度小了,方差小了。
+- **结果**:分类准确率最高 +6%,生成 +12%;迭代最多少约 81%;GPU 时间最多少 70%。
+
+> TaskMap also puts weight updates in a low-dimensional space, but for a different reason: we wanted updates that could be compared across tasks, and you want gradient estimates with lower variance.
+
+🈶 TaskMap 也把权重更新放到低维空间,但目的不同:我们要的是任务之间能比较,您要的是梯度估计方差小。
+
+## VLM 剪枝一篇 · One VLM paper
+
+### Patch-to-Prune / P2P(2026.10,arXiv,合作论文)
+黄老师是中间作者,别说成她的主线工作。
+
+- **做法**:不训练、不改权重。用验证集找出解码器里哪些层的视觉 token 输出可以换成固定的中性向量,这些计算就能跳过。
+- **结果**:允许 3% 误差时,保留约 94% 准确率,FLOPs 降 55%。
+
+> FLOPs dropped 55%, and I'd love to know how much real latency that gives on a small device. On my Jetson work, the speedup at inference and end to end were very different: 12x versus about 7x.
+
+🈶 FLOPs 降了 55%,我很想知道在小设备上真实延迟降多少。我在 Jetson 上测过,推理提速和端到端提速差很多:12 倍对约 7 倍。
+
+## 其他只需要知道名字 · Names to recognize
+
+- **GPU-WSE 那篇(2026.10)**:GPU 加晶圆级芯片的异构系统,什么时候划算。只看到方法,没有具体数字。
+- **Structured Expert Routing(DAC 2026 LBR)**:MoE 在 GPU-CPU 之间调度专家。我**只查到标题**,全文没找到。这是和你「调度」最接近的一篇,可以直接问她。
+- **Sampling via Decision-Flow(AACL 2026)**、**LLM-NAS(GECCO 2026)**、**MaxK-GNN(ASPLOS 2024)**、**PruneGNN(HPCA 2024)**、**E.T.(SC 2021,GPU 上的自注意力)**。
+
+# 篇四 · 基础概念从零讲
+> 她可能随口用这些词。token、attention 在 Byte Veda 手册篇三
+
+## SVD 压缩 · SVD compression
+
+**一句话**:大矩阵的信息常常集中在少数几个方向上,只留那几个方向就够了。
+
+**比方**:一张照片,记「主要的几个明暗模式」,而不是每个像素。
+
+<div class="dg"><svg viewBox="0 0 400 190" role="img" aria-label="SVD 低秩分解示意"><rect class="bx hl" x="14" y="30" width="110" height="110" rx="4"/><text class="s1" x="69" y="82" text-anchor="middle">W</text><text class="t2" x="69" y="100" text-anchor="middle">1000 × 1000</text><text class="s1" x="140" y="90" text-anchor="middle">≈</text><rect class="bx me" x="158" y="30" width="46" height="110" rx="4"/><text class="s1" x="181" y="88" text-anchor="middle">U</text><rect class="bx me" x="216" y="74" width="28" height="28" rx="4"/><text class="s1" x="230" y="93" text-anchor="middle">S</text><rect class="bx me" x="256" y="62" width="130" height="46" rx="4"/><text class="s1" x="321" y="90" text-anchor="middle">Vᵀ</text><text class="t2" x="181" y="158" text-anchor="middle">1000 × 50</text><text class="t2" x="230" y="124" text-anchor="middle">50 个数</text><text class="t2" x="321" y="124" text-anchor="middle">50 × 1000</text><text class="t2" x="200" y="182" text-anchor="middle">存储:100 万 → 约 10 万,小了约 90%</text></svg></div>
+
+**算一遍**:1000×1000 的矩阵有 1,000,000 个数。留秩 50:U 有 50,000,V 有 50,000,S 有 50,合计 100,050。小了约 90%,乘法也少了差不多这么多。
+
+**代价**:丢掉的方向就是信息损失。秩越低越省,但准确率可能掉。
+
+**黄老师的两步改进**:RFID-MoE 决定「哪个专家留多少秩」;PARSE 决定「这个问题用多少秩」。
+
+> SVD keeps only the strongest directions of a weight matrix. A 1000 by 1000 matrix at rank 50 goes from a million numbers to about a hundred thousand.
+
+<span class="tg me">真做过相近的</span> TaskMap 用的是**固定**的正交基,不是对每层做 SVD。两者都是「低维坐标」,但基不一样。别说成同一件事。
+
+## MoE:专家混合 · Mixture of experts
+
+**一句话**:把大模型的一层拆成很多「专家」,每个 token 只叫几个专家干活。
+
+<div class="dg"><svg viewBox="0 0 400 200" role="img" aria-label="MoE 路由示意"><rect class="bx hl" x="150" y="10" width="100" height="36" rx="8"/><text class="s1" x="200" y="33" text-anchor="middle">一个 token</text><rect class="bx" x="130" y="66" width="140" height="36" rx="8"/><text class="s1" x="200" y="89" text-anchor="middle">路由器选 top-k</text><line class="ar" x1="200" y1="46" x2="200" y2="66"/><g><rect class="bx me" x="20" y="134" width="64" height="40" rx="6"/><text class="t2" x="52" y="158" text-anchor="middle">专家 1</text><rect class="bx" x="96" y="134" width="64" height="40" rx="6"/><text class="t2" x="128" y="158" text-anchor="middle">专家 2</text><rect class="bx me" x="172" y="134" width="64" height="40" rx="6"/><text class="t2" x="204" y="158" text-anchor="middle">专家 3</text><rect class="bx" x="248" y="134" width="64" height="40" rx="6"/><text class="t2" x="280" y="158" text-anchor="middle">专家 4</text><text class="t2" x="352" y="158" text-anchor="middle">… 几百个</text></g><line class="ar" x1="170" y1="102" x2="52" y2="134"/><line class="ar" x1="200" y1="102" x2="204" y2="134"/><text class="t2" x="200" y="194" text-anchor="middle">全部专家都要占内存,但每次只算被选中的</text></svg></div>
+
+**比方**:大医院几百个专科医生,每个病人只看两三个。
+
+**为什么好压缩**:专家被叫的次数差很多。很少被叫的专家可以压得更狠。这就是 RFID-MoE 的「路由频率」。
+
+**为什么和调度有关**:每次只算几个专家,其余可以放到 CPU 内存里,要用时再搬上 GPU。这就是 GPU-CPU 编排。
+
+> In a mixture-of-experts model, a router picks a few experts for each token. All experts take memory, but only the chosen ones compute, so memory is the bottleneck and usage is uneven.
+
+<span class="tg gen">只懂原理</span>
+
+## 剪枝、量化、蒸馏 · Pruning, quantization, distillation
+
+- **剪枝**:把不重要的权重或结构删掉。比方:修树枝。
+- **量化**:用更少的位存每个数,32 位变 16 位或 8 位。比方:价格只记到元。你的 RCRI 用的就是 **FP16**。
+- **蒸馏**:用大模型教小模型。比方:老师把经验讲给学生。
+- **稀疏训练**:训练时就保持大部分权重为 0,而不是训完再剪。她 DAC 2023 做过。
+- **分解**:SVD 这类,上面讲了。
+
+<span class="tg me">真做过</span> FP16 和 TensorRT。<span class="tg gen">只懂原理</span> 剪枝、蒸馏、稀疏训练。
+
+## 零阶优化 · Zeroth-order optimization
+
+**一句话**:不用反向传播,只靠多跑几次前向,试出该往哪走。
+
+**比方**:蒙着眼下山。往某个方向迈一小步、再往反方向迈一小步,哪边低就知道了。
+
+**公式**(知道意思就行):
+
+`g ≈ [ L(θ + μu) − L(θ − μu) ] / (2μ) · u`
+
+θ 是参数,u 是随机方向,μ 是步长。L 是损失。
+
+**难点**:参数有几十亿个,随机方向几乎都试不到点子上,估得很不准。P-GAP 的办法就是先把搜索范围缩到低维。
+
+**好处**:不存计算图,省内存,所以适合小设备微调。
+
+<span class="tg gen">只懂原理</span>
+
+## 为什么扩散模型能缓存 · Why diffusion can be cached
+
+扩散模型从噪声开始,一步一步去噪。每一步都要过一次大网络。
+
+<div class="dg"><svg viewBox="0 0 400 150" role="img" aria-label="扩散步缓存示意"><g><rect class="bx me" x="10" y="30" width="62" height="40" rx="6"/><text class="t2" x="41" y="55" text-anchor="middle">第 1 步</text><rect class="bx" x="88" y="30" width="62" height="40" rx="6"/><text class="t2" x="119" y="55" text-anchor="middle">第 2 步</text><rect class="bx" x="166" y="30" width="62" height="40" rx="6"/><text class="t2" x="197" y="55" text-anchor="middle">第 3 步</text><rect class="bx me" x="244" y="30" width="62" height="40" rx="6"/><text class="t2" x="275" y="55" text-anchor="middle">第 4 步</text><rect class="bx" x="322" y="30" width="62" height="40" rx="6"/><text class="t2" x="353" y="55" text-anchor="middle">第 5 步</text></g><line class="ar" x1="72" y1="50" x2="88" y2="50"/><line class="ar" x1="150" y1="50" x2="166" y2="50"/><line class="ar" x1="228" y1="50" x2="244" y2="50"/><line class="ar" x1="306" y1="50" x2="322" y2="50"/><rect class="bx me" x="60" y="100" width="18" height="18" rx="3"/><text class="t2" x="84" y="114">完整计算</text><rect class="bx" x="190" y="100" width="18" height="18" rx="3"/><text class="t2" x="214" y="114">复用并外推,省时间</text><text class="t2" x="200" y="142" text-anchor="middle">示意图,不是论文的实际步数安排</text></svg></div>
+
+相邻两步的中间特征很像,所以可以不重算,拿上一步的结果估一下。
+
+**缓存的风险**:估错了,错误会一步步带下去。视频很长时更明显。
+
+<span class="tg me">相关经验</span> 你在 iQIYI 把扩散图像生成管线的端到端延迟降了约 30%,但**不是**用特征缓存。别说成缓存。
+
+## 世界模型、VLA、action chunk · World models, VLA, action chunks
+
+- **世界模型**:模型内部的模拟器。给当前画面和一个动作,预测接下来会发生什么。这样不用真机器人也能试策略。
+- **Ctrl-World**:用扩散模型做世界模型,基于 Stable Video Diffusion。三个特点:多视角联合预测、按位姿检索记忆、逐帧的动作条件。
+- **VLA**:看图 + 听指令 → 输出动作。
+- **action chunk**:一次输出接下来一小段动作,而不是一步一步出。IG-VLA 的 169.5 ms 是一个 chunk 的时间。
+- **为什么延迟要紧**:机器人的世界不会等你。模型算得慢,动作就基于旧画面。
+
+## prefill 和 decode · Prefill and decode
+
+- **prefill**:读你的 prompt,把上下文算一遍。
+- **decode**:一个 token 一个 token 往外吐。
+
+PARSE 两个都提速了。这个你为 Alpaca 学过。
+
+# 篇五 · 她可能问的题
+> 每题先中文提纲,再英文原话。不要背,记住结构
+
+## 1. "GPU scheduling for robot workloads" 是什么意思?· What do you mean by that?
+
+这是你自己写的,她很可能问。先说清楚:**你还没做过调度器**。
+
+提纲:一个机器人上有好几个模型共用 GPU → 每个的截止时间不一样 → 现在大多串行 → 想按剩余时间决定谁降质量。
+<span class="en">Outline: several models share one GPU → each has a different deadline → most run in series today → decide who gives up quality based on time left.</span>
+
+> A robot runs several models on one GPU: perception, maybe a policy, maybe a world model. They have different deadlines. In RCRI we just ran them in series, and that's why 12 FPS fell to 5. I haven't built a scheduler yet. What I'd like to explore is whether the system can decide at runtime which model should give up some quality, based on how much time is left.
+
+🈶 一个机器人要在一块 GPU 上跑好几个模型:感知、策略,可能还有世界模型,它们的截止时间不一样。RCRI 里我们只是串行跑,所以 12 FPS 掉到 5。我还没做过调度器。我想探索的是,系统能不能在运行时根据剩余时间,决定哪个模型牺牲一点质量。
+
+## 2. 讲讲 RCRI · Tell me about RCRI
+
+<span class="tg me">真做过</span> 两人项目,各约一半;姿态打分和 HSV 分组是队友的。
+
+> We wanted to recognize climbing routes from a camera on a small device with no cloud. I trained YOLOv8 on GCP, reaching mAP50 of 0.825 for the hold detector, exported to ONNX, and compiled a TensorRT FP16 engine on a 2-gigabyte Jetson Nano. Its GPU has no fast INT8 path, so FP16 was the right choice. Detection runs at 12 FPS, 83 milliseconds a frame, at about 5 watts. The full pipeline takes about 200 milliseconds a frame, so 5 FPS.
+
+追问:
+
+- **怎么把 5 FPS 提上去?** 两个模型共用主干;只对新出现的岩点分类;隔几帧分类一次。<span class="en">Share a backbone, classify only new holds, or classify every few frames.</span> 这些是想法,**没做过**。
+- **最难的 bug?** ONNX 后处理多做了一次 sigmoid,分数全挤在 0.5,每张图只出约 10 个岩点。去掉后 40 多个。<span class="en">Double sigmoid squeezed scores near 0.5; about 10 holds per image became over 40.</span>
+
+## 3. 讲讲 GPU 那门课 · Tell me about the GPU course
+
+<span class="tg me">真做过</span> E6792。**kernel 是课程给的,你写的是 host 端。**
+
+> In E6792 I wrote the CUDA host layer for a small CNN: device memory, launch configuration, data types. The kernels were provided. Then I profiled YOLOv4-Tiny on a Jetson Nano. TensorRT took inference from about 1 to 13 FPS, around 12 times, but end to end only from 1 to 7.45, because the CPU parts didn't get faster. That's Amdahl's law showing up in a real measurement.
+
+🈶 12 倍和 7.45 倍的差距,就是因为 GPU 之外的部分没变快。
+
+另外还有 CLIP:文本塔预先算好存起来,每帧只跑图像塔。<span class="en">Text embeddings are cached, so each frame runs only the image tower.</span>
+
+## 4. 讲讲 Ctrl-World · Tell me about Ctrl-World
+
+<span class="tg nt">复现过</span> 没有改算法,这点要说清楚。
+
+> I reproduced all three inference modes: replaying dataset trajectories, keyboard-controlled rollouts, and policy-in-the-loop rollouts. I worked through environment and export problems across PyTorch, Stable Video Diffusion, CLIP and OpenPI, then looked at rollout coherence, control responsiveness and task completion. I didn't change the method.
+
+⚠️ **「一条 rollout 跑多久」她很可能问,而我这边没有记录。** 今晚想一下:
+
+- A:记得大概数字 → 直接说,加一句 "roughly"。
+- B:记得很慢但没数字 → "It was slow enough to feel it, but I didn't measure it carefully, and that's the first thing I'd do."
+- C:完全不记得 → "I didn't record latency at the time. I can rerun it and send you numbers."
+
+回忆线索:用的什么 GPU?在哪台机器上跑的?当时等一条视频要不要去干别的?
+
+## 5. 讲讲 TaskMap · Tell me about TaskMap
+
+<span class="tg me">真做过</span> 二作,你做的是消融和冷启动实验。
+
+> One frozen LLM serves many tasks, and a shared LoRA makes them interfere. TaskMap writes each task's FFN update as coefficients in shared fixed orthogonal bases, so updates have comparable coordinates. I ran the ablations and the cold-start experiments on a frozen BF16 Qwen2.5-1.5B. The ablations showed the gains come from block-specific coefficients, not learned routing or sparsity. On 20 unseen tasks, the worst drop was 7.9 versus 26.7 for shared LoRA. LoRA still has the higher average, and direct per-task optimization beats us on known tasks.
+
+主动说局限,她是做这行的,这比吹更让人信。
+
+- **为什么正交?** 两个更新的距离等于两组系数的距离,系数是唯一的坐标。LoRA 的 B·A 不唯一。<span class="en">With orthonormal bases, distance between updates equals distance between coefficients. LoRA factors aren't unique.</span>
+- **会更慢吗?** 实验里用 Python hook 加残差,没有优化。单任务可以把更新合进权重。<span class="en">We used Python hooks. For one task you could merge the update into the weights.</span> 后半句是你的想法。
+
+## 6. 你的 LoRA 经验 · Your LoRA experience
+
+你消息里写了 LoRA fine-tuning。三处:
+
+- SJTU:LLaMA2 用 PEFT/LoRA 微调,内部评测 +22%。
+- iQIYI:管理多个 LoRA 适配器,做风格控制的图像生成。
+- TaskMap:LoRA 是对照组。
+
+## 7. 你怎么做实验?· How do you run experiments?
+
+讲 BOLT,这是最能打动做系统的人的故事。
+
+> In a compiler project, we measured how much a stale profile could be recovered. Without a controlled environment, Wax showed 73%. With a controlled one, it was 92%. Same method, different measurement. Now I control the environment before I believe a number.
+
+🈶 同样的方法,没控制环境测出 73%,控制后 92%。所以现在我先控环境,再信数字。
+
+## 8. 为什么读博?· Why a PhD?
+
+⚠️ **这段只能你自己定,下面是草稿。** 不像你说的话就改。
+
+> In industry I got good at making things work. The questions I keep wanting to answer are different: why something is slow, and whether a different representation or schedule would change that. I want a few years to go deep on one of those.
+
+追问 **"也在找工作吗?"**:如实说就好。
+
+> Yes, I'm looking at industry roles too, since I graduate in December. Research is what I want to build toward, and working with a group before applying would help me decide well.
+
+## 9. 想申哪些学校?· Which schools?
+
+我没有你的申请名单。今晚想一下。不确定就说:
+
+> I'm still building my list. I'm looking for groups working on efficient systems for robots and world models, and yours is very close to that.
+
+Stevens 博士:**1 月 15 日是 preferred deadline**,之后滚动。全部博士生有资助,要两封推荐信、SOP、writing sample,GRE 可选。
+
+## 10. 一周能投入多少?什么时候开始?· Time and start date
+
+⚠️ **我不替你填这个数。** 明天之前想好:
+
+- 这学期到 12 月:每周 ___ 小时(还有课和求职)。
+- 1 月以后:能不能更多?
+
+> I can do about [X] hours a week until I graduate in December, and more after that.
+
+**实习的身份和钱**:你不主动提。她问到再说 "I'd check with Columbia's international office to make sure the setup is right."
+
+## 11. 现场解释题 · Explain on the spot
+
+她可能会顺手考一下:
+
+- **SVD 压缩怎么省?** 看篇四。
+- **MoE 为什么卡内存?** 看篇四。
+- **TensorRT 做了什么?** 把计算图针对这块 GPU 编译成引擎:合并层、挑最快实现、用 FP16。<span class="en">It compiles the graph for this GPU: fusing layers, picking fast implementations, using FP16.</span>
+- **FLOPs 和延迟为什么不一样?** FLOPs 只数乘加。真实延迟还有内存访问、kernel 启动、数据搬运。<span class="en">FLOPs count arithmetic only. Latency also includes memory access, kernel launches and data movement.</span>
+
+不会就说不会:
+
+> I haven't worked on that directly. My understanding is [一句话], but I'd want to read more before I rely on it.
+
+# 篇六 · 你可以提的想法
+> 这些是我替你想的,她组里可能已经做过。全部用问句提,别说成计划已定
+
+## 总思路 · The big picture
+
+她的论文里已经有好几个「用质量换时间」的旋钮:
+
+- SpectralCache:少算几步。
+- PARSE:用低一点的秩。
+- P2P:跳过一部分视觉计算。
+
+这些旋钮大多在**上线前**或者**按输入**定好。机器人多一个条件:**有截止时间**。
+
+<div class="dg"><svg viewBox="0 0 400 236" role="img" aria-label="按截止时间调度的想法"><rect class="bx hl" x="110" y="8" width="180" height="44" rx="8"/><text class="s1" x="200" y="27" text-anchor="middle">这一帧还剩多少时间?</text><text class="t2" x="200" y="44" text-anchor="middle">控制回路的截止时间</text><rect class="bx me" x="110" y="76" width="180" height="40" rx="8"/><text class="s1" x="200" y="101" text-anchor="middle">调度器(还不存在)</text><line class="ar" x1="200" y1="52" x2="200" y2="76"/><g><rect class="bx" x="8" y="148" width="120" height="54" rx="8"/><text class="s1" x="68" y="170" text-anchor="middle">世界模型</text><text class="t2" x="68" y="190" text-anchor="middle">少算几步</text><rect class="bx" x="140" y="148" width="120" height="54" rx="8"/><text class="s1" x="200" y="170" text-anchor="middle">大模型</text><text class="t2" x="200" y="190" text-anchor="middle">降低秩</text><rect class="bx" x="272" y="148" width="120" height="54" rx="8"/><text class="s1" x="332" y="170" text-anchor="middle">感知</text><text class="t2" x="332" y="190" text-anchor="middle">隔帧分类</text></g><line class="ar" x1="170" y1="116" x2="68" y2="148"/><line class="ar" x1="200" y1="116" x2="200" y2="148"/><line class="ar" x1="230" y1="116" x2="332" y2="148"/><text class="t2" x="200" y="226" text-anchor="middle">目标:按时出动作,质量损失最小</text></svg></div>
+
+> Your papers already have several knobs that trade quality for time. On a robot there's also a deadline. Could a scheduler turn those knobs at runtime, based on how much time is left in the control loop?
+
+🈶 您的论文里已经有好几个用质量换时间的旋钮。机器人还多了截止时间。能不能有个调度器,在运行时根据控制回路还剩多少时间去转这些旋钮?
+
+**这是方向,不是第一步。** 她多半会问「那你先做什么」,接下面的想法 A。
+
+## 想法 A(首选):缓存放到 Ctrl-World 上 · Idea A: caching in Ctrl-World
+
+**问题**:SpectralCache 看的是生成质量。但世界模型用来评估策略时,要紧的是**策略结果有没有变**。画面差一点没事,但判断错了成败就有问题。
+
+**为什么是你**:你已经复现过 Ctrl-World,环境是通的(需要确认环境现在还在)。
+
+**第一周**:
+
+1. 测每步去噪的时间,算出全流程哪里最贵。
+2. 加一个最简单的步间缓存。
+3. 对比:加缓存和不加,同一个策略的任务成败是否一致。
+
+> I already have experience with Ctrl-World's rollouts. A small first step could be measuring where the time goes, adding simple step caching, and checking whether a policy's task outcomes stay the same, not just the video quality. Has your group tried something like this?
+
+**可能的风险**:Ctrl-World 基于 Stable Video Diffusion,和 Hunyuan 结构不同,SpectralCache 不一定直接能用。
+
+## 想法 B(备选):FLOPs 对真实延迟 · Idea B: FLOPs versus real latency
+
+**问题**:P2P 这类方法报 FLOPs 降 55%。到小设备上,真实延迟和功耗降多少?
+
+**为什么是你**:你用 nvprof 测过,也见过 12 倍和 7.45 倍的差距。
+
+**注意**:你的 Jetson Nano 只有 2 GB,跑不动 Qwen2.5-VL 这种 VLM。要用更大的板子,比如 Orin,或者先在普通 GPU 上测。
+
+> I've seen a big gap between model speedup and end-to-end speedup. Would it be useful to measure how FLOPs reductions like P2P translate into real latency and power on an edge device?
+
+## 想法 C(她对大模型感兴趣时):TaskMap 和低秩 · Idea C: TaskMap meets low rank
+
+只在她主动聊 LLM 压缩时提。没有想法 A、B 那么具体。
+
+> In TaskMap, each task is a small set of coefficients. I wonder if those could predict which rank a task needs, the way PARSE does per prompt.
+
+# 篇七 · 反问和收尾
+> 选三个问。第一个和最后一个必问
+
+## 反问 · Questions to ask
+
+1. **方向**(必问)<br>
+"Your recent papers moved toward world models and VLA. Is that a main direction for the group now?"<br>
+🈶 最近的论文转向世界模型和 VLA 了,这是组里现在的主要方向吗?
+
+2. **调度**<br>
+"I could only find the title of your DAC paper on expert routing under GPU-CPU orchestration. Could you tell me what the key idea was?"<br>
+🈶 您 DAC 那篇 GPU-CPU 编排我只查到了标题,能讲讲核心想法吗?
+
+3. **远程实习**<br>
+"How do remote interns usually work with the group? Do they work with you directly or with a PhD student?"<br>
+🈶 远程实习生一般怎么和组里配合?直接跟您还是跟博士生?
+
+4. **什么样的人合适**<br>
+"What makes a remote intern go well or badly, in your experience?"<br>
+🈶 您觉得远程实习生做得好或不好的区别在哪?
+
+5. **算力**<br>
+"For work like SpectralCache, what compute would an intern have access to?"<br>
+🈶 像 SpectralCache 这种工作,实习生能用到什么算力?
+
+6. **博士**<br>
+"Are you planning to take PhD students for Fall 2027? What would you want to see from an applicant before January?"<br>
+🈶 Fall 2027 您计划招博士吗?1 月之前您希望申请人做到什么?
+
+7. **下一步**(必问)<br>
+"What would be a good small first task? And should I send my CV and transcripts to your hiring email?"<br>
+🈶 什么样的小任务适合开始?CV 和成绩单发您的招聘邮箱可以吗?
+
+## 收尾 · Closing
+
+> Thank you so much, this was really helpful. I'll send you my CV and [她说的那件事] by [你能做到的日期].
+
+会后当天发感谢。发之前给我看一下,我按聊的内容改:
+
+> Hi Professor Huang, thank you for your time today. I especially enjoyed hearing about [具体一点]. As we discussed, I've attached my CV and transcript, and I'll [下一步] by [日期]. Best, Christina
+
+⚠️ 她主页的招聘邮箱是 shaoyi.hiring@gmail.com,她的学校邮箱是 shuang59@stevens.edu。看她说发哪个。
+
+# 篇八 · 别说错
+> 这些都是事实边界,她一追问就露馅
+
+## 事实红线 · Facts to keep straight
+
+- **kernel 不是你写的。** E6792 的 kernel 是课程给的,你写 host 端。
+- **12 FPS 只是检测。** 全流程 5 FPS。
+- **RCRI 是两人项目。** 你们各约一半。
+- **Ctrl-World 是复现。** 没改算法,没有新结果。
+- **iQIYI 的 −30% 不是缓存做的。**
+- **TaskMap 你是二作,已接收,WSDM 2027 Findings。** 别再说 under review。平均分 LoRA 更高。
+- **调度器你没做过。** 这是兴趣。
+- **P2P 她不是一作。** 也别说 IG-VLA 是她一作。
+- **论文你只读了摘要**,就说 "I read the abstract"。她问细节时:"I haven't gone through that section yet."
+
+## 成绩单和 CV · Transcript and CV
+
+她要 CV 和成绩单。**一旦发成绩单,CV 上的 GPA 必须和成绩单一致:3.72,不能写 4.0。** 本科 GPA 写 3.7。
+
+**毕业时间**:你的领英标题写 Dec 2026,这里就说 December 2026,别说 May 2027。
+
+## 今晚和明天 · Tonight and tomorrow
+
+**今晚 30 分钟**:
+
+1. 读 SpectralCache 和 IG-VLA 的摘要(10 分钟)。<a href="https://arxiv.org/abs/2610.02660">SpectralCache</a> · <a href="https://arxiv.org/abs/2610.02626">IG-VLA</a>
+2. 开场念三遍(5 分钟)。
+3. 想好三个空(5 分钟):**每周几小时、为什么读博、Ctrl-World 跑多久**。
+4. 看一遍想法 A,能用自己的话讲(10 分钟)。
+
+**明天 14:45**:只看篇零和反问。喝口水。
+
+**来源**:<a href="https://www.shaoyihuang.com/">她的主页</a> · <a href="https://scholar.google.com/citations?user=Ybk2L10AAAAJ&hl=en&sortby=pubdate">Google Scholar</a> · <a href="https://arxiv.org/abs/2602.09316">RFID-MoE</a> · <a href="https://arxiv.org/abs/2605.08568">PARSE</a> · <a href="https://arxiv.org/abs/2510.18228">P-GAP</a> · <a href="https://arxiv.org/abs/2610.03389">P2P</a> · <a href="https://www.stevens.edu/admission-aid/graduate-admissions/application-deadlines">Stevens 截止日期</a>
+</script>
+<script type="application/json" id="gloss">{}</script>
+<div id="tip"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+const md=document.getElementById('src').textContent;
+const main=document.getElementById('body');
+main.innerHTML=marked.parse(md,{mangle:false,headerIds:false});
+main.querySelectorAll('p,li,td').forEach(el=>{el.innerHTML=el.innerHTML.replace(/🈶([^<）]*)/g,'<span class="zh">🈶$1</span>');});
+const DKEY='shaoyi_1106_done_v1';const FKEY='shaoyi_1106_fav_v1';const LKEY='shaoyi_1106_later_v1';
+function ld(k,d){try{return JSON.parse(localStorage.getItem(k)||d)}catch(e){return JSON.parse(d)}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let done=ld(DKEY,'{}');
+function hkey(t){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))>>>0;return 'h'+h.toString(36)}
+
+/* 篇 banners + TOC groups */
+const tl=document.getElementById('tl');const heads=[];let n=0;
+let group=null,gwrap=null,lastL2=null,l2count=0;
+const groups=[];
+main.querySelectorAll('h1,h2,h3').forEach(h=>{
+  const raw=h.textContent.trim();
+  const id='s'+(n++);h.id=id;heads.push(h);
+  if(h.tagName==='H1'&&raw.startsWith('篇')){
+    const desc=h.nextElementSibling&&h.nextElementSibling.tagName==='BLOCKQUOTE'?h.nextElementSibling:null;
+    const d=document.createElement('div');d.className='part';d.id=id;
+    d.innerHTML='<div class="k">PART</div><h1></h1>'+(desc?'<p>'+desc.textContent+'</p>':'');
+    d.querySelector('h1').textContent=raw;h.replaceWith(d);if(desc)desc.remove();
+    group=document.createElement('details');group.open=true;
+    group.innerHTML='<summary>'+raw+'<span class="pp"></span></summary>';
+    gwrap=document.createElement('div');group.appendChild(gwrap);tl.appendChild(group);
+    groups.push({el:group,items:[]});
+    return;
+  }
+  const key=hkey(raw);h.dataset.k=key;
+  const a=document.createElement('a');a.href='#'+id;a.textContent=raw;
+  a.className=h.tagName==='H1'?'l1':h.tagName==='H2'?'l2':'l3';
+  if(h.tagName==='H3'){if(lastL2)a.classList.add('of-'+lastL2);}
+  if(h.tagName==='H2'){lastL2=key;a.dataset.k=key;}
+  if(done[key])a.classList.add('done');
+  a.dataset.hk=key;
+  (gwrap||tl).appendChild(a);
+  if(h.tagName!=='H1'&&groups.length)groups[groups.length-1].items.push(key);
+  if(h.tagName==='H2'){a.addEventListener('click',()=>{a.classList.toggle('open');});}
+  /* heading widgets */
+  const chk=document.createElement('span');chk.className='chk'+(done[key]?' on':'');chk.textContent=done[key]?'✓ 掌握':'☐ 掌握';chk.title='勾上=这节我掌握了';
+  chk.onclick=()=>{done[key]=!done[key];if(!done[key])delete done[key];sv(DKEY,done);chk.className='chk'+(done[key]?' on':'');chk.textContent=done[key]?'✓ 掌握':'☐ 掌握';a.classList.toggle('done',!!done[key]);prog();};
+  h.appendChild(chk);
+  {const fv=ld(FKEY,'{}');const st=document.createElement('span');st.className='fav'+(fv[key]?' on':'');st.textContent=fv[key]?'★ 已收藏':'☆ 收藏';st.title='收藏这一节,集中显示在页面最上面';
+   st.onclick=()=>{const f=ld(FKEY,'{}');if(f[key])delete f[key];else f[key]={t:raw.slice(0,80),ts:Date.now()};sv(FKEY,f);st.className='fav'+(f[key]?' on':'');st.textContent=f[key]?'★ 已收藏':'☆ 收藏';renderFavs();};
+   h.appendChild(st);}
+  {const lv=ld(LKEY,'{}');const lt=document.createElement('span');lt.className='lat'+(lv[key]?' on':'');lt.textContent=lv[key]?'🔖 待看':'🔖 稍后';lt.title='标记稍后再看';if(lv[key])a.classList.add('lat-on');
+   lt.onclick=()=>{const f=ld(LKEY,'{}');if(f[key])delete f[key];else f[key]={t:raw.slice(0,80),ts:Date.now()};sv(LKEY,f);lt.className='lat'+(f[key]?' on':'');lt.textContent=f[key]?'🔖 待看':'🔖 稍后';a.classList.toggle('lat-on',!!f[key]);renderLater();};
+   h.appendChild(lt);}
+  const ask=document.createElement('a');ask.className='ask';ask.textContent='＋问';ask.title='对这一节提问';
+  ask.onclick=()=>{setSec(h);document.getElementById('qtext').focus();};
+  h.appendChild(ask);
+});
+function prog(){
+  let T=0,D=0;
+  groups.forEach(g=>{const t=g.items.length,d=g.items.filter(k=>done[k]).length;T+=t;D+=d;g.el.querySelector('.pp').textContent=d+'/'+t;});
+  document.getElementById('allprog').innerHTML='已掌握 '+D+' / '+T+' 节<div class="bar"><i style="width:'+(T?100*D/T:0)+'%"></i></div>';
+}
+prog();
+function secNodes(h){const out=[];const lvl=+h.tagName[1];let e=h.nextElementSibling;while(e){if(/^H[1-3]$/.test(e.tagName)&&(+e.tagName[1])<=lvl)break;if(!e.classList.contains('chnav'))out.push(e);e=e.nextElementSibling;}return out;}
+function renderFavs(){const box=document.getElementById('favs');const f=ld(FKEY,'{}');const ks=Object.keys(f).sort((a,b)=>f[a].ts-f[b].ts);
+  box.innerHTML='';const h2=document.createElement('h2');h2.textContent='⭐ 我的收藏 ('+ks.length+')';box.appendChild(h2);
+  if(!ks.length){const p=document.createElement('p');p.className='hint';p.textContent='点任意标题旁的「☆ 收藏」,那一节会集中出现在这里;可以一键全部展开,面试前只看这一块。收藏存在这台设备的浏览器里。';box.appendChild(p);return;}
+  const all=document.createElement('button');all.className='fbtn';all.textContent='全部展开';let open=false;
+  all.onclick=()=>{open=!open;all.textContent=open?'全部收起':'全部展开';box.querySelectorAll('.fi').forEach(fi=>fi._set(open));};h2.appendChild(all);
+  const cp=document.createElement('button');cp.className='fbtn';cp.textContent='复制收藏清单';cp.onclick=()=>{const txt=ks.map((k,i)=>(i+1)+'. '+f[k].t).join('\n');try{navigator.clipboard.writeText(txt).then(()=>{cp.textContent='已复制';setTimeout(()=>cp.textContent='复制收藏清单',1500);},()=>{prompt&&0;});}catch(e){}};h2.appendChild(cp);
+  ks.forEach(k=>{const h=heads.find(x=>x.dataset.k===k);const fi=document.createElement('div');fi.className='fi';const row=document.createElement('div');row.className='row';
+    const a=document.createElement('a');a.className='t';a.textContent=f[k].t;if(h)a.href='#'+h.id;row.appendChild(a);
+    const tg=document.createElement('button');tg.className='fbtn';tg.textContent='展开';row.appendChild(tg);
+    const rm=document.createElement('button');rm.className='fbtn';rm.textContent='✕';rm.title='取消收藏';rm.onclick=()=>{const g=ld(FKEY,'{}');delete g[k];sv(FKEY,g);if(h){const st=h.querySelector('.fav');if(st){st.className='fav';st.textContent='☆ 收藏';}}renderFavs();};row.appendChild(rm);
+    fi.appendChild(row);const body=document.createElement('div');body.className='body';body.hidden=true;fi.appendChild(body);
+    fi._set=(on)=>{if(on&&!body.childNodes.length&&h){secNodes(h).forEach(n=>{const c=n.cloneNode(true);c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));c.removeAttribute&&c.removeAttribute('id');body.appendChild(c);});}body.hidden=!on;tg.textContent=on?'收起':'展开';};
+    tg.onclick=()=>fi._set(body.hidden);box.appendChild(fi);});
+}
+renderFavs();
+function renderLater(){const box=document.getElementById('later');const f=ld(LKEY,'{}');const ks=Object.keys(f).sort((a,b)=>f[a].ts-f[b].ts);
+  box.innerHTML='';if(!ks.length){box.hidden=true;return;}box.hidden=false;
+  const h2=document.createElement('h2');h2.textContent='🔖 稍后再看 ('+ks.length+')';box.appendChild(h2);
+  ks.forEach(k=>{const h=heads.find(x=>x.dataset.k===k);const fi=document.createElement('div');fi.className='fi';const row=document.createElement('div');row.className='row';
+    const a=document.createElement('a');a.className='t';a.textContent=f[k].t;if(h)a.href='#'+h.id;row.appendChild(a);
+    const tg=document.createElement('button');tg.className='fbtn';tg.textContent='展开';row.appendChild(tg);
+    const ok=document.createElement('button');ok.className='fbtn';ok.textContent='看完了';ok.title='从稍后再看里移除';
+    ok.onclick=()=>{const g=ld(LKEY,'{}');delete g[k];sv(LKEY,g);if(h){const lt=h.querySelector('.lat');if(lt){lt.className='lat';lt.textContent='🔖 稍后';}const ta=tl.querySelector('a[data-hk="'+k+'"]');if(ta)ta.classList.remove('lat-on');}renderLater();};row.appendChild(ok);
+    fi.appendChild(row);const body=document.createElement('div');body.className='body';body.hidden=true;fi.appendChild(body);
+    tg.onclick=()=>{const on=body.hidden;if(on&&!body.childNodes.length&&h){secNodes(h).forEach(n=>{const c=n.cloneNode(true);c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));body.appendChild(c);});}body.hidden=!on;tg.textContent=on?'收起':'展开';};
+    box.appendChild(fi);});
+}
+renderLater();
+/* quick links */
+const Q=[["速览", "第 0 章"], ["公司", "第 1 章"], ["开场项目", "第 2 章"], ["动机安排", "A 部分"], ["本地大模型", "B 部分"], ["押题 32", "C 部分"], ["反问", "第 4 章"], ["请你确认", "附录 D"]];
+const quick=document.getElementById('quick');
+(function(){try{const last=JSON.parse(localStorage.getItem('shaoyi_1106_last_v1')||'null');if(last&&last.k){const h=heads.find(x=>x.dataset.k===last.k);if(h){const a=document.createElement('a');a.href='#'+h.id;a.textContent='↩ 上次看到:'+last.title.slice(0,18);a.style.borderColor='var(--acc)';a.style.color='var(--acc)';quick.appendChild(a);}}}catch(e){}})();
+Q.forEach(([label,pre])=>{const h=heads.find(x=>x.textContent.trim().startsWith(pre)||x.textContent.trim().includes(pre));if(!h)return;const a=document.createElement('a');a.href='#'+h.id;a.textContent=label;quick.appendChild(a);});
+/* search: match H1/H2/H3, show matched H3 */
+document.getElementById('q').addEventListener('input',e=>{const v=e.target.value.toLowerCase().trim();
+  tl.querySelectorAll('a').forEach(a=>{const hit=!v||a.textContent.toLowerCase().includes(v);a.hidden=!hit;if(a.classList.contains('l3'))a.style.display=(v&&hit)?'block':'';});
+  tl.querySelectorAll('details').forEach(d=>{d.open=true;});
+});
+main.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b)}catch(e){}});
+
+/* ---- 生动化:给标注块上色 ---- */
+main.querySelectorAll('blockquote').forEach(q=>{
+  const t=q.textContent.trim();
+  main.querySelectorAll('blockquote').forEach(bq=>{const t=bq.textContent.trim();if(t.startsWith('🔤')){const p=document.createElement('p');p.className='legend';p.innerHTML=bq.innerHTML.replace(/<\/?p>/g,' ').replace('🔤','');bq.replaceWith(p);}});
+  const map=[['🔰','co-basic','零基础版'],['⚠️','co-warn','注意'],['🔴','co-hot','重要'],['✅','co-ok','已核实'],['💡','co-tip','提示'],['📍','co-hot','阅读位置'],['🈶','co-say','中文']];
+  for(const [e,c,l] of map){if(t.startsWith(e)||t.startsWith('**'+e)){q.classList.add('co',c);q.dataset.l=l;return;}}
+  if(/^["“*]/.test(t)||/^[A-Z][a-z]/.test(t)){q.classList.add('co','co-say');q.dataset.l='面试原话';}
+});
+/* ---- 章标题:编号徽章 + 预计阅读时间 + 上一章/下一章 ---- */
+const CPM=420; /* 中文阅读速度:字/分钟 */
+const chapters=[];
+(function(){
+  const h1s=[...main.querySelectorAll('h1')].filter(h=>!h.closest('.part'));
+  h1s.forEach((h,i)=>{
+    let len=0;let e=h.nextElementSibling;const nodes=[];
+    while(e&&!(e.tagName==='H1')&&!e.classList.contains('part')){len+=e.innerText.length;nodes.push(e);e=e.nextElementSibling;}
+    const mins=Math.max(1,Math.round(len/CPM));
+    h.classList.add('ch');const sm=document.createElement('small');sm.textContent='预计阅读 ≈ '+mins+' 分钟 · '+nodes.filter(n=>n.tagName==='H2').length+' 节';h.appendChild(sm);
+    chapters.push({h,nodes,len,mins,last:nodes[nodes.length-1]||h});
+    const a=tl.querySelector('a[href="#'+h.id+'"]');if(a){const r=document.createElement('span');r.className='rt';r.textContent=mins+'′';a.appendChild(r);}
+  });
+  chapters.forEach((c,i)=>{
+    const nav=document.createElement('div');nav.className='chnav';
+    const prev=chapters[i-1],next=chapters[i+1];
+    nav.innerHTML=(prev?'<a href="#'+prev.h.id+'">← 上一章:'+prev.h.firstChild.textContent.trim().slice(0,22)+'</a>':'<span></span>')+(next?'<a href="#'+next.h.id+'">下一章:'+next.h.firstChild.textContent.trim().slice(0,22)+' →</a>':'<span></span>');
+    c.last.after(nav);
+  });
+  main.querySelectorAll('h2').forEach(h=>{const m=h.firstChild&&h.firstChild.textContent.match(/^\s*(§?\d+(?:\.\d+)*|附录 [A-C]|[一二三四五六七八九十]+、)/);if(m){const n=document.createElement('span');n.className='num';n.textContent=m[1].trim();h.firstChild.textContent=h.firstChild.textContent.replace(m[0],'').replace(/^[·\s]+/,'');h.prepend(n);}});
+})();
+function chapterStatus(){
+  const y=window.scrollY+140;let cur=null;
+  for(const c of chapters){if(c.h.offsetTop<=y)cur=c;else break;}
+  if(!cur)return;
+  const start=cur.h.offsetTop,end=cur.last.offsetTop+cur.last.offsetHeight;
+  const pct=Math.min(100,Math.max(0,Math.round(100*(y-start)/Math.max(1,end-start))));
+  document.getElementById('chname').textContent=cur.h.firstChild.textContent.trim().slice(0,40);
+  document.getElementById('chleft').textContent='还剩 ≈ '+Math.max(0,Math.round(cur.mins*(100-pct)/100))+' 分钟';
+  document.getElementById('chprog').style.width=pct+'%';document.getElementById('chpct').textContent=pct+'%';
+}
+window.addEventListener('scroll',()=>{clearTimeout(window.__c);window.__c=setTimeout(chapterStatus,60);});chapterStatus();
+
+/* ---- 名词悬停解释(来自附录 C) ---- */
+(function(){
+  const G=JSON.parse(document.getElementById('gloss').textContent||'{}');
+  const terms=Object.keys(G).sort((a,b)=>b.length-a.length);if(!terms.length)return;
+  const esc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re=new RegExp('('+terms.map(esc).join('|')+')','gi');
+  const lower={};terms.forEach(t=>lower[t.toLowerCase()]=t);
+  const appC=heads.find(h=>h.textContent.trim().startsWith('附录 C'));
+  const skip=n=>{for(let e=n.parentElement;e;e=e.parentElement){const tg=e.tagName;if(tg==='PRE'||tg==='CODE'||tg==='A'||tg==='H1'||tg==='H2'||tg==='H3'||tg==='SCRIPT'||e.classList.contains('gl')||e.classList.contains('part'))return true;}return false;};
+  let inC=false;
+  const blocks=main.querySelectorAll('p,li,td,th,blockquote');
+  blocks.forEach(bl=>{
+    if(appC&&bl.compareDocumentPosition(appC)&Node.DOCUMENT_POSITION_PRECEDING)return; /* skip glossary itself */
+    const seen=new Set();
+    const walker=document.createTreeWalker(bl,NodeFilter.SHOW_TEXT,{acceptNode:n=>skip(n)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+    const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(nd=>{
+      const txt=nd.nodeValue;if(!re.test(txt)){re.lastIndex=0;return;}re.lastIndex=0;
+      const frag=document.createDocumentFragment();let last=0,m,changed=false;
+      while((m=re.exec(txt))){const key=lower[m[1].toLowerCase()];if(!key||seen.has(key)){continue;}
+        /* latin terms must be whole words */
+        if(/^[A-Za-z0-9+.\- ]+$/.test(key)){const b=txt[m.index-1]||' ',a=txt[m.index+m[0].length]||' ';if(/[A-Za-z0-9_]/.test(b)||/[A-Za-z0-9_]/.test(a))continue;}
+        seen.add(key);frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+        const sp=document.createElement('span');sp.className='gl';sp.textContent=m[0];sp.dataset.d=G[key];frag.appendChild(sp);last=m.index+m[0].length;changed=true;}
+      if(changed){frag.appendChild(document.createTextNode(txt.slice(last)));nd.replaceWith(frag);}
+    });
+  });
+  const tip=document.getElementById('tip');
+  main.addEventListener('mouseover',e=>{const t=e.target.closest('.gl');if(!t)return;const d=t.dataset.d;const i=d.indexOf(':');tip.innerHTML='<b></b> ';tip.querySelector('b').textContent=d.slice(0,i);tip.appendChild(document.createTextNode(d.slice(i+1)));tip.style.display='block';
+    const r=t.getBoundingClientRect();let x=r.left,y=r.bottom+8;if(x+370>innerWidth)x=innerWidth-380;if(y+140>innerHeight)y=r.top-8-tip.offsetHeight;tip.style.left=x+'px';tip.style.top=y+'px';});
+  main.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('.gl'))tip.style.display='none';});
+})();
+document.getElementById('top').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+/* reading progress + current highlight */
+const rp=document.getElementById('rp');
+function savePos(){try{let best=null;for(const h of heads){if(!h.isConnected)continue;if(h.getBoundingClientRect().top<=120)best=h;else break;}if(best&&best.dataset.k){localStorage.setItem('shaoyi_1106_pos_v1',JSON.stringify({k:best.dataset.k,off:Math.round(window.scrollY-(best.getBoundingClientRect().top+window.scrollY)),when:Date.now()}));}}catch(e){}}
+function onscroll(){const h=document.documentElement;rp.style.width=(100*h.scrollTop/(h.scrollHeight-h.clientHeight))+'%';clearTimeout(window.__t);window.__t=setTimeout(()=>{nearest();savePos();},80);}
+window.addEventListener('scroll',onscroll);
+setInterval(savePos,1000);window.addEventListener('pagehide',savePos);window.addEventListener('beforeunload',savePos);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')savePos();});
+
+/* ---- 右侧 Q&A:用 Claude 生成解答(只在 claude.ai 里打开的版本可用) ---- */
+let SAMPLE=null;const sampleReady=(async()=>{await new Promise(r=>setTimeout(r,0));try{if(window.claude&&window.claude.use){SAMPLE=await window.claude.use('sample');}}catch(e){SAMPLE=null;}try{render();}catch(e){}})();
+function secText(id){const h=document.getElementById(id);if(!h)return '';let t=[];let e=h.nextElementSibling;const lvl=+h.tagName[1];while(e){if(/^H[1-3]$/.test(e.tagName)&&(+e.tagName[1])<=lvl)break;if(!e.classList.contains('part'))t.push(e.innerText);e=e.nextElementSibling;}return t.join('\n').slice(0,6000);}
+async function answer(it,box,btn){
+  if(!SAMPLE){box.textContent='这个功能只在 claude.ai 上打开的版本可用。本地版请点「复制全部为 Markdown」发给我。';return;}
+  const ctx=secText(it.id);btn.disabled=true;box.className='ans think';box.textContent='Claude 在想…(5–60 秒)';
+  const prompt='你是在帮一位 2026 年 12 月毕业的哥大计算机工程硕士准备和 Stevens 助理教授 Shaoyi Huang 的 30 分钟研究聊天(11/6 周五 15:00 Zoom,聊研究兴趣、远程实习、Fall 2027 博士)。她正在读一份手册,看到下面这一节时提了一个问题。请用中文、零基础也能懂的口吻回答:先一句人话给结论,再展开解释,必要时给一句可以直接说的英文。不要编造她的项目细节;涉及她的项目只引用手册原文。控制在 300 字以内。\n\n【她正在看的章节】'+(it.title||'')+'\n'+ctx+'\n\n【她的问题】'+it.text;
+  try{const {text}=await SAMPLE(prompt,{onText:({text})=>{box.className='ans';box.textContent=text;}});
+    const all=load();const i=all.findIndex(x=>x.k===it.k);if(i>=0){all[i].answer=text;store(all);}box.className='ans';box.textContent=text;}
+  catch(e){box.className='ans';box.textContent=e&&e.text?e.text:(e&&e.code==='not_granted'?'你没有允许这个页面使用 Claude,所以生成不了。':'生成失败('+(e&&e.code||'unknown')+'),稍后再试或发给我。');}
+  finally{btn.disabled=false;}
+}
+/* ---- 右侧 Q&A ---- */
+const KEY='shaoyi_1106_qa_v1';
+let cur={id:'',title:'(未定位)'};
+function setSec(h){cur={id:h.id,title:h.textContent.replace('＋问','').replace(/[☐✓] 掌握/,'').replace(/[☆★] (已)?收藏/,'').replace(/🔖 (稍后|待看)/,'').trim()};try{if(h.dataset.k)localStorage.setItem('shaoyi_1106_last_v1',JSON.stringify({k:h.dataset.k,title:cur.title,when:Date.now()}));}catch(e){}document.getElementById('cursec').textContent='当前章节:'+cur.title;
+  tl.querySelectorAll('a.cur').forEach(a=>a.classList.remove('cur'));const a=tl.querySelector('a[href="#'+h.id+'"]');if(a)a.classList.add('cur');}
+function nearest(){let best=null;for(const h of heads){if(!h.isConnected)continue;const r=h.getBoundingClientRect();if(r.top<=120)best=h;else break;}if(best)setSec(best);}
+nearest();
+(function(){try{const LAND="第 0 章";let _sv=null;try{_sv=JSON.parse(localStorage.getItem('shaoyi_1106_pos_v1')||'null')||JSON.parse(localStorage.getItem('shaoyi_1106_last_v1')||'null')}catch(e){}if(LAND&&!(_sv&&_sv.k)){const h=heads.find(x=>x.textContent.indexOf(LAND)>=0);if(h){const go=()=>{window.scrollTo({top:Math.max(0,h.getBoundingClientRect().top+window.scrollY-10),behavior:'auto'});try{h.scrollIntoView({block:'start',behavior:'auto'})}catch(e){}};go();setTimeout(go,300);setTimeout(go,1200);setTimeout(go,2500);return;}}let p=JSON.parse(localStorage.getItem('shaoyi_1106_pos_v1')||'null');if(location.hash&&!(p&&p.k))return;if(!p||!p.k){const l=JSON.parse(localStorage.getItem('shaoyi_1106_last_v1')||'null');if(l&&l.k)p={k:l.k,off:0};}if(!p||!p.k)return;const h=heads.find(x=>x.dataset.k===p.k);if(!h)return;const go=()=>{const y=h.getBoundingClientRect().top+window.scrollY+(p.off||0);window.scrollTo({top:Math.max(0,y),behavior:'auto'});};go();setTimeout(go,300);setTimeout(go,1200);}catch(e){}})();
+function load(){return ld(KEY,'[]')}
+function store(list){sv(KEY,list)}
+function render(){
+  const list=load();const box=document.getElementById('notes');box.innerHTML='';
+  if(!list.length){box.innerHTML='<div style="color:var(--mut);font-size:13px">还没有问题。</div>';return;}
+  list.slice().reverse().forEach(it=>{
+    const d=document.createElement('div');d.className='note'+(it.done?' answered':'');
+    d.innerHTML='<div class="t"><span>'+(it.title||'')+' · '+it.when+'</span><span><a data-a="jump">跳转</a> <a data-a="done">'+(it.done?'未答':'已答')+'</a> <a data-a="del">删</a></span></div><div class="b"></div>';
+    d.querySelector('.b').textContent=it.text;
+    const ab=document.createElement('div');ab.className='ans';ab.hidden=!it.answer;ab.textContent=it.answer||'';d.appendChild(ab);
+    const bb=document.createElement('div');bb.className='btns2';const gen=document.createElement('button');gen.textContent=it.answer?'重新生成解答':'生成解答';gen.title=SAMPLE?'用 Claude 生成这一题的解答':'只在 claude.ai 上打开的版本可用';gen.onclick=()=>{ab.hidden=false;answer(it,ab,gen);};bb.appendChild(gen);d.appendChild(bb);
+    d.querySelectorAll('.t a').forEach(a=>a.onclick=()=>{
+      const all=load();const i=all.findIndex(x=>x.k===it.k);if(i<0)return;
+      if(a.dataset.a==='del')all.splice(i,1);
+      if(a.dataset.a==='done')all[i].done=!all[i].done;
+      if(a.dataset.a==='jump'&&it.id){location.hash='#'+it.id;return;}
+      store(all);render();
+    });
+    box.appendChild(d);
+  });
+}
+document.getElementById('save').onclick=()=>{
+  const ta=document.getElementById('qtext');const text=ta.value.trim();if(!text)return;
+  const list=load();const now=new Date();const when=now.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  list.push({k:Date.now()+Math.random(),id:cur.id,title:cur.title,text,when,done:false});
+  store(list);ta.value='';render();
+};
+document.getElementById('clear').onclick=()=>{const b=document.getElementById('clear');if(load().length&&b.dataset.arm){store([]);render();delete b.dataset.arm;b.textContent='清空全部';}else{b.dataset.arm='1';b.textContent='再点一次确认清空';setTimeout(()=>{delete b.dataset.arm;b.textContent='清空全部';},3000);}};
+document.getElementById('copy').onclick=async()=>{
+  const list=load().filter(x=>!x.done);
+  const out=['## ❓ 待答(从 HTML 复制,'+new Date().toLocaleDateString('zh-CN')+')',''].concat(list.map(x=>'- **['+x.title+']** '+x.text.replace(/\n/g,' '))).join('\n');
+  const b=document.getElementById('copy');
+  try{await navigator.clipboard.writeText(out);b.textContent='已复制 '+list.length+' 条';}
+  catch(e){const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');b.textContent='已复制 '+list.length+' 条';}catch(_){b.textContent='复制失败,手动选中';}ta.remove();}
+  setTimeout(()=>b.textContent='复制全部为 Markdown',2000);
+};
+render();
+</script></body></html>
